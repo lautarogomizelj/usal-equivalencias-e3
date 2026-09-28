@@ -1,0 +1,42 @@
+/*
+ * Colores semánticos. Valores PROVISORIOS hasta que exista el Design System
+ * definitivo (frontend-interfaces.md §0.15). Usar siempre el nombre semántico
+ * (bg-primary, text-danger...), nunca un color literal.
+ */
+@theme {
+  --color-*: initial;
+
+  --color-white: #ffffff;
+  --color-black: #000000;
+  --color-transparent: transparent;
+
+  --color-primary: #1d4e89;
+  --color-primary-hover: #163d6b;
+  --color-primary-contrast: #ffffff;
+
+  --color-secondary: #e8eef6;
+  --color-secondary-hover: #d5e0ee;
+  --color-secondary-contrast: #1d4e89;
+
+  --color-success: #1f7a4d;
+  --color-success-soft: #e3f4ea;
+  --color-warning: #a15c00;
+  --color-warning-soft: #fdf1dc;
+  --color-danger: #b42318;
+  --color-danger-hover: #912018;
+  --color-danger-soft: #fdeceb;
+  --color-info: #175cd3;
+  --color-info-soft: #e6effc;
+
+  --color-background: #f6f7f9;
+  --color-surface: #ffffff;
+  --color-surface-muted: #eef0f3;
+  --color-border: #d0d5dd;
+  --color-border-strong: #98a2b3;
+
+  --color-text: #1d2433;
+  --color-text-muted: #5b6475;
+  --color-text-disabled: #98a2b3;
+
+  --color-focus: #2e90fa;
+}

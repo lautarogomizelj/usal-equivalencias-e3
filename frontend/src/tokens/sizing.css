@@ -1,0 +1,21 @@
+/*
+ * Alturas, anchuras reutilizables y tamaños de iconos.
+ * Uso con Tailwind: h-(--size-input), w-(--size-sidebar), max-w-(--size-content).
+ */
+:root {
+  --size-topbar: 4rem;
+  --size-sidebar: 16rem;
+  --size-content: 80rem;
+  --size-form: 32rem;
+  --size-modal-sm: 28rem;
+  --size-modal-md: 40rem;
+
+  --size-input: 2.5rem;
+  --size-button-sm: 2rem;
+  --size-button-md: 2.5rem;
+  --size-button-lg: 3rem;
+
+  --size-icon-sm: 1rem;
+  --size-icon-md: 1.25rem;
+  --size-icon-lg: 1.5rem;
+}

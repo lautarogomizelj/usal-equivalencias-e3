@@ -1,0 +1,10 @@
+/* Capas. Uso: z-(--z-modal). No usar números sueltos (z-50). */
+:root {
+  --z-base: 0;
+  --z-dropdown: 100;
+  --z-sticky: 200;
+  --z-overlay: 300;
+  --z-modal: 400;
+  --z-toast: 500;
+  --z-tooltip: 600;
+}

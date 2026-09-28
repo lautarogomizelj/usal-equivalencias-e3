@@ -1,0 +1,9 @@
+/*
+ * Escala de espaciado (§0.3.5): 4 · 8 · 12 · 16 · 24 · 32 · 48 · 64 px.
+ * Con base de 4px las clases válidas son:
+ *   1 (4) · 2 (8) · 3 (12) · 4 (16) · 6 (24) · 8 (32) · 12 (48) · 16 (64)
+ * Ej: p-4, gap-6, mt-8. No usar otros pasos ni valores arbitrarios (p-[13px]).
+ */
+@theme {
+  --spacing: 0.25rem;
+}

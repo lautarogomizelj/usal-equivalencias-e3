@@ -1,0 +1,9 @@
+/* Breakpoints centralizados (§0.7.1). Mobile-first: sm: (tablet), md:, lg: (desktop), xl:. */
+@theme {
+  --breakpoint-*: initial;
+
+  --breakpoint-sm: 40rem;
+  --breakpoint-md: 48rem;
+  --breakpoint-lg: 64rem;
+  --breakpoint-xl: 80rem;
+}

@@ -18,7 +18,7 @@ Este sistema reemplaza ese circuito por una plataforma web donde cada rol tiene 
 
 El backend es un esqueleto vacío. Existen las carpetas del package de Java con la separación por capas prevista, pero todas contienen únicamente un archivo `.gitkeep`. No hay `pom.xml`, ni Dockerfile, ni migraciones de Flyway, ni una sola clase de Java. Tampoco existe la orquestación con Docker Compose que la documentación describe.
 
-El frontend sí es una base funcional: tiene el sistema de Design Tokens completo, el cliente HTTP centralizado con manejo tipado de errores, el router, el layout público, la página de inicio, la página de error 404 y un componente base de botón. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema, pero las pantallas de negocio todavía no existen.
+El frontend sí es una base funcional: tiene el sistema de Design Tokens completo, el cliente HTTP centralizado con manejo tipado de errores, el router, el layout público, la página de inicio, la página de error 404 y un componente base de botón. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
 
 En resumen: la base técnica y la especificación están sólidas, la implementación de negocio está sin empezar.
 
@@ -48,8 +48,10 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Runtime** | Java 17 / Spring Boot 3.2 |
 | **Base de datos** | PostgreSQL 15 |
 | **Autenticación** | Spring Security 6 + OAuth2 Google + JWT |
+| **Documentación de la API** | SpringDoc OpenAPI (Swagger UI) |
 | **Migraciones** | Flyway |
 | **Build** | Maven |
+| **Logging** | SLF4J + Logback |
 | **Testing** | JUnit 5 + Mockito |
 
 ### Infraestructura (a implementar)
@@ -65,31 +67,31 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | Servicio | Puerto | URL |
 |----------|--------|-----|
 | **Frontend (React)** | 5173 | http://localhost:5173 |
-| **Backend (Spring)** | 8080 | http://localhost:8080 |
+| **Backend (Spring)** | 8080 | http://localhost:8080/api |
 | **PostgreSQL** | 5432 | localhost:5432 |
 | **pgAdmin** | 5050 | http://localhost:5050 |
 
-Una aclaración importante para el desarrollo local: en la máquina actual no hay JDK ni Maven instalados. Todo lo que involucre Java tendrá que correr dentro de Docker.
+El backend expone su API bajo el context path `/api`, que es lo que declara `VITE_API_URL` en el `.env` del frontend.
+
+Requisito de entorno: en la máquina de desarrollo actual no hay JDK ni Maven instalados, así que todo lo que involucre Java tendrá que correr dentro de Docker.
 
 ---
 
 ## Convenciones de git
 
 ```
-feature/* ──► develop ──► beta/* ──► main
-                              │
-                         hotfix/* ──► main
+feature/* ──► develop ──► main
+fix/*     ──► develop ──► main
+                  ▲
+                  └── fix/* urgente: merge directo a main
 ```
 
 | Rama | Propósito |
 |------|-----------|
 | **main** | Releases estables en producción |
-| **develop** | Rama de integración — aquí mergean todos los features |
-| **beta/*** | Release candidates (ej: beta/1.0) |
-| **hotfix/*** | Fixes emergentes que van directo a main |
+| **develop** | Rama de integración — aquí mergean todos los `feature/*` y `fix/*` |
 | **feature/*** | Features nuevos |
 | **fix/*** | Bug fixes |
-| **enhancement/*** | Mejoras a features existentes |
 
 Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
 
@@ -97,7 +99,7 @@ Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
 |---------|-----|
 | **ADDED:** | Nueva funcionalidad |
 | **FIX:** | Corrección de bug |
-| **HOTFIX:** | Corrección urgente aplicada directo en producción |
+| **HOTFIX:** | Corrección urgente aplicada directo en producción (un `fix/*` mergeado directo a `main`) |
 | **REFACTOR:** | Reorganización sin cambio de comportamiento (mover, renombrar, limpiar) |
 
 `backend/` y `frontend/` son independientes entre sí, así que conviene que cada commit toque una sola de las dos, y que los cambios de documentación vengan en commits separados de los de código.
@@ -106,7 +108,7 @@ Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
 
 ## Cómo correr el proyecto
 
-Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Solo hay tareas de frontend: el backend todavía no existe.
+Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Solo hay tareas de frontend: el backend todavía no existe. Cuando se implemente, sus tareas van a llevar el prefijo `backend-` para no chocar con las del frontend.
 
 ### Comandos del Makefile
 
@@ -151,6 +153,8 @@ Otros scripts de `package.json`: `npm run build`, `npm run preview`, `npm run li
 
 El repositorio es un monorepo con dos aplicaciones y un directorio de documentación.
 
+Este README es la fuente canónica del estado actual, el stack, los puertos y las convenciones de git. Los demás documentos se vinculan a esta página en lugar de repetir esa información, para que no haya dos versiones que puedan divergir.
+
 **`backend/`** — Servicio Spring Boot. Dentro de `src/main/java/com/usal/e3/` están las capas ya separadas: `api` con los controladores REST agrupados por dominio, `service` con la lógica de negocio, `repository` con el acceso a datos, `domain` con las entidades JPA, `mapper` para la conversión entre entidad y DTO, más `security`, `exception` y `config`. En `src/main/resources/db/migration/` van los scripts de Flyway. En `src/test/` están los tres niveles de prueba previstos: unitarios de servicio, de repositorio y de integración.
 
 **`frontend/`** — Aplicación React. La carpeta `src/` está organizada por responsabilidad: `assets` para los archivos estáticos, `components/ui` para los componentes base compartidos, `constants` para rutas, roles, límites de archivo y variables de entorno, `hooks` y `store` para la lógica y el estado reutilizables, `layouts` para los layouts compartidos por sección, `pages` con una carpeta por área o rol, `router` para la definición de rutas, `services` para toda la comunicación con el backend, `styles` para el CSS global, `tokens` para el Design System, `types` para los tipos y DTOs compartidos, `utils` para funciones puras y `validations` para las reglas y mensajes de error.
@@ -161,7 +165,8 @@ El repositorio es un monorepo con dos aplicaciones y un directorio de documentac
 |-----------|--------------|
 | `Docs/Sistema_Equivalencias_Requisitos_v6.md` | Especificación funcional y no funcional, versión 6. Es la fuente de verdad del negocio: actores, módulos, estados del expediente, esquema de tablas y reglas de permisos. Cuando haya una duda sobre qué tiene que hacer el sistema, la respuesta está acá. |
 | `Docs/frontend-interfaces.md` | Especificación de interfaces: cada pantalla, campo, estado de carga y acción por rol, más los estándares obligatorios de Frontend (tokens, accesibilidad, responsive, validaciones). Es el contrato entre el negocio y la capa de presentación, y es el documento que manda cuando hay que decidir cómo mostrar algo. |
-| `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, puertos, flujo de comunicación entre Frontend y Backend y las tres capas. |
+| `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, flujo de comunicación entre Frontend y Backend y las tres capas. Los puertos y el stack están en este README, no se repiten ahí. |
 | `Docs/README_FRONTEND_E3.md` | Guía de trabajo del equipo Frontend: stack, estructura de carpetas, reglas rápidas de estilos y servicios, y la lista de pendientes del lado Frontend. |
-| `Docs/README_BACKEND_E3.md` | Guía de trabajo del equipo Backend. |
+| `Docs/README_BACKEND_E3.md` | Guía de trabajo del equipo Backend. Todas sus secciones están marcadas "(a implementar)": el servicio todavía no existe y el documento describe el diseño previsto, no el estado actual. |
 | `Docs/Diagramas/` (3 archivos `.jpeg`) | Diagramas de actividades y de los flujos de análisis preliminar y revisión legal. |
+| `AGENTS.md` | Pautas de trabajo para las herramientas de asistencia: cómo encarar un cambio, reglas de UI y prefijos de commit. |

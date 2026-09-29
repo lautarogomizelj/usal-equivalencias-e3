@@ -26,7 +26,7 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 
 ## Stack
 
-### Frontend (implementado)
+### Frontend
 
 | Capa | Tecnología |
 |-------|------------|
@@ -41,7 +41,7 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Cliente HTTP** | `fetch` nativo, centralizado en `src/services/api/client.ts` |
 | **Entorno** | Node 24 + npm · alias `@` para apuntar a `src` |
 
-### Backend (previsto, no implementado)
+### Backend (a implementar)
 
 | Capa | Tecnología |
 |-------|------------|
@@ -52,13 +52,22 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Build** | Maven |
 | **Testing** | JUnit 5 + Mockito |
 
-### Infraestructura (prevista, no implementada)
+### Infraestructura (a implementar)
 
 | Capa | Tecnología |
 |-------|------------|
 | **Contenedores** | Docker |
 | **Orquestación** | Docker Compose |
 | **Servicios del stack** | Aplicación backend, PostgreSQL y pgAdmin |
+
+### Puertos
+
+| Servicio | Puerto | URL |
+|----------|--------|-----|
+| **Frontend (React)** | 5173 | http://localhost:5173 |
+| **Backend (Spring)** | 8080 | http://localhost:8080 |
+| **PostgreSQL** | 5432 | localhost:5432 |
+| **pgAdmin** | 5050 | http://localhost:5050 |
 
 Una aclaración importante para el desarrollo local: en la máquina actual no hay JDK ni Maven instalados. Todo lo que involucre Java tendrá que correr dentro de Docker.
 

@@ -93,16 +93,19 @@ Se recomienda una estructura similar a:
 src/
 ├── assets/
 ├── components/
+│   └── ui/
+├── constants/
+├── hooks/
 ├── layouts/
 ├── pages/
+├── router/
 ├── services/
-├── hooks/
 ├── store/
 ├── styles/
 ├── tokens/
 ├── types/
 ├── utils/
-└── constants/
+└── validations/
 ```
 
 Objetivos:
@@ -158,17 +161,17 @@ Ejemplo:
 
 ```text
 tokens/
-├── colors/
-├── spacing/
-├── radius/
-├── shadows/
-├── typography/
-├── breakpoints/
-├── sizing/
-└── zIndex/
+├── colors.css
+├── spacing.css
+├── radius.css
+├── shadows.css
+├── typography.css
+├── breakpoints.css
+├── sizing.css
+└── z-index.css
 ```
 
-Todos los componentes deben consumir estos tokens.
+Todos los tokens se importan desde `tokens/index.css`, que es el único punto de entrada. Todos los componentes deben consumir estos tokens.
 
 ### 0.3.2 Prohibición de valores hardcodeados
 

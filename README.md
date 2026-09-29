@@ -104,18 +104,6 @@ Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
 
 ---
 
-## Organización del proyecto
-
-El repositorio es un monorepo con dos aplicaciones y un directorio de documentación.
-
-**`backend/`** — Servicio Spring Boot. Dentro de `src/main/java/com/usal/e3/` están las capas ya separadas: `api` con los controladores REST agrupados por dominio, `service` con la lógica de negocio, `repository` con el acceso a datos, `domain` con las entidades JPA, `mapper` para la conversión entre entidad y DTO, más `security`, `exception` y `config`. En `src/main/resources/db/migration/` van los scripts de Flyway. En `src/test/` están los tres niveles de prueba previstos: unitarios de servicio, de repositorio y de integración.
-
-**`frontend/`** — Aplicación React. La carpeta `src/` está organizada por responsabilidad: `assets` para los archivos estáticos, `components/ui` para los componentes base compartidos, `constants` para rutas, roles, límites de archivo y variables de entorno, `hooks` y `store` para la lógica y el estado reutilizables, `layouts` para los layouts compartidos por sección, `pages` con una carpeta por área o rol, `router` para la definición de rutas, `services` para toda la comunicación con el backend, `styles` para el CSS global, `tokens` para el Design System, `types` para los tipos y DTOs compartidos, `utils` para funciones puras y `validations` para las reglas y mensajes de error.
-
-**`Docs/`** — Documentación del proyecto: especificación de requisitos, especificación de interfaces de frontend, notas de arquitectura, los README de backend y de frontend, y la carpeta `Docs/Diagramas/` con los diagramas de actividades y de los flujos principales del proceso.
-
----
-
 ## Cómo correr el proyecto
 
 Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Solo hay tareas de frontend: el backend todavía no existe.
@@ -161,9 +149,19 @@ Otros scripts de `package.json`: `npm run build`, `npm run preview`, `npm run li
 
 ## Documentación
 
-- `Docs/Sistema_Equivalencias_Requisitos_v6.md` — Especificación funcional y no funcional, versión 6. Es la fuente de verdad del negocio: actores, módulos, estados del expediente, esquema de tablas y reglas de permisos. Cuando haya una duda sobre qué tiene que hacer el sistema, la respuesta está acá.
-- `Docs/frontend-interfaces.md` — Especificación de interfaces: cada pantalla, campo, estado de carga y acción por rol, más los estándares obligatorios de Frontend (tokens, accesibilidad, responsive, validaciones). Es el contrato entre el negocio y la capa de presentación, y es el documento que manda cuando hay que decidir cómo mostrar algo.
-- `Docs/ARQUITECTURA_E3.md` — Estructura del monorepo, puertos, flujo de comunicación entre Frontend y Backend y las tres capas.
-- `Docs/README_FRONTEND_E3.md` — Guía de trabajo del equipo Frontend: stack, estructura de carpetas, reglas rápidas de estilos y servicios, y la lista de pendientes del lado Frontend.
-- `Docs/README_BACKEND_E3.md` — Guía de trabajo del equipo Backend.
-- `Docs/Diagramas/` — Diagramas de actividades y de los flujos de análisis preliminar y revisión legal.
+El repositorio es un monorepo con dos aplicaciones y un directorio de documentación.
+
+**`backend/`** — Servicio Spring Boot. Dentro de `src/main/java/com/usal/e3/` están las capas ya separadas: `api` con los controladores REST agrupados por dominio, `service` con la lógica de negocio, `repository` con el acceso a datos, `domain` con las entidades JPA, `mapper` para la conversión entre entidad y DTO, más `security`, `exception` y `config`. En `src/main/resources/db/migration/` van los scripts de Flyway. En `src/test/` están los tres niveles de prueba previstos: unitarios de servicio, de repositorio y de integración.
+
+**`frontend/`** — Aplicación React. La carpeta `src/` está organizada por responsabilidad: `assets` para los archivos estáticos, `components/ui` para los componentes base compartidos, `constants` para rutas, roles, límites de archivo y variables de entorno, `hooks` y `store` para la lógica y el estado reutilizables, `layouts` para los layouts compartidos por sección, `pages` con una carpeta por área o rol, `router` para la definición de rutas, `services` para toda la comunicación con el backend, `styles` para el CSS global, `tokens` para el Design System, `types` para los tipos y DTOs compartidos, `utils` para funciones puras y `validations` para las reglas y mensajes de error.
+
+### Documentos del proyecto
+
+| Documento | Qué contiene |
+|-----------|--------------|
+| `Docs/Sistema_Equivalencias_Requisitos_v6.md` | Especificación funcional y no funcional, versión 6. Es la fuente de verdad del negocio: actores, módulos, estados del expediente, esquema de tablas y reglas de permisos. Cuando haya una duda sobre qué tiene que hacer el sistema, la respuesta está acá. |
+| `Docs/frontend-interfaces.md` | Especificación de interfaces: cada pantalla, campo, estado de carga y acción por rol, más los estándares obligatorios de Frontend (tokens, accesibilidad, responsive, validaciones). Es el contrato entre el negocio y la capa de presentación, y es el documento que manda cuando hay que decidir cómo mostrar algo. |
+| `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, puertos, flujo de comunicación entre Frontend y Backend y las tres capas. |
+| `Docs/README_FRONTEND_E3.md` | Guía de trabajo del equipo Frontend: stack, estructura de carpetas, reglas rápidas de estilos y servicios, y la lista de pendientes del lado Frontend. |
+| `Docs/README_BACKEND_E3.md` | Guía de trabajo del equipo Backend. |
+| `Docs/Diagramas/` (3 archivos `.jpeg`) | Diagramas de actividades y de los flujos de análisis preliminar y revisión legal. |

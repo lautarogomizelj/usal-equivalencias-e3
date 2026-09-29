@@ -107,30 +107,46 @@ El repositorio es un monorepo con dos aplicaciones y un directorio de documentac
 
 ---
 
-## Cómo levantar el frontend
+## Cómo correr el frontend
 
-Hace falta Node 24 y npm.
+Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Solo hay tareas de frontend: el backend todavía no existe.
 
-Desde la carpeta `frontend`: primero se crea el archivo `.env` a partir de `.env.example`, que es donde se define la URL del backend. Después se instalan las dependencias y se levanta el servidor de desarrollo, que queda disponible en `http://localhost:5173`.
+### Con Makefile
 
-Las variables de entorno de Vite solo se leen al arrancar el servidor. Si modificás el `.env`, tenés que reiniciar el dev server para que el cambio tome efecto.
+```bash
+cd frontend
+cp .env.example .env
+cd ..
+make install
+make dev          # http://localhost:5173
+```
 
-Desde la raíz del proyecto, los mismos pasos están encapsulados en el Makefile.
+El `.env` se crea una sola vez y es donde se define la URL del backend. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
 
----
+### Comandos
 
-## Makefile
+| Comando | Qué hace |
+|---------|----------|
+| `make help` | Lista las tareas disponibles. Es la tarea por defecto, así que correr `make` a secas muestra la ayuda. |
+| `make install` | Instala las dependencias con `npm ci`, que respeta el lockfile y por lo tanto es reproducible. |
+| `make dev` | Levanta el servidor de desarrollo con recarga en caliente. |
+| `make build` | Compila TypeScript y genera el build de producción. |
+| `make lint` | Corre oxlint. |
+| `make preview` | Sirve localmente el build de producción. |
+| `make clean` | Borra el directorio de build. Es el único target que no envuelve un script de npm. |
+| `make down` | Detiene el stack de contenedores. Hoy no hace nada porque todavía no hay `docker-compose.yml`: avisa por pantalla en lugar de fallar, y pasa a hacer el teardown real de Docker Compose en cuanto ese archivo exista. |
 
-En la raíz hay un Makefile que envuelve los pasos de trabajo. Solo hay tareas de frontend, porque el backend todavía no existe.
+### Con npm directo
 
-- `make help` lista las tareas disponibles. Es la tarea por defecto, así que correr `make` a secas muestra la ayuda.
-- `make install` instala las dependencias. Usa `npm ci`, que respeta el lockfile y por lo tanto es reproducible.
-- `make dev` levanta el servidor de desarrollo con recarga en caliente.
-- `make build` compila TypeScript y genera el build de producción.
-- `make lint` corre oxlint.
-- `make preview` sirve localmente el build de producción.
-- `make clean` borra el directorio de build. Es el único target que no envuelve un script de npm.
-- `make down` detiene el stack de contenedores. Hoy no hace nada porque todavía no hay `docker-compose.yml`: avisa por pantalla en lugar de fallar, y pasa a hacer el teardown real de Docker Compose en cuanto ese archivo exista.
+Para trabajar sin make, los mismos pasos desde la carpeta `frontend`:
+
+```bash
+cp .env.example .env   # URL del backend
+npm install            # o npm ci, si respetás el lockfile
+npm run dev            # http://localhost:5173
+```
+
+Otros scripts de `package.json`: `npm run build`, `npm run preview`, `npm run lint`.
 
 ---
 

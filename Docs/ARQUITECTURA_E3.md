@@ -1,73 +1,93 @@
 # USAL E3 - Arquitectura
 
+> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). Este documento se limita a la estructura del monorepo, el flujo de comunicación y las capas.
+
 ## Estructura del Monorepo
+
+Este es el árbol real del repositorio hoy. Lo que todavía no existe está en [Estructura prevista](#estructura-prevista), más abajo.
 
 ```
 usal-equivalencias-e3/
-├── backend/                    # Java + Spring Boot 3.2
-│   ├── src/main/java/com/usal/e3/
-│   │   ├── api/                # Controllers REST
-│   │   ├── service/            # Lógica de negocio
-│   │   ├── repository/         # Acceso a datos (JPA)
-│   │   ├── domain/             # Entidades JPA (modelos de dominio)
-│   │   ├── mapper/             # MapStruct: Entity ↔ DTO
-│   │   ├── security/           # JWT, OAuth2, permisos
-│   │   ├── exception/          # Excepciones personalizadas
-│   │   └── config/             # Configuración Spring
-│   ├── src/main/resources/
-│   │   ├── application.yml
-│   │   └── db/migration/       # Scripts Flyway
-│   ├── src/test/java/com/usal/e3/   # Tests (unitarios, repos, integración)
-│   ├── pom.xml
-│   └── Dockerfile
-│
-├── frontend/                   # React + Vite
-│   ├── src/
-│   │   ├── assets/             # Imágenes y archivos estáticos
-│   │   ├── components/
-│   │   │   └── ui/             # Componentes base compartidos (Button, Input, Modal, Table...)
-│   │   ├── constants/          # Rutas, roles, límites de archivos, reglas de auth, env
-│   │   ├── hooks/              # Hooks reutilizables
-│   │   ├── layouts/            # Layouts compartidos (público, dashboard, detalle...)
-│   │   ├── pages/              # Una carpeta por área/rol (public, aspirante, academico...)
-│   │   ├── router/             # Definición de rutas
-│   │   ├── services/           # Comunicación con backend (api/client.ts es el único que usa fetch)
-│   │   ├── store/              # Estado global (Context API)
-│   │   ├── styles/             # Estilos globales
-│   │   ├── tokens/             # Design Tokens (colores, espaciado, radios, sombras, tipografía...)
-│   │   ├── types/              # Tipos y DTOs compartidos
-│   │   ├── utils/              # Utilidades puras
-│   │   ├── validations/        # Validaciones y mensajes de error compartidos
-│   │   └── App.jsx
-│   ├── public/
-│   ├── package.json
-│   ├── vite.config.js
-│   └── Dockerfile
-│
-├── db/                         # Esquema BD (documentación)
-│   └── schema.md               # Diagrama de tablas
-│
-├── docs/
-│   ├── ARQUITECTURA.md         # Este archivo
-│   ├── API.md                  # Endpoints
-│   └── demo-credentials.md
-│
-├── Makefile                    # Orquestación centralizada
-├── docker-compose.yml
+├── AGENTS.md                       # Pautas de trabajo para herramientas de asistencia
+├── Makefile                        # Orquestación centralizada
+├── README.md                       # Documento canónico: estado, stack, puertos, git
 ├── .gitignore
-└── README.md
+│
+├── backend/                        # Java + Spring Boot 3.2 (a implementar)
+│   ├── src/main/java/com/usal/e3/
+│   │   ├── api/                    # Controllers REST
+│   │   │   ├── auth/
+│   │   │   ├── solicitudes/
+│   │   │   ├── usuarios/
+│   │   │   ├── carreras/
+│   │   │   ├── chat/
+│   │   │   └── admin/
+│   │   ├── service/                # Lógica de negocio
+│   │   ├── repository/             # Acceso a datos (JPA)
+│   │   ├── domain/                 # Entidades JPA (modelos de dominio)
+│   │   ├── mapper/                 # MapStruct: Entity ↔ DTO
+│   │   ├── security/               # JWT, OAuth2, permisos
+│   │   ├── exception/              # Excepciones personalizadas
+│   │   └── config/                 # Configuración Spring
+│   ├── src/main/resources/
+│   │   └── db/migration/           # Scripts Flyway
+│   └── src/test/java/com/usal/e3/  # Tests (unitarios, repos, integración)
+│
+├── frontend/                       # React + Vite
+│   ├── public/
+│   ├── src/
+│   │   ├── assets/                 # Imágenes y archivos estáticos
+│   │   ├── components/
+│   │   │   └── ui/                 # Componentes base compartidos (Button, Input, Modal, Table...)
+│   │   ├── constants/              # Rutas, roles, límites de archivos, reglas de auth, env
+│   │   ├── hooks/                  # Hooks reutilizables
+│   │   ├── layouts/                # Layouts compartidos (público, dashboard, detalle...)
+│   │   ├── pages/                  # Una carpeta por área/rol (public, aspirante, academico...)
+│   │   ├── router/                 # Definición de rutas
+│   │   ├── services/               # Comunicación con backend (api/client.ts es el único que usa fetch)
+│   │   ├── store/                  # Estado global (Context API)
+│   │   ├── styles/                 # Estilos globales
+│   │   ├── tokens/                 # Design Tokens (colores, espaciado, radios, sombras, tipografía...)
+│   │   ├── types/                  # Tipos y DTOs compartidos
+│   │   ├── utils/                  # Utilidades puras
+│   │   ├── validations/            # Validaciones y mensajes de error compartidos
+│   │   └── main.tsx                # Entry point
+│   ├── .env.example                # URL del backend
+│   ├── .oxlintrc.json
+│   ├── package.json
+│   ├── tsconfig.json
+│   └── vite.config.ts
+│
+└── Docs/
+    ├── ARQUITECTURA_E3.md          # Este archivo
+    ├── README_BACKEND_E3.md        # Guía del equipo Backend (todo a implementar)
+    ├── README_FRONTEND_E3.md       # Guía del equipo Frontend
+    ├── frontend-interfaces.md      # Especificación de interfaces
+    ├── Sistema_Equivalencias_Requisitos_v6.md
+    └── Diagramas/                  # DiagramaActividades.jpeg, LogicaPrincipal_*.jpeg
 ```
+
+### Estructura prevista
+
+Estos archivos todavía no existen. Van a aparecer cuando se implemente el backend y el stack de contenedores:
+
+| Ruta | Qué es |
+|------|--------|
+| `backend/pom.xml` | Build de Maven |
+| `backend/Dockerfile` | Imagen del servicio Spring Boot |
+| `backend/src/main/resources/application*.yml` | Configuración por ambiente y perfil `docker` |
+| `backend/src/main/resources/logback-spring.xml` | Configuración de logging |
+| `backend/src/main/resources/db/migration/V*.sql` | Migraciones Flyway |
+| `docker-compose.yml` | Stack de contenedores (backend + PostgreSQL + pgAdmin) |
+| `Docs/API.md` | Contrato de la API |
+| `db/schema.md` | Diagrama de tablas |
+| `Docs/demo-credentials.md` | Credenciales de las cuentas demo |
 
 ---
 
 ## Puertos
 
-| Servicio | Puerto | URL |
-|----------|--------|-----|
-| **Frontend (React)** | 5173 | http://localhost:5173 |
-| **Backend (Spring)** | 8080 | http://localhost:8080 |
-| **PostgreSQL** | 5432 | localhost:5432 |
-| **pgAdmin** | 5050 | http://localhost:5050 |
+Ver la tabla de puertos en el [README de la raíz](../README.md), sección **Puertos**. El backend expone su API bajo el context path `/api`.
 
 ---
 
@@ -92,12 +112,12 @@ Cliente (navegador)
 http://localhost:5173
 ```
 
-### 2️⃣ Backend Inicia en Desarrollo
+### 2️⃣ Backend Inicia en Desarrollo (a implementar)
 
 ```
 Backend Developer
         ↓
-make backend-dev
+make backend-up-dev
         ↓
 ┌────────────────────────────────┐
 │  Spring Boot Application       │
@@ -124,11 +144,11 @@ Abre http://localhost:5173
 ┌─────────────────────────────────────────┐
 │  NAVEGADOR (Cliente)                    │
 │                                         │
-│  React App (JavaScript)                 │
+│  React App                              │
 │  ├─ Componentes                         │
 │  ├─ Router (páginas)                    │
 │  ├─ Context (estado global)             │
-│  └─ Axios (cliente HTTP)                │
+│  └─ fetch (services/api/client.ts)      │
 └─────────────────────────────────────────┘
 ```
 
@@ -137,6 +157,8 @@ Abre http://localhost:5173
 ## Interacción Frontend ↔ Backend
 
 ### Ejemplo: Usuario hace Login con Google
+
+> **Diseño tentativa.** La autenticación no está implementada y todavía no está decidida. El diagrama de abajo es uno de los flujos posibles —OAuth 2.0 con Google y JWT—, pero el cliente HTTP que existe hoy (`frontend/src/services/api/client.ts`) va con `credentials: 'include'`, es decir cookie de sesión, y no guarda el token en `localStorage`. Además, según la especificación funcional, no todos los roles usan OAuth: Aspirante y Admin General entram con email y contraseña. Cuando se implemente la auth hay que volver a este diagrama con el flujo real.
 
 ```
 NAVEGADOR (Frontend)                          SERVIDOR (Backend)
@@ -209,11 +231,12 @@ NAVEGADOR (Frontend)                          SERVIDOR (Backend)
 - Validaciones complejas
 
 **Stack:**
-- React 18
-- Vite
-- Axios (cliente HTTP)
+- React 19
+- Vite 8
+- TypeScript 6
+- `fetch` nativo (cliente HTTP)
 - Context API (estado global)
-- Tailwind CSS
+- Tailwind CSS v4
 
 #### Estructura de Carpetas
 
@@ -221,23 +244,23 @@ NAVEGADOR (Frontend)                          SERVIDOR (Backend)
 |---------|-----------|----------|
 | **assets/** | Imágenes, SVGs, fuentes estáticas | logos, iconos, fotos |
 | **components/ui/** | Componentes base reutilizables | Button, Input, Modal, Table, Card |
-| **constants/** | Constantes de aplicación | rutas, roles (ACAD, ADMIN), límites de archivo, reglas auth |
-| **hooks/** | Hooks React reutilizables | useAuth, usePermiso, useFormData, useFetch |
-| **layouts/** | Layouts compartidos por sección | LayoutPublico, LayoutDashboard, LayoutDetalle |
+| **constants/** | Constantes de aplicación | rutas, roles (ACADEMICO, ADMIN, ...), límites de archivo, reglas auth, env |
+| **hooks/** | Hooks React reutilizables | useAuth, usePermiso, useFormData |
+| **layouts/** | Layouts compartidos por sección | PublicLayout, LayoutDashboard, LayoutDetalle |
 | **pages/** | Páginas por área/rol | pages/public/, pages/aspirante/, pages/academico/, pages/admin/ |
 | **router/** | Definición de rutas | rutas públicas, protegidas por rol |
-| **services/** | Cliente HTTP | api/client.ts (ÚNICO que hace fetch), servicios por dominio |
+| **services/** | Cliente HTTP | api/client.ts (ÚNICO que hace fetch), ApiError.ts, servicios por dominio |
 | **store/** | Estado global con Context | AuthContext, SolicitudesContext, PermsContext |
-| **styles/** | CSS/SCSS globales | reset, tipografía global, breakpoints |
-| **tokens/** | Design System | colores, espaciado, radios, sombras, tamaños |
+| **styles/** | CSS global | reset, tipografía global |
+| **tokens/** | Design System | colores, espaciado, radios, sombras, tamaños, breakpoints, z-index |
 | **types/** | TypeScript types | DTOs, interfaces compartidas |
 | **utils/** | Funciones puras | formatters, parsers, helpers |
-| **validations/** | Esquemas de validación | Zod schemas, mensajes de error |
+| **validations/** | Validadores y mensajes de error | requerido(), email(), dni(), archivo() |
 
 #### Cómo habla con Backend
 
-- **Único punto de comunicación:** `services/api/client.ts` (centraliza Axios/fetch)
-- **Interceptores:** Agregan JWT automáticamente en headers Authorization
+- **Único punto de comunicación:** `services/api/client.ts`, que expone `api.get/post/put/patch/delete` sobre `fetch` nativo.
+- **Errores tipados:** las respuestas que no son `ok` se convierten en `ApiError` con un `kind` (`unauthorized`, `forbidden`, `network`...).
 - **Servicios por dominio:** `services/solicitudes.ts`, `services/usuarios.ts`, etc.
-- **Sin fetch directo:** Nunca hacer Axios/fetch desde componentes o utils
-- **Manejo de errores centralizado:** Interceptores responden a 401 (token expirado), 403 (sin permisos), etc.
+- **Sin fetch directo:** nunca llamar a `fetch` desde componentes o utils.
+- **Pendiente de definir:** cómo viaja la sesión (cookie `HttpOnly` o header `Authorization: Bearer`). El cliente actual usa `credentials: 'include'`.

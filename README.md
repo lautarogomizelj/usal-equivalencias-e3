@@ -26,13 +26,72 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 
 ## Stack
 
-**Frontend** (implementado): React 19 sobre Vite 8, TypeScript 6, Tailwind CSS v4 como motor de estilos, React Router 8 para navegación y `lucide-react` como única librería de íconos. `oxlint` como linter. El estado global está previsto vía Context API de React, sin librería externa. Los imports usan el alias `@` para apuntar a `src`, así que no hay rutas relativas largas.
+### Frontend (implementado)
 
-**Backend** (previsto, no implementado): Java 17, Spring Boot 3.2, PostgreSQL 15, Spring Security 6 con OAuth2 de Google y JWT, Flyway para migraciones, Maven como build, y JUnit 5 con Mockito para las pruebas.
+| Capa | Tecnología |
+|-------|------------|
+| **Runtime** | React 19 + React DOM 19 |
+| **Lenguaje** | TypeScript 6 |
+| **Build / Dev server** | Vite 8 |
+| **Estilos** | Tailwind CSS v4 + Design Tokens del proyecto |
+| **Navegación** | React Router 8 |
+| **Íconos** | `lucide-react` (única librería de íconos) |
+| **Estado global** | Context API de React, sin librería externa |
+| **Linter** | `oxlint` |
+| **Cliente HTTP** | `fetch` nativo, centralizado en `src/services/api/client.ts` |
+| **Entorno** | Node 24 + npm · alias `@` para apuntar a `src` |
 
-**Infraestructura** (prevista, no implementada): Docker y Docker Compose para levantar aplicación, base de datos y pgAdmin.
+### Backend (previsto, no implementado)
+
+| Capa | Tecnología |
+|-------|------------|
+| **Runtime** | Java 17 / Spring Boot 3.2 |
+| **Base de datos** | PostgreSQL 15 |
+| **Autenticación** | Spring Security 6 + OAuth2 Google + JWT |
+| **Migraciones** | Flyway |
+| **Build** | Maven |
+| **Testing** | JUnit 5 + Mockito |
+
+### Infraestructura (prevista, no implementada)
+
+| Capa | Tecnología |
+|-------|------------|
+| **Contenedores** | Docker |
+| **Orquestación** | Docker Compose |
+| **Servicios del stack** | Aplicación backend, PostgreSQL y pgAdmin |
 
 Una aclaración importante para el desarrollo local: en la máquina actual no hay JDK ni Maven instalados. Todo lo que involucre Java tendrá que correr dentro de Docker.
+
+---
+
+## Convenciones de git
+
+```
+feature/* ──► develop ──► beta/* ──► main
+                              │
+                         hotfix/* ──► main
+```
+
+| Rama | Propósito |
+|------|-----------|
+| **main** | Releases estables en producción |
+| **develop** | Rama de integración — aquí mergean todos los features |
+| **beta/*** | Release candidates (ej: beta/1.0) |
+| **hotfix/*** | Fixes emergentes que van directo a main |
+| **feature/*** | Features nuevos |
+| **fix/*** | Bug fixes |
+| **enhancement/*** | Mejoras a features existentes |
+
+Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
+
+| Prefijo | Uso |
+|---------|-----|
+| **ADDED:** | Nueva funcionalidad |
+| **FIX:** | Corrección de bug |
+| **HOTFIX:** | Corrección urgente aplicada directo en producción |
+| **REFACTOR:** | Reorganización sin cambio de comportamiento (mover, renombrar, limpiar) |
+
+`backend/` y `frontend/` son independientes entre sí, así que conviene que cada commit toque una sola de las dos, y que los cambios de documentación vengan en commits separados de los de código.
 
 ---
 
@@ -75,21 +134,6 @@ En la raíz hay un Makefile que envuelve los pasos de trabajo. Solo hay tareas d
 
 ---
 
-## Convenciones de git
-
-El proyecto trabaja sobre `main` como rama de integración. Es la rama en la que vive todo el trabajo.
-
-Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
-
-- `ADDED:` — funcionalidad nueva.
-- `FIX:` — corrección de bug.
-- `HOTFIX:` — corrección urgente aplicada directo sobre producción.
-- `REFACTOR:` — reorganización que no cambia el comportamiento: mover, renombrar o limpiar.
-
-`backend/` y `frontend/` son independientes entre sí, así que conviene que cada commit toque una sola de las dos, y que los cambios de documentación vengan en commits separados de los de código.
-
----
-
 ## Documentación
 
 - `Docs/Sistema_Equivalencias_Requisitos_v6.md` — Especificación funcional y no funcional, versión 6. Es la fuente de verdad del negocio: actores, módulos, estados del expediente, esquema de tablas y reglas de permisos. Cuando haya una duda sobre qué tiene que hacer el sistema, la respuesta está acá.
@@ -98,33 +142,3 @@ Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
 - `Docs/README_FRONTEND_E3.md` — Guía de trabajo del equipo Frontend: stack, estructura de carpetas, reglas rápidas de estilos y servicios, y la lista de pendientes del lado Frontend.
 - `Docs/README_BACKEND_E3.md` — Guía de trabajo del equipo Backend.
 - `Docs/Diagramas/` — Diagramas de actividades y de los flujos de análisis preliminar y revisión legal.
-
----
-
-## Deuda técnica conocida
-
-Todo lo que sigue está detectado, pero no corregido. Conviene atacarlo en commits separados, de a un tema.
-
-### Documentación
-
-- `Docs/README_BACKEND_E3.md` es el problema más grave. Describe herramientas de build, comandos de Docker, seed de datos demo, cobertura mínima y reglas de arquitectura que **no existen en el repositorio**, y además manda a clonar un repositorio distinto. Quien llegue nuevo y lo lea va a perder tiempo buscando cosas que no están.
-- `Docs/ARQUITECTURA_E3.md` describe la carpeta de documentación como `docs/` en minúscula y se referencia a sí mismo con otro nombre. En Linux esa diferencia de mayúsculas rompe los enlaces. Además, el mismo archivo referencia tres documentos que no existen: el esquema de base de datos, el catálogo de endpoints y las credenciales de demo.
-- `Docs/ARQUITECTURA_E3.md` también describe un stack desactualizado: React 18, Axios y `App.jsx`. Lo que hay en el código es React 19, React Router 8, `main.tsx` y `fetch` nativo sin Axios.
-- `Docs/frontend-interfaces.md` declara estar basado en los requisitos versión 5, cuando el documento vigente es la versión 6.
-- La lista de notas finales de la especificación de requisitos numera el ítem 8 dos veces. Es cosmético, pero el documento se rotula como versión final.
-- La sección 6 de `AGENTS.md` pide verificar `~/CSS/styles.css` y exige ilustraciones en `Assets/new-icons`. Esas rutas no existen acá: son de otro proyecto, y contradicen la regla del propio repositorio de usar lucide como única librería de íconos.
-
-### Esquema de base de datos
-
-- El SQL de la especificación de requisitos está escrito en dialecto MySQL (autoincremento, backticks, claves `UNIQUE KEY`) y el stack es PostgreSQL 15. Hay que traducirlo antes de escribir la primera migración de Flyway.
-- La definición de la tabla `usuarios` no incluye la columna de contraseña hasheada, pero el requisito de login del administrador general por usuario y contraseña la necesita. Es un hueco a resolver antes de implementar la autenticación.
-
-### Frontend
-
-- El cliente HTTP autentica por cookie, pero la documentación de arquitectura describe tokens JWT en el almacenamiento local y cabecera `Authorization: Bearer`. Hay que decidir cuál de los dos modelos se implementa y dejar el código y el documento de acuerdo.
-- `.env.example` apunta al puerto 3000, y el backend cuando exista va a escuchar en el 8080.
-
-### Git
-
-- La rama `develop` del remoto quedó atrás de `main` y nunca se usó. El flujo de ramas que declara el README del backend no es el que se está siguiendo.
-- El `.gitignore` de la raíz cubre Node pero no los artefactos de Java ni el volumen de PostgreSQL. Cuando exista el backend hay que agregar `target`, `*.class` y el directorio de datos, o se van a terminar commiteando binarios.

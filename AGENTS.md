@@ -65,24 +65,33 @@ Unos criterios de éxito sólidos permiten trabajar de forma independiente. Los 
 - Las variables deben declararse en camelCase.
 
 ## 6. Creación de Componentes y UI
-- Cada vez que se genere un nuevo elemento debe verificarse el archivo ~/CSS/styles.css para buscar si ya existe algo similar a lo necesitado.
+- Cada vez que se genere un nuevo elemento debe verificarse si ya existe algo similar a lo necesitado, mirando
+`frontend/src/styles/global.css` y los Design Tokens de `frontend/src/tokens/`.
 - No deben hardcodearse estilos dentro del frontend.
 - Todos los componentes que se añadan a la hoja de estilos deben ser pensados como
 elementos reutilizables.
 - Utiliza siempre las variables globales de diseño (Design Tokens) definidas en el proyecto para colores, espaciados y tipografía.
 - Mantener consistencia visual en todo el sistema.
-- Esta terminantemente prohibido usar emojis del sistema. Toda ilustración debe estar en Assets/new-icons, en caso de no estar, incrustar una ilustración estilo path.
+- Toda ilustración debe estar en `frontend/src/assets/`; en caso de no estar, incrustar una ilustración estilo path.
+- Está terminantemente prohibido usar emojis del sistema como ilustración.
 
 ## 7. Nombre de commits
 
 - Al finalizar una tarea, el asistente debe proponer **siempre** uno o más nombres de commit (formato `PREFIJO: descripción breve en español`).
-- Prefijos del repositorio, sincronizados con `README.md` ("Flujo de trabajo y convenciones"):
+- Prefijos del repositorio, sincronizados con `README.md` ("Convenciones de git"):
 
 | Prefijo     | Uso                                             |
 | ----------- | ----------------------------------------------- |
 | `ADDED:`    | Nueva funcionalidad                            |
 | `FIX:`      | Corrección de bug                             |
-| `HOTFIX:`   | Fix urgente aplicado directo en producción     |
+| `HOTFIX:`   | Corrección urgente aplicada directo en producción (un `fix/*` mergeado directo a `main`) |
 | `REFACTOR:` | Reorganización sin cambio de comportamiento (mover/renombrar/limpiar) |
+
+## 8. Documentación
+
+- `README.md` (raíz) es la **única** fuente canónica del estado actual, el stack, los puertos y las convenciones de git.
+- Los demás documentos (`Docs/*.md`) se vinculan a esa página con enlaces en lugar de repetir esa información, para que no haya dos versiones que puedan divergir.
+- Lo que todavía no existe se marca con "(a implementar)" en el título de la sección, y no se escribe en presente.
+- Al tocar código que cambie una regla documentada, actualizar el documento en el mismo commit.
 
 **Estas pautas funcionan si:** hay menos cambios innecesarios en las diferencias de código (*diffs*), menos reescrituras por exceso de complejidad y las preguntas aclaratorias surgen antes de la implementación en lugar de después de cometer errores.

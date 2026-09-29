@@ -1,7 +1,7 @@
 # E3 · Frontend
 
 Frontend del Sistema de Tramitación de Equivalencias Electrónicas (E3).
-Pantallas y reglas: [`../frontend-interfaces.md`](../frontend-interfaces.md) · Requisitos: [`../Sistema_Equivalencias_Requisitos_v6.md`](../Sistema_Equivalencias_Requisitos_v6.md).
+Pantallas y reglas: [`./frontend-interfaces.md`](./frontend-interfaces.md) · Requisitos: [`./Sistema_Equivalencias_Requisitos_v6.md`](./Sistema_Equivalencias_Requisitos_v6.md) · Stack, puertos y git: [`../README.md`](../README.md).
 
 ## Stack
 

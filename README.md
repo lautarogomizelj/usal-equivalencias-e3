@@ -8,6 +8,7 @@
 | 1.1 | 2026-09-29 | lautarogomizelj | Stack en tablas, tabla de puertos y convenciones de git unificadas |
 | 1.2 | 2026-10-07 | lautarogomizelj | Corrección de rutas de documentos y alta de Gestión de Cambios |
 | 1.3 | 2026-10-07 | lautarogomizelj | Unificación de las guías de Frontend y Backend en este documento |
+| 1.4 | 2026-10-07 | lautarogomizelj | Sección de control de versiones y gestión de cambios; regla de versionado en AGENTS.md |
 
 Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad Nacional de San Luis.
 
@@ -112,6 +113,16 @@ Los mensajes de commit llevan un prefijo que indica el tipo de cambio:
 | **REFACTOR:** | Reorganización sin cambio de comportamiento (mover, renombrar, limpiar) |
 
 `backend/` y `frontend/` son independientes entre sí, así que conviene que cada commit toque una sola de las dos, y que los cambios de documentación vengan en commits separados de los de código.
+
+---
+
+## Control de versiones y gestión de cambios
+
+La documentación de este repo es fuente de verdad: se versiona en lugar de duplicarse.
+
+- **Control de versiones.** Cada documento fuente tiene una tabla *Control de versiones* justo debajo del título: [`Docs/Sistema_Equivalencias_Requisitos.md`](Docs/Sistema_Equivalencias_Requisitos.md), [`Docs/frontend-interfaces.md`](Docs/frontend-interfaces.md), [`Docs/ARQUITECTURA_E3.md`](Docs/ARQUITECTURA_E3.md) y este README. Los cambios se hacen **editando el archivo en el lugar** y agregando una fila (Versión · Fecha · Autor · Descripción) al final de la tabla, en orden cronológico. No se crea un archivo nuevo por cada cambio: los históricos quedan en `Docs/Desactualizados/`.
+- **Control de cambios.** Lo que cambia durante el desarrollo y no estaba previsto en la especificación se registra en [`Docs/GESTION_CAMBIOS.md`](Docs/GESTION_CAMBIOS.md) con un ID (`CC-001`, `CC-002`, …) y un estado: `Propuesto` → `Aprobado` → `Implementado` / `Rechazado`.
+- **Flujo.** Registrar el cambio en Gestión de Cambios → evaluar impacto → aprobar → implementar en el documento fuente y sumar la fila en su tabla de control de versiones → commit con el prefijo correspondiente y el ID del cambio.
 
 ---
 

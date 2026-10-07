@@ -93,5 +93,6 @@ elementos reutilizables.
 - Los demás documentos (`Docs/*.md`) se vinculan a esa página con enlaces en lugar de repetir esa información, para que no haya dos versiones que puedan divergir.
 - Lo que todavía no existe se marca con "(a implementar)" en el título de la sección, y no se escribe en presente.
 - Al tocar código que cambie una regla documentada, actualizar el documento en el mismo commit.
+- Todo cambio **importante** sobre un documento fuente (`README.md` o `Docs/*.md`) agrega una fila nueva en su tabla de *Control de versiones* en el mismo commit. Los cambios intrascendentes (typos, formato) no.
 
 **Estas pautas funcionan si:** hay menos cambios innecesarios en las diferencias de código (*diffs*), menos reescrituras por exceso de complejidad y las preguntas aclaratorias surgen antes de la implementación en lugar de después de cometer errores.

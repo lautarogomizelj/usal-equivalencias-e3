@@ -67,10 +67,9 @@ usal-equivalencias-e3/
 │
 └── Docs/
     ├── ARQUITECTURA_E3.md          # Este archivo
-    ├── README_BACKEND_E3.md        # Guía del equipo Backend (todo a implementar)
-    ├── README_FRONTEND_E3.md       # Guía del equipo Frontend
+    ├── GESTION_CAMBIOS.md          # Registro de cambios de requisitos y diseño
     ├── frontend-interfaces.md      # Especificación de interfaces
-    ├── Sistema_Equivalencias_Requisitos_v6.md
+    ├── Sistema_Equivalencias_Requisitos.md
     └── Diagramas/                  # DiagramaActividades.jpeg, LogicaPrincipal_*.jpeg
 ```
 

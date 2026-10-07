@@ -7,6 +7,13 @@ Basado en: Especificación de Requisitos Funcionales y No Funcionales v8.0 (16 e
 
 **Cambio principal respecto de v1.0:** a partir del punto 4 las interfaces están definidas **por estado de la solicitud**. Para cada estado en que un rol tiene que hacer algo (o esperar algo) existe una interfaz propia, con su código (`ASP-…`, `ACAD-…`, `SEC-…`). El listado completo de puntos que requieren decisión de negocio está en el Anexo A.
 
+## Control de versiones
+
+| Versión | Fecha | Autor | Descripción |
+|---------|-------|-------|-------------|
+| 2.0 | 2026-09-29 | lautarogomizelj | Interfaces reorganizadas por estado de la solicitud (16 estados) con códigos `ASP-…`/`ACAD-…`/`SEC-…`, basadas en requisitos v8.0 |
+| 1.0 | 2026-09-28 | lautarogomizelj | Versión inicial: estándares frontend, componentes globales e interfaces por rol, basada en requisitos v5.0 |
+
 ---
 
 # 0. ESTÁNDARES Y LINEAMIENTOS DE DESARROLLO FRONTEND

@@ -4,8 +4,8 @@
 
 | Versión | Fecha | Autor | Descripción |
 |---------|-------|-------|-------------|
-| 1.1 | 2026-09-29 | lautarogomizelj | Alineación con el código real: `fetch` nativo, React 19 y Design Tokens |
 | 1.0 | 2026-09-28 | lautarogomizelj | Versión inicial: estructura del monorepo, flujo de comunicación y capas |
+| 1.1 | 2026-09-29 | lautarogomizelj | Alineación con el código real: `fetch` nativo, React 19 y Design Tokens |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). Este documento se limita a la estructura del monorepo, el flujo de comunicación y las capas.
 

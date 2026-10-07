@@ -11,8 +11,8 @@ Basado en: Especificación de Requisitos Funcionales y No Funcionales v8.0 (16 e
 
 | Versión | Fecha | Autor | Descripción |
 |---------|-------|-------|-------------|
-| 2.0 | 2026-09-29 | lautarogomizelj | Interfaces reorganizadas por estado de la solicitud (16 estados) con códigos `ASP-…`/`ACAD-…`/`SEC-…`, basadas en requisitos v8.0 |
 | 1.0 | 2026-09-28 | lautarogomizelj | Versión inicial: estándares frontend, componentes globales e interfaces por rol, basada en requisitos v5.0 |
+| 2.0 | 2026-09-29 | lautarogomizelj | Interfaces reorganizadas por estado de la solicitud (16 estados) con códigos `ASP-…`/`ACAD-…`/`SEC-…`, basadas en requisitos v8.0 |
 
 ---
 

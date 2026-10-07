@@ -5,14 +5,14 @@
 
 | Versión | Fecha | Autor | Descripción |
 |---------|-------|-------|-------------|
-| 8.0 | 2026-09-29 | lautarogomizelj | RF-ASP-004 de recarga selectiva por documento y RF-ACAD-009 de revisión de documentos; apéndice de equivalencias v6 → v8 |
-| 7.0 | 2026-09-29 | lautarogomizelj | Reescritura de los requisitos funcionales con códigos (RF-AUTH, RF-ASP, RF-ESTADO, RF-PROC, RF-ACAD…), RBAC simplificado y 16 estados explícitos |
-| 6.0 | 2026-09-28 | lautarogomizelj | Módulos 4.1 a 4.13, estructura de tablas de permisos, queries de validación y regla crítica de `revoked_at` |
-| 5.0 | 2026-09-27 | lautarogomizelj | Agrega la estructura de tablas clave |
-| 4.0 | 2026-09-27 | lautarogomizelj | Reestructuración y simplificación del documento |
-| 3.0 | 2026-09-25 | lautarogomizelj | Incorpora participantes y roles, notas importantes y el resumen de paneles por estado |
-| 2.0 | 2026-09-25 | lautarogomizelj | Agrega la descripción de paneles por estado |
 | 1.0 | 2026-09-25 | lautarogomizelj | Carga inicial de requisitos funcionales y no funcionales |
+| 2.0 | 2026-09-25 | lautarogomizelj | Agrega la descripción de paneles por estado |
+| 3.0 | 2026-09-25 | lautarogomizelj | Incorpora participantes y roles, notas importantes y el resumen de paneles por estado |
+| 4.0 | 2026-09-27 | lautarogomizelj | Reestructuración y simplificación del documento |
+| 5.0 | 2026-09-27 | lautarogomizelj | Agrega la estructura de tablas clave |
+| 6.0 | 2026-09-28 | lautarogomizelj | Módulos 4.1 a 4.13, estructura de tablas de permisos, queries de validación y regla crítica de `revoked_at` |
+| 7.0 | 2026-09-29 | lautarogomizelj | Reescritura de los requisitos funcionales con códigos (RF-AUTH, RF-ASP, RF-ESTADO, RF-PROC, RF-ACAD…), RBAC simplificado y 16 estados explícitos |
+| 8.0 | 2026-09-29 | lautarogomizelj | RF-ASP-004 de recarga selectiva por documento y RF-ACAD-009 de revisión de documentos; apéndice de equivalencias v6 → v8 |
 
 ---
 

@@ -1,5 +1,5 @@
 # Sistema de Tramitación de Equivalencias Electrónicas (E3)
-## Especificación de Requisitos Funcionales y No Funcionales - Versión 9.0
+## Especificación de Requisitos Funcionales y No Funcionales - Versión 10.0
 
 ## Control de versiones
 
@@ -14,6 +14,7 @@
 | 7.0 | 2026-09-29 | lautarogomizelj | Reescritura de los requisitos funcionales con códigos (RF-AUTH, RF-ASP, RF-ESTADO, RF-PROC, RF-ACAD…), RBAC simplificado y 16 estados explícitos |
 | 8.0 | 2026-09-29 | lautarogomizelj | RF-ASP-004 de recarga selectiva por documento y RF-ACAD-009 de revisión de documentos; apéndice de equivalencias v6 → v8 |
 | 9.0 | 2026-10-13 | lautarogomizelj | Reemplaza el catálogo de estados, la tabla de transiciones y las notificaciones por la nueva tabla de estados (18 estados, 23 transiciones) y elimina el diagrama de transiciones; actualiza los requisitos que dependen de estados (RF-ASP, RF-ACAD, RF-SEC, RF-PROC, RF-MSG); agrega RF-ASP-009; quita `reunion_realizada` y agrega `etapa_revision` en `documentos_solicitud`; deja marcados como pendientes los requisitos de estados aún no definidos |
+| 10.0 | 2026-10-13 | lautarogomizelj | Permite al Académico actualizar la matriz de equivalencias y el horario de cursada desde `ANAL-POST` (RF-ACAD-002, RF-ACAD-004, RF-PROC-002); agrega la tabla versionada `analisis_academico`, la notificación al aspirante (RF-ESTADO-002) y la entrada de auditoría |
 
 ---
 
@@ -404,7 +405,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 6 | `REU-FEC-ACAD` | Reunión pendiente de fechas académico | El aspirante solicitó otras fechas (motivo y detalle de cuándo puede); el Académico debe sugerir una 2ª ronda | Intermedio |
 | 7 | `REU-CHAT` | Resolución fecha por chat | El aspirante rechazó la 2ª ronda; aspirante y Académico pautan la fecha por chat (se abre por defecto) y el Académico la fija | Intermedio |
 | 8 | `REU-PEND` | Reunión pendiente de realización | Fecha de reunión definida (el Académico incluye el enlace de Meet); falta realizar la reunión | Intermedio |
-| 9 | `ANAL-POST` | Análisis pos reunión | La reunión finalizó; espacio previo a la aceptación/rechazo de la inscripción, donde el Académico puede re-subir documentos si hace falta | Intermedio |
+| 9 | `ANAL-POST` | Análisis pos reunión | La reunión finalizó; espacio previo a la aceptación/rechazo de la inscripción, donde el Académico puede actualizar la matriz de equivalencias y el horario de cursada si hace falta | Intermedio |
 | 10 | `INSC-ACEP` | Inscripción aceptada | Análisis preliminar/equivalencias aceptado; el aspirante debe indicar si sus documentos están legalizados | Intermedio |
 | 11 | `INSC-RECH` | Inscripción rechazada | Análisis preliminar/equivalencias rechazado; se termina el proceso | **Terminal** |
 | 12 | `LEG-REV` | Análisis de documentos legalizados | El aspirante indicó la legalidad de sus documentos; el Académico los analiza | Intermedio |
@@ -430,7 +431,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 9 | Aspirante | Seleccionar fechas | `REU-FEC-ASP` | `REU-PEND` | El Académico incluye un enlace de Meet para la reunión | RF-ASP-005, RF-ACAD-003 |
 | 10 | Aspirante | Rechaza 2ª ronda de fechas | `REU-FEC-ASP` | `REU-CHAT` | Tanto al Académico como al aspirante se les pone por defecto el chat para que pauten una fecha | RF-ASP-005, RF-MSG-001 |
 | 11 | Académico | Fijar fecha | `REU-CHAT` | `REU-PEND` | Al tocar el botón se abre un modal preguntando la fecha pautada para la reunión | RF-ACAD-003 |
-| 12 | Académico | Indica que la reunión finalizó | `REU-PEND` | `ANAL-POST` | Espacio previo a la aceptación/rechazo de la inscripción, en donde, si hace falta, el Académico puede re-subir documentos | RF-ACAD-004 |
+| 12 | Académico | Indica que la reunión finalizó | `REU-PEND` | `ANAL-POST` | Espacio previo a la aceptación/rechazo de la inscripción, en donde, si hace falta, el Académico puede actualizar la matriz de equivalencias y el horario de cursada | RF-ACAD-004 |
 | 13 | Académico | Aceptar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-ACEP` | | RF-ACAD-006 |
 | 14 | Académico | Rechazar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-RECH` | Se termina el proceso | RF-ACAD-006 |
 | 15 | Aspirante | Indica la legalidad de sus documentos | `INSC-ACEP` | `LEG-REV` | El aspirante tiene que responder si su documentación está legalizada | RF-ASP-009 |
@@ -469,6 +470,7 @@ Cuando el estado cambia, el sistema envía mail automático al actor siguiente r
 | Reunión pendiente de realización | Análisis pos reunión | Aspirante | "La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción." |
 | Análisis pos reunión | Inscripción aceptada | Aspirante | "Tu inscripción fue aceptada. Ingresá a tu cuenta e indicá si tus documentos están legalizados." |
 | Análisis pos reunión | Inscripción rechazada | Aspirante | "Lamentablemente tu solicitud no pudo ser aprobada. Motivo: [...]" |
+| Análisis pos reunión | Análisis pos reunión (sin cambio de estado) | Aspirante | 🆕 "El Académico actualizó la matriz de equivalencias / el horario de cursada de tu solicitud. ID: [...]" |
 | Inscripción aceptada | Análisis de documentos legalizados | Académico | 🆕 "El aspirante indicó que su documentación está legalizada. Revisá los documentos. ID: [...]" |
 | Análisis de documentos legalizados | Documentos legalizados rechazados | Aspirante | 🆕 "Observaciones en tus documentos legalizados. Motivo: [comentario del Académico]. Documentos a recargar: [lista de documentos marcados con ❌]" |
 | Documentos legalizados rechazados | Análisis de documentos legalizados | Académico | 🆕 "Aspirante ha reenviado documentos legalizados. ID: [...]" |
@@ -483,6 +485,7 @@ Cuando el estado cambia, el sistema envía mail automático al actor siguiente r
 - Los mails son SOLO notificaciones; no son el medio de comunicación principal (para eso está el chat, módulo 4.5)
 - 🆕 marca los mails redactados en la v9 que no tienen antecedente en la v8
 - **Enlace de Meet:** cuando el Académico incluye el enlace en `REU-PEND` (no es una transición), el sistema envía al aspirante: "Tu reunión fue confirmada para [fecha/hora]. Link: [Meet]"
+- **Actualización de matriz/horario en `ANAL-POST`:** cuando el Académico actualiza la matriz de equivalencias o el horario de cursada (RF-ACAD-004), **no hay cambio de estado**; el sistema envía el mail al aspirante de la fila "Análisis pos reunión → Análisis pos reunión"
 - Las notificaciones de los estados posteriores a `E3-INI` (disposición generada, expediente finalizado) quedan pendientes hasta que se definan esos estados
 
 #### RF-ESTADO-003: Estructura de BD de Estados
@@ -556,9 +559,10 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
      - Marca de revisión de cada documento (✅ / ❌ / ⏳) y comentario por documento; el Académico responsable puede modificarla (RF-ACAD-009)
      - Botón para descargar todo en ZIP
   3. **Análisis Preliminar:**
-     - Matriz de equivalencias (descargable si está cargada)
-     - Horario de cursada (descargable)
+     - Matriz de equivalencias (descargable: solo la versión vigente)
+     - Horario de cursada (descargable: solo la versión vigente)
      - Botón: "Subir matriz, horario de cursada y fechas disponibles" (solo desde `ANAL-PEND`)
+     - Botones: "Actualizar matriz de equivalencias" y "Actualizar horario de cursada" (desde `ANAL-POST`, RF-ACAD-004)
   4. **Reunión:**
      - Calendario si está en etapa de propuesta
      - Horarios propuestos (editable si es académico asignado)
@@ -637,7 +641,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 
 ##### RF-ACAD-002: Análisis Preliminar y Propuesta de Fechas
 - **Acciona:** Desde estado **"Análisis preliminar pendiente"** (`ANAL-PEND`)
-- Es la única instancia en la que el Académico sube la matriz de equivalencias, el horario de cursada y las fechas disponibles
+- Es donde el Académico sube por primera vez la matriz de equivalencias, el horario de cursada y las fechas disponibles (la matriz y el horario también se pueden **actualizar desde `ANAL-POST`**, RF-ACAD-004). Las fechas disponibles solo se proponen desde `ANAL-PEND`/`REU-FEC-ACAD` (RF-ACAD-003)
 - Académico prepara:
   - **Matriz de equivalencias** (puede cargar archivo o escribir notas)
   - **Posible horario de cursada** (puede cargar archivo o escribir notas)
@@ -647,6 +651,23 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   - Mail al aspirante: "Elegí un horario para la reunión..."
   - Estado → **"Reunión pendiente de fechas aspirante"** (`REU-FEC-ASP`)
   - Se inicia el contador de rondas en 1 (RF-ACAD-003)
+- **Almacenamiento:** la matriz de equivalencias y el horario de cursada se guardan en la tabla `analisis_academico` (versionada):
+  ```
+  analisis_academico
+    id (PK)
+    solicitud_id (FK a solicitudes)
+    tipo (ENUM: 'MATRIZ_EQUIVALENCIAS','HORARIO_CURSADA')
+    version (INT, default 1)
+    reemplaza_a_id (FK a analisis_academico, NULL)   -- versión anterior
+    nombre_archivo (VARCHAR, NULL)
+    ruta_archivo (VARCHAR, NULL)
+    notas (TEXT, NULL)                               -- el Académico puede escribir notas en vez de/de además del archivo
+    fecha_carga (TIMESTAMP)
+    subido_por_id (FK a usuarios)
+  ```
+  - La **versión vigente** es la de mayor `version` por (`solicitud_id`, `tipo`); la API y todos los paneles exponen **solo esa**
+  - Las versiones anteriores se conservan en BD pero **no se exponen** por la API ni por ningún panel; solo el administrador de la base de datos puede consultarlas directamente
+  - Cada actualización crea una versión nueva (`version` + 1, `reemplaza_a_id` apunta a la anterior) y se registra en auditoría
 
 ##### RF-ACAD-003: Rondas de Fechas, Fecha por Chat y Enlace de Meet
 - **Acciona:** Desde los estados `REU-FEC-ACAD`, `REU-CHAT` y `REU-PEND`
@@ -672,7 +693,9 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   - Botón: "Indicar que la reunión finalizó" (doble verificación)
   - Sistema: Estado → **"Análisis pos reunión"** (`ANAL-POST`)
   - Mail al aspirante
-- En `ANAL-POST` el Académico puede re-subir documentos si hace falta, antes de decidir la aceptación o el rechazo (RF-ACAD-006)
+- En `ANAL-POST` el Académico puede **actualizar la matriz de equivalencias y el horario de cursada** si hace falta, antes de decidir la aceptación o el rechazo (RF-ACAD-006)
+  - Cada actualización crea una versión nueva en `analisis_academico` (RF-ACAD-002); solo la versión vigente es visible para los usuarios
+  - Se envía mail al aspirante (RF-ESTADO-002) y se registra en auditoría
 - ⚠ **Pendiente de definir:** si el aspirante no se presentó, la tabla de estados vigente no tiene una transición para volver a coordinar la reunión
 
 ##### RF-ACAD-005: Análisis de Documentos Legalizados
@@ -951,7 +974,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   comentarios (TEXT)
   ip_origen (VARCHAR)
   ```
-- Se audita: cambios de estado, tomar/baja/asignar responsable, crear cuenta, cambiar avatar, cambiar contraseña, revocar permisos, marcas de revisión de documentos, descargas de expedientes, logins, etc.
+- Se audita: cambios de estado, tomar/baja/asignar responsable, crear cuenta, cambiar avatar, cambiar contraseña, revocar permisos, marcas de revisión de documentos, actualización de matriz de equivalencias / horario de cursada, descargas de expedientes, logins, etc.
 
 #### RF-AUDIT-002: Historial del Proceso (Visual para Todos)
 - **Búsqueda:**
@@ -1002,7 +1025,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 
 ## 5. ESTRUCTURA DE TABLAS CLAVE (Módulo Autenticación)
 
-Las tablas `solicitudes` (RF-ASP-001), `estados` y `estados_solicitud` (RF-ESTADO-003), `carreras` (RF-ADMIN-002), `documentos_solicitud` (RF-ACAD-009) y `auditoria_sistema` (RF-AUDIT-001) están definidas en sus requisitos.
+Las tablas `solicitudes` (RF-ASP-001), `estados` y `estados_solicitud` (RF-ESTADO-003), `carreras` (RF-ADMIN-002), `documentos_solicitud` (RF-ACAD-009), `analisis_academico` (RF-ACAD-002) y `auditoria_sistema` (RF-AUDIT-001) están definidas en sus requisitos.
 
 ### **Tabla 1: `usuarios` (@usal.edu.ar)**
 ```sql
@@ -1243,6 +1266,7 @@ WHERE user_id = ? AND career_id = ?;
 35. ✅ **v9:** revisión por documento (tilde/cruz) desde `DOC-REV` y desde `LEG-REV`, con el campo `etapa_revision` en `documentos_solicitud`
 36. ✅ **v9:** se elimina el campo `reunion_realizada` de `solicitudes`
 37. ✅ **v9:** RF-ASP-009 nuevo; RF-ACAD-007 sin uso; pendientes de estados no definidos: RF-ASP-008, RF-ACAD-008, RF-SEC-003, RF-SEC-004 y RF-ADMIN-006
+38. ✅ **v10:** la matriz de equivalencias y el horario de cursada se pueden actualizar desde `ANAL-POST` (RF-ACAD-004), se guardan versionados en `analisis_academico` (solo la versión vigente es visible) y su actualización notifica al aspirante y queda en auditoría
 
 ---
 
@@ -1331,7 +1355,7 @@ Los IDs de la columna izquierda corresponden a la numeración de la v6; los de l
 
 ---
 
-**Versión:** 9.0
+**Versión:** 10.0
 **Fecha:** Octubre 2026
 **Autores:** Lautaro Gomizelj, [Compañero 2], [Compañero 3]
 **Estado:** LISTO PARA ARQUITECTURA DE BD Y HITOS DE DESARROLLO (los estados posteriores a `E3-INI` están pendientes de definición)

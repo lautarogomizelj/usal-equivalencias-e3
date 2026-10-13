@@ -1,5 +1,5 @@
 # Sistema de Tramitación de Equivalencias Electrónicas (E3)
-## Especificación de Requisitos Funcionales y No Funcionales - Versión 10.0
+## Especificación de Requisitos Funcionales y No Funcionales - Versión 11.0
 
 ## Control de versiones
 
@@ -15,6 +15,7 @@
 | 8.0 | 2026-09-29 | lautarogomizelj | RF-ASP-004 de recarga selectiva por documento y RF-ACAD-009 de revisión de documentos; apéndice de equivalencias v6 → v8 |
 | 9.0 | 2026-10-13 | lautarogomizelj | Reemplaza el catálogo de estados, la tabla de transiciones y las notificaciones por la nueva tabla de estados (18 estados, 23 transiciones) y elimina el diagrama de transiciones; actualiza los requisitos que dependen de estados (RF-ASP, RF-ACAD, RF-SEC, RF-PROC, RF-MSG); agrega RF-ASP-009; quita `reunion_realizada` y agrega `etapa_revision` en `documentos_solicitud`; deja marcados como pendientes los requisitos de estados aún no definidos |
 | 10.0 | 2026-10-13 | lautarogomizelj | Permite al Académico actualizar la matriz de equivalencias y el horario de cursada desde `ANAL-POST` (RF-ACAD-002, RF-ACAD-004, RF-PROC-002); agrega la tabla versionada `analisis_academico`, la notificación al aspirante (RF-ESTADO-002) y la entrada de auditoría |
+| 11.0 | 2026-10-13 | lautarogomizelj | Divide el estado `REU-FEC-ASP` en `REU-FEC-ASP-1` y `REU-FEC-ASP-2` para codificar el límite de 2 rondas en el grafo (catálogo de 19 estados, 23 transiciones); actualiza RF-ASP-005, RF-ACAD-002/003, RF-ESTADO-002 y la tabla de estados (E3) |
 
 ---
 
@@ -32,7 +33,7 @@ El **Sistema de Tramitación de Equivalencias Electrónicas (E3)** es una aplica
 ### Solución propuesta:
 Plataforma web centralizada donde:
 - Cada rol (Aspirante, Académico, Secretaría Administrativa, Admin, Revisor Logs) tiene un panel personalizado
-- El proceso avanza mediante transiciones de estado explícitas (18 estados)
+- El proceso avanza mediante transiciones de estado explícitas (19 estados)
 - Los cambios de estado generan notificaciones automáticas por mail
 - Hay trazabilidad completa y auditoría detallada de cada paso
 - El almacenamiento es centralizado en la base de datos de la facultad (por año y DNI)
@@ -322,13 +323,13 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - La recarga de documentos legalizados rechazados (`LEG-RECH`) se resuelve en RF-ASP-009
 
 #### RF-ASP-005: Elegir Horario de Reunión
-- **Acciona:** Desde estado **"Reunión pendiente de fechas aspirante"** (`REU-FEC-ASP`)
+- **Acciona:** Desde los estados **"Reunión pendiente de fechas aspirante (1ª ronda)"** (`REU-FEC-ASP-1`) y **"Reunión pendiente de fechas aspirante (2ª ronda)"** (`REU-FEC-ASP-2`)
 - Aspirante recibe mail y ve en su panel las fechas disponibles propuestas por el Académico (hasta 7, duración 1 hora), junto con la matriz de equivalencias y el posible horario de cursada que el Académico subió (RF-ACAD-002)
-- El sistema lleva un contador de rondas de fechas (**máximo 2**); `REU-FEC-ASP` es el mismo estado en ambas rondas
-- **En la 1ª ronda** el aspirante puede:
+- El límite es de **2 rondas**: cada ronda es un estado distinto (`REU-FEC-ASP-1` y `REU-FEC-ASP-2`), por lo que no existe una 3ª ronda
+- **En la 1ª ronda** (`REU-FEC-ASP-1`) el aspirante puede:
   - **Seleccionar fecha** (una sola) → Estado **"Reunión pendiente de realización"** (`REU-PEND`)
   - **Solicitar otras fechas:** envía el motivo y el detalle de cuándo puede reunirse → Estado **"Reunión pendiente de fechas académico"** (`REU-FEC-ACAD`)
-- **En la 2ª ronda** el aspirante puede:
+- **En la 2ª ronda** (`REU-FEC-ASP-2`) el aspirante puede:
   - **Seleccionar fecha** (una sola) → `REU-PEND`
   - **Rechazar la 2ª ronda de fechas** → Estado **"Resolución fecha por chat"** (`REU-CHAT`)
 - Al elegir una fecha NO hay confirmación posterior del Académico: el Académico solo incluye el enlace de Meet (RF-ACAD-003)
@@ -393,7 +394,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - Esta tabla es la fuente de verdad de lo que permite hacer el sistema: ninguna acción puede cambiar el estado si no figura como transición
 - La tabla está incompleta: los estados posteriores a `E3-INI` se definirán en próximas versiones
 
-**Catálogo de estados (18):**
+**Catálogo de estados (19):**
 
 | # | Código | Estado | Descripción | Tipo |
 |---|---|---|---|---|
@@ -401,20 +402,21 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 2 | `DOC-REV` | Documentación pendiente de revisión | El aspirante envió la documentación y espera la revisión del Académico | Intermedio |
 | 3 | `DOC-RECH` | Documentación rechazada | Hay observaciones sobre la documentación; el sistema guarda cuáles documentos debe recargar el aspirante (RF-ACAD-009) | Intermedio |
 | 4 | `ANAL-PEND` | Análisis preliminar pendiente | Documentación aceptada; el Académico debe armar la matriz de equivalencias, el posible horario de cursada y las fechas disponibles para la reunión | Intermedio |
-| 5 | `REU-FEC-ASP` | Reunión pendiente de fechas aspirante | El aspirante debe elegir una de las fechas propuestas por el Académico, solicitar otras o (en la 2ª ronda) rechazarlas | Intermedio |
-| 6 | `REU-FEC-ACAD` | Reunión pendiente de fechas académico | El aspirante solicitó otras fechas (motivo y detalle de cuándo puede); el Académico debe sugerir una 2ª ronda | Intermedio |
-| 7 | `REU-CHAT` | Resolución fecha por chat | El aspirante rechazó la 2ª ronda; aspirante y Académico pautan la fecha por chat (se abre por defecto) y el Académico la fija | Intermedio |
-| 8 | `REU-PEND` | Reunión pendiente de realización | Fecha de reunión definida (el Académico incluye el enlace de Meet); falta realizar la reunión | Intermedio |
-| 9 | `ANAL-POST` | Análisis pos reunión | La reunión finalizó; espacio previo a la aceptación/rechazo de la inscripción, donde el Académico puede actualizar la matriz de equivalencias y el horario de cursada si hace falta | Intermedio |
-| 10 | `INSC-ACEP` | Inscripción aceptada | Análisis preliminar/equivalencias aceptado; el aspirante debe indicar si sus documentos están legalizados | Intermedio |
-| 11 | `INSC-RECH` | Inscripción rechazada | Análisis preliminar/equivalencias rechazado; se termina el proceso | **Terminal** |
-| 12 | `LEG-REV` | Análisis de documentos legalizados | El aspirante indicó la legalidad de sus documentos; el Académico los analiza | Intermedio |
-| 13 | `LEG-RECH` | Documentos legalizados rechazados | Hay observaciones sobre los documentos legalizados; el sistema guarda cuáles debe recargar el aspirante (RF-ACAD-009) | Intermedio |
-| 14 | `CUPON-SOL` | Solicitud de cupón de pago | Documentos legalizados aceptados; se informa al aspirante la cantidad de materias y Secretaría debe enviar el cupón de pago | Intermedio |
-| 15 | `CUPON-PAG` | Pago de cupón por aspirante | Cupón enviado; esperando que el aspirante pague y cargue el comprobante | Intermedio |
-| 16 | `PAG-CTRL` | Control de pago | Comprobante cargado; Secretaría controla el pago | Intermedio |
-| 17 | `PAG-REENV` | Reenvío de comprobante | El pago fue rechazado; el aspirante debe reenviar el comprobante | Intermedio |
-| 18 | `E3-INI` | Inicio de E3 | Pago aceptado; inicio de E3. Último estado cargado en la tabla vigente | Intermedio |
+| 5 | `REU-FEC-ASP-1` | Reunión pendiente de fechas aspirante (1ª ronda) | El aspirante debe elegir una de las fechas propuestas por el Académico o solicitar otras | Intermedio |
+| 6 | `REU-FEC-ASP-2` | Reunión pendiente de fechas aspirante (2ª ronda) | El aspirante debe elegir una de las fechas propuestas o rechazar la 2ª ronda (no hay 3ª ronda) | Intermedio |
+| 7 | `REU-FEC-ACAD` | Reunión pendiente de fechas académico | El aspirante solicitó otras fechas (motivo y detalle de cuándo puede); el Académico debe sugerir una 2ª ronda | Intermedio |
+| 8 | `REU-CHAT` | Resolución fecha por chat | El aspirante rechazó la 2ª ronda; aspirante y Académico pautan la fecha por chat (se abre por defecto) y el Académico la fija | Intermedio |
+| 9 | `REU-PEND` | Reunión pendiente de realización | Fecha de reunión definida (el Académico incluye el enlace de Meet); falta realizar la reunión | Intermedio |
+| 10 | `ANAL-POST` | Análisis pos reunión | La reunión finalizó; espacio previo a la aceptación/rechazo de la inscripción, donde el Académico puede actualizar la matriz de equivalencias y el horario de cursada si hace falta | Intermedio |
+| 11 | `INSC-ACEP` | Inscripción aceptada | Análisis preliminar/equivalencias aceptado; el aspirante debe indicar si sus documentos están legalizados | Intermedio |
+| 12 | `INSC-RECH` | Inscripción rechazada | Análisis preliminar/equivalencias rechazado; se termina el proceso | **Terminal** |
+| 13 | `LEG-REV` | Análisis de documentos legalizados | El aspirante indicó la legalidad de sus documentos; el Académico los analiza | Intermedio |
+| 14 | `LEG-RECH` | Documentos legalizados rechazados | Hay observaciones sobre los documentos legalizados; el sistema guarda cuáles debe recargar el aspirante (RF-ACAD-009) | Intermedio |
+| 15 | `CUPON-SOL` | Solicitud de cupón de pago | Documentos legalizados aceptados; se informa al aspirante la cantidad de materias y Secretaría debe enviar el cupón de pago | Intermedio |
+| 16 | `CUPON-PAG` | Pago de cupón por aspirante | Cupón enviado; esperando que el aspirante pague y cargue el comprobante | Intermedio |
+| 17 | `PAG-CTRL` | Control de pago | Comprobante cargado; Secretaría controla el pago | Intermedio |
+| 18 | `PAG-REENV` | Reenvío de comprobante | El pago fue rechazado; el aspirante debe reenviar el comprobante | Intermedio |
+| 19 | `E3-INI` | Inicio de E3 | Pago aceptado; inicio de E3. Último estado cargado en la tabla vigente | Intermedio |
 
 **Tabla de transiciones:**
 
@@ -425,11 +427,11 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 3 | Académico | Rechaza documentación | `DOC-REV` | `DOC-RECH` | Marca los documentos a recargar (tilde/cruz) | RF-ACAD-001, RF-ACAD-009 |
 | 4 | Aspirante | Reenviar documentación | `DOC-RECH` | `DOC-REV` | Recarga los documentos marcados con ❌ | RF-ASP-004 |
 | 5 | Académico | Acepta | `DOC-REV` | `ANAL-PEND` | | RF-ACAD-001 |
-| 6 | Académico | Sube documentación y sugiere fechas disponibles | `ANAL-PEND` | `REU-FEC-ASP` | El Académico sube la matriz de equivalencias, el horario de cursada y las fechas disponibles. Se le manda al aspirante los horarios disponibles del Académico para la reunión junto con los documentos | RF-ACAD-002 |
-| 7 | Aspirante | Solicita otras fechas | `REU-FEC-ASP` | `REU-FEC-ACAD` | El aspirante envía motivo y detalle de cuándo puede reunirse | RF-ASP-005 |
-| 8 | Académico | Sugiere 2ª ronda de fechas | `REU-FEC-ACAD` | `REU-FEC-ASP` | | RF-ACAD-003 |
-| 9 | Aspirante | Seleccionar fechas | `REU-FEC-ASP` | `REU-PEND` | El Académico incluye un enlace de Meet para la reunión | RF-ASP-005, RF-ACAD-003 |
-| 10 | Aspirante | Rechaza 2ª ronda de fechas | `REU-FEC-ASP` | `REU-CHAT` | Tanto al Académico como al aspirante se les pone por defecto el chat para que pauten una fecha | RF-ASP-005, RF-MSG-001 |
+| 6 | Académico | Sube documentación y sugiere fechas disponibles | `ANAL-PEND` | `REU-FEC-ASP-1` | El Académico sube la matriz de equivalencias, el horario de cursada y las fechas disponibles. Se le manda al aspirante los horarios disponibles del Académico para la reunión junto con los documentos | RF-ACAD-002 |
+| 7 | Aspirante | Solicita otras fechas | `REU-FEC-ASP-1` | `REU-FEC-ACAD` | El aspirante envía motivo y detalle de cuándo puede reunirse | RF-ASP-005 |
+| 8 | Académico | Sugiere 2ª ronda de fechas | `REU-FEC-ACAD` | `REU-FEC-ASP-2` | | RF-ACAD-003 |
+| 9 | Aspirante | Seleccionar fechas | `REU-FEC-ASP-1` / `REU-FEC-ASP-2` | `REU-PEND` | El Académico incluye un enlace de Meet para la reunión | RF-ASP-005, RF-ACAD-003 |
+| 10 | Aspirante | Rechaza 2ª ronda de fechas | `REU-FEC-ASP-2` | `REU-CHAT` | Tanto al Académico como al aspirante se les pone por defecto el chat para que pauten una fecha | RF-ASP-005, RF-MSG-001 |
 | 11 | Académico | Fijar fecha | `REU-CHAT` | `REU-PEND` | Al tocar el botón se abre un modal preguntando la fecha pautada para la reunión | RF-ACAD-003 |
 | 12 | Académico | Indica que la reunión finalizó | `REU-PEND` | `ANAL-POST` | Espacio previo a la aceptación/rechazo de la inscripción, en donde, si hace falta, el Académico puede actualizar la matriz de equivalencias y el horario de cursada | RF-ACAD-004 |
 | 13 | Académico | Aceptar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-ACEP` | | RF-ACAD-006 |
@@ -445,7 +447,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 23 | Administrativo | Pago aceptado | `PAG-CTRL` | `E3-INI` | | RF-SEC-002 |
 
 **Notas sobre las transiciones:**
-- **Rondas de fechas (transiciones 6 a 10):** `REU-FEC-ASP` es el mismo estado en las dos rondas, por eso el sistema lleva un contador de rondas (máximo 2). En la 1ª ronda el aspirante puede seleccionar fecha (9) o solicitar otras (7); en la 2ª puede seleccionar fecha (9) o rechazar la ronda (10)
+- **Rondas de fechas (transiciones 6 a 10):** cada ronda es un estado distinto (`REU-FEC-ASP-1` y `REU-FEC-ASP-2`), por lo que el límite de 2 rondas queda codificado en el grafo. En la 1ª ronda el aspirante puede seleccionar fecha (9) o solicitar otras (7); en la 2ª puede seleccionar fecha (9) o rechazar la ronda (10). La 2ª ronda solo se alcanza por la transición 8; no existe una transición hacia una 3ª ronda
 - **Selección de fecha:** al seleccionar fecha el aspirante pasa directamente a `REU-PEND`; no hay confirmación posterior del Académico
 - **Rechazos con marca por documento (transiciones 3 y 16):** en ambos casos se aplica la revisión por documento de RF-ACAD-009 (al menos un ❌ y ningún documento en `PENDIENTE`)
 - **Casos sin transición definida (pendientes):** que el aspirante responda que sus documentos NO están legalizados (`INSC-ACEP`); que el aspirante no se presente a la reunión (`REU-PEND`); reapertura de expedientes (RF-ADMIN-006); estados posteriores a `E3-INI`
@@ -461,11 +463,11 @@ Cuando el estado cambia, el sistema envía mail automático al actor siguiente r
 | Documentación pendiente de revisión | Documentación rechazada | Aspirante | "Observaciones en tu documentación. Motivo: [comentario del Académico]. Documentos a recargar: [lista de documentos marcados con ❌]" |
 | Documentación rechazada | Documentación pendiente de revisión | Académico | "Aspirante ha recargado documentación. ID: [...]" |
 | Documentación pendiente de revisión | Análisis preliminar pendiente | Aspirante | "Tu documentación fue aceptada. Tu solicitud está siendo analizada por nuestro equipo académico." |
-| Análisis preliminar pendiente | Reunión pendiente de fechas aspirante | Aspirante | "Elegí un horario para la reunión. Horarios propuestos: [...]. Se adjuntan la matriz de equivalencias y el posible horario de cursada." |
-| Reunión pendiente de fechas aspirante | Reunión pendiente de fechas académico | Académico | 🆕 "El aspirante solicitó otras fechas para la reunión. Motivo y disponibilidad: [...]. ID: [...]" |
-| Reunión pendiente de fechas académico | Reunión pendiente de fechas aspirante | Aspirante | 🆕 "El Académico propuso una segunda ronda de fechas para la reunión. Horarios propuestos: [...]" |
-| Reunión pendiente de fechas aspirante | Reunión pendiente de realización | Académico | 🆕 "El aspirante eligió la fecha [fecha/hora] para la reunión. Incluí el enlace de Meet. ID: [...]" |
-| Reunión pendiente de fechas aspirante | Resolución fecha por chat | Académico y Aspirante | 🆕 "La 2ª ronda de fechas fue rechazada. Pauten la fecha de la reunión por el chat de la solicitud. ID: [...]" |
+| Análisis preliminar pendiente | Reunión pendiente de fechas aspirante (1ª ronda) | Aspirante | "Elegí un horario para la reunión. Horarios propuestos: [...]. Se adjuntan la matriz de equivalencias y el posible horario de cursada." |
+| Reunión pendiente de fechas aspirante (1ª ronda) | Reunión pendiente de fechas académico | Académico | 🆕 "El aspirante solicitó otras fechas para la reunión. Motivo y disponibilidad: [...]. ID: [...]" |
+| Reunión pendiente de fechas académico | Reunión pendiente de fechas aspirante (2ª ronda) | Aspirante | 🆕 "El Académico propuso una segunda ronda de fechas para la reunión. Horarios propuestos: [...]" |
+| Reunión pendiente de fechas aspirante (1ª o 2ª ronda) | Reunión pendiente de realización | Académico | 🆕 "El aspirante eligió la fecha [fecha/hora] para la reunión. Incluí el enlace de Meet. ID: [...]" |
+| Reunión pendiente de fechas aspirante (2ª ronda) | Resolución fecha por chat | Académico y Aspirante | 🆕 "La 2ª ronda de fechas fue rechazada. Pauten la fecha de la reunión por el chat de la solicitud. ID: [...]" |
 | Resolución fecha por chat | Reunión pendiente de realización | (interno) | - |
 | Reunión pendiente de realización | Análisis pos reunión | Aspirante | "La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción." |
 | Análisis pos reunión | Inscripción aceptada | Aspirante | "Tu inscripción fue aceptada. Ingresá a tu cuenta e indicá si tus documentos están legalizados." |
@@ -524,7 +526,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 
 ##### RF-PROC-001: Bandeja de Solicitudes (ordenamiento)
 - **Listado con filtros:**
-  - Por estado (dropdown con los 18 estados)
+  - Por estado (dropdown con los 19 estados)
   - Por fecha (última actualización, rango)
   - Búsqueda por ID solicitud, nombre aspirante, carrera
   - Mis asignadas vs. Todas
@@ -649,8 +651,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - Botón: "Guardar propuesta"
   - Sistema envía al aspirante las fechas junto con los documentos (matriz y horario de cursada)
   - Mail al aspirante: "Elegí un horario para la reunión..."
-  - Estado → **"Reunión pendiente de fechas aspirante"** (`REU-FEC-ASP`)
-  - Se inicia el contador de rondas en 1 (RF-ACAD-003)
+  - Estado → **"Reunión pendiente de fechas aspirante (1ª ronda)"** (`REU-FEC-ASP-1`)
 - **Almacenamiento:** la matriz de equivalencias y el horario de cursada se guardan en la tabla `analisis_academico` (versionada):
   ```
   analisis_academico
@@ -674,8 +675,8 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - **2ª ronda de fechas** (desde **"Reunión pendiente de fechas académico"**, `REU-FEC-ACAD`):
   - El Académico ve el motivo y el detalle de cuándo puede reunirse el aspirante (RF-ASP-005)
   - Botón: "Sugerir 2ª ronda de fechas": propone hasta 7 horarios de 1 hora
-  - Estado → **"Reunión pendiente de fechas aspirante"** (`REU-FEC-ASP`), con el contador de rondas en 2
-  - **Máximo 2 rondas:** no se puede proponer una 3ª
+  - Estado → **"Reunión pendiente de fechas aspirante (2ª ronda)"** (`REU-FEC-ASP-2`)
+  - **Máximo 2 rondas:** no se puede proponer una 3ª (no existe transición hacia una 3ª ronda)
 - **Fecha por chat** (desde **"Resolución fecha por chat"**, `REU-CHAT`):
   - Se abre por defecto el chat para el Académico y el aspirante (RF-MSG-001)
   - Una vez pautada la fecha, el Académico toca "Fijar fecha": se abre un modal que pregunta la fecha pautada para la reunión
@@ -1267,6 +1268,7 @@ WHERE user_id = ? AND career_id = ?;
 36. ✅ **v9:** se elimina el campo `reunion_realizada` de `solicitudes`
 37. ✅ **v9:** RF-ASP-009 nuevo; RF-ACAD-007 sin uso; pendientes de estados no definidos: RF-ASP-008, RF-ACAD-008, RF-SEC-003, RF-SEC-004 y RF-ADMIN-006
 38. ✅ **v10:** la matriz de equivalencias y el horario de cursada se pueden actualizar desde `ANAL-POST` (RF-ACAD-004), se guardan versionados en `analisis_academico` (solo la versión vigente es visible) y su actualización notifica al aspirante y queda en auditoría
+39. ✅ **v11:** `REU-FEC-ASP` se divide en `REU-FEC-ASP-1` (1ª ronda) y `REU-FEC-ASP-2` (2ª ronda), de modo que el límite de 2 rondas queda codificado como transiciones del grafo (sin contador externo ni campos extra)
 
 ---
 
@@ -1322,7 +1324,7 @@ Los IDs de la columna izquierda corresponden a la numeración de la v6; los de l
 | RF-CARR-002 y RF-ADMIN-002 | RF-ADMIN-003 | Unificados |
 | RF-ESTADO-BD-001, 002 | RF-ESTADO-003 | Unificados |
 | RF-ESTADO-BD-003 | RF-ESTADO-004 | |
-| (nuevo) | RF-ESTADO-001, RF-ESTADO-002 | Catálogo de estados, transiciones y notificaciones (v9: 18 estados y 23 transiciones, sin diagrama) |
+| (nuevo) | RF-ESTADO-001, RF-ESTADO-002 | Catálogo de estados, transiciones y notificaciones (v11: 19 estados y 23 transiciones, sin diagrama) |
 | RF-DATOS-001, RF-SOL-001, RF-ASIGN-001 | RF-ASP-001 | Unificados (crear solicitud) |
 | RF-SOL-002 | RF-ASP-002 | |
 | RF-SOL-003 y RF-ASIGN-003 | RF-ASP-003 | Unificados (estado + responsables) |
@@ -1355,7 +1357,7 @@ Los IDs de la columna izquierda corresponden a la numeración de la v6; los de l
 
 ---
 
-**Versión:** 10.0
+**Versión:** 11.0
 **Fecha:** Octubre 2026
 **Autores:** Lautaro Gomizelj, [Compañero 2], [Compañero 3]
 **Estado:** LISTO PARA ARQUITECTURA DE BD Y HITOS DE DESARROLLO (los estados posteriores a `E3-INI` están pendientes de definición)

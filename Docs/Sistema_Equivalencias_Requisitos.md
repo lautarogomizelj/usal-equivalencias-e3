@@ -1,5 +1,5 @@
 # Sistema de Tramitación de Equivalencias Electrónicas (E3)
-## Especificación de Requisitos Funcionales y No Funcionales - Versión 11.0
+## Especificación de Requisitos Funcionales y No Funcionales - Versión 12.0
 
 ## Control de versiones
 
@@ -16,6 +16,7 @@
 | 9.0 | 2026-10-13 | lautarogomizelj | Reemplaza el catálogo de estados, la tabla de transiciones y las notificaciones por la nueva tabla de estados (18 estados, 23 transiciones) y elimina el diagrama de transiciones; actualiza los requisitos que dependen de estados (RF-ASP, RF-ACAD, RF-SEC, RF-PROC, RF-MSG); agrega RF-ASP-009; quita `reunion_realizada` y agrega `etapa_revision` en `documentos_solicitud`; deja marcados como pendientes los requisitos de estados aún no definidos |
 | 10.0 | 2026-10-13 | lautarogomizelj | Permite al Académico actualizar la matriz de equivalencias y el horario de cursada desde `ANAL-POST` (RF-ACAD-002, RF-ACAD-004, RF-PROC-002); agrega la tabla versionada `analisis_academico`, la notificación al aspirante (RF-ESTADO-002) y la entrada de auditoría |
 | 11.0 | 2026-10-13 | lautarogomizelj | Divide el estado `REU-FEC-ASP` en `REU-FEC-ASP-1` y `REU-FEC-ASP-2` para codificar el límite de 2 rondas en el grafo (catálogo de 19 estados, 23 transiciones); actualiza RF-ASP-005, RF-ACAD-002/003, RF-ESTADO-002 y la tabla de estados (E3) |
+| 12.0 | 2026-10-13 | lautarogomizelj | Agrega el estado `LEG-PEND` (documentos sin legalizar) para resolver el caso de `INSC-ACEP` sin transición y la transición `REU-PEND` → `REU-FEC-ACAD` para cuando el aspirante no se presenta a la reunión (catálogo de 20 estados, 26 transiciones); actualiza RF-ASP-009, RF-ACAD-004, RF-ESTADO-002 y la tabla de estados (E3) |
 
 ---
 
@@ -33,7 +34,7 @@ El **Sistema de Tramitación de Equivalencias Electrónicas (E3)** es una aplica
 ### Solución propuesta:
 Plataforma web centralizada donde:
 - Cada rol (Aspirante, Académico, Secretaría Administrativa, Admin, Revisor Logs) tiene un panel personalizado
-- El proceso avanza mediante transiciones de estado explícitas (19 estados)
+- El proceso avanza mediante transiciones de estado explícitas (20 estados)
 - Los cambios de estado generan notificaciones automáticas por mail
 - Hay trazabilidad completa y auditoría detallada de cada paso
 - El almacenamiento es centralizado en la base de datos de la facultad (por año y DNI)
@@ -364,9 +365,12 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - **Indicar legalidad**
   - **Acciona:** Desde estado **"Inscripción aceptada"** (`INSC-ACEP`)
   - El aspirante responde únicamente si su documentación está legalizada (no carga archivos en este paso)
-  - Al confirmar, el SISTEMA cambia estado a **"Análisis de documentos legalizados"** (`LEG-REV`)
-  - Mail al Académico (RF-ESTADO-002)
-  - ⚠ **Pendiente de definir:** qué ocurre si el aspirante responde que su documentación NO está legalizada. La tabla de estados vigente no tiene transición para ese caso; la solicitud permanece en `INSC-ACEP`
+  - Si responde que SÍ está legalizada: el SISTEMA cambia estado a **"Análisis de documentos legalizados"** (`LEG-REV`) y se envía mail al Académico (RF-ESTADO-002)
+  - Si responde que NO está legalizada: el SISTEMA cambia estado a **"Legalización pendiente"** (`LEG-PEND`) y se envía al aspirante un mail con las indicaciones para legalizar (RF-ESTADO-002)
+- **Avisar que ya legalizó**
+  - **Acciona:** Desde estado **"Legalización pendiente"** (`LEG-PEND`)
+  - El aspirante indica que ya legalizó sus documentos
+  - Al confirmar, el SISTEMA cambia estado a **"Análisis de documentos legalizados"** (`LEG-REV`) y se envía mail al Académico (RF-ESTADO-002)
 - **Reenviar documentos legalizados**
   - **Acciona:** Desde estado **"Documentos legalizados rechazados"** (`LEG-RECH`)
   - El Académico marcó cada documento con tilde o cruz (RF-ACAD-009, etapa `LEGALIZACION`) y el sistema guardó cuáles debe recargar el aspirante
@@ -394,7 +398,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - Esta tabla es la fuente de verdad de lo que permite hacer el sistema: ninguna acción puede cambiar el estado si no figura como transición
 - La tabla está incompleta: los estados posteriores a `E3-INI` se definirán en próximas versiones
 
-**Catálogo de estados (19):**
+**Catálogo de estados (20):**
 
 | # | Código | Estado | Descripción | Tipo |
 |---|---|---|---|---|
@@ -404,19 +408,20 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 4 | `ANAL-PEND` | Análisis preliminar pendiente | Documentación aceptada; el Académico debe armar la matriz de equivalencias, el posible horario de cursada y las fechas disponibles para la reunión | Intermedio |
 | 5 | `REU-FEC-ASP-1` | Reunión pendiente de fechas aspirante (1ª ronda) | El aspirante debe elegir una de las fechas propuestas por el Académico o solicitar otras | Intermedio |
 | 6 | `REU-FEC-ASP-2` | Reunión pendiente de fechas aspirante (2ª ronda) | El aspirante debe elegir una de las fechas propuestas o rechazar la 2ª ronda (no hay 3ª ronda) | Intermedio |
-| 7 | `REU-FEC-ACAD` | Reunión pendiente de fechas académico | El aspirante solicitó otras fechas (motivo y detalle de cuándo puede); el Académico debe sugerir una 2ª ronda | Intermedio |
+| 7 | `REU-FEC-ACAD` | Reunión pendiente de fechas académico | El aspirante solicitó otras fechas (motivo y detalle de cuándo puede) o no se presentó a la reunión; el Académico debe sugerir nuevas fechas | Intermedio |
 | 8 | `REU-CHAT` | Resolución fecha por chat | El aspirante rechazó la 2ª ronda; aspirante y Académico pautan la fecha por chat (se abre por defecto) y el Académico la fija | Intermedio |
 | 9 | `REU-PEND` | Reunión pendiente de realización | Fecha de reunión definida (el Académico incluye el enlace de Meet); falta realizar la reunión | Intermedio |
 | 10 | `ANAL-POST` | Análisis pos reunión | La reunión finalizó; espacio previo a la aceptación/rechazo de la inscripción, donde el Académico puede actualizar la matriz de equivalencias y el horario de cursada si hace falta | Intermedio |
 | 11 | `INSC-ACEP` | Inscripción aceptada | Análisis preliminar/equivalencias aceptado; el aspirante debe indicar si sus documentos están legalizados | Intermedio |
-| 12 | `INSC-RECH` | Inscripción rechazada | Análisis preliminar/equivalencias rechazado; se termina el proceso | **Terminal** |
-| 13 | `LEG-REV` | Análisis de documentos legalizados | El aspirante indicó la legalidad de sus documentos; el Académico los analiza | Intermedio |
-| 14 | `LEG-RECH` | Documentos legalizados rechazados | Hay observaciones sobre los documentos legalizados; el sistema guarda cuáles debe recargar el aspirante (RF-ACAD-009) | Intermedio |
-| 15 | `CUPON-SOL` | Solicitud de cupón de pago | Documentos legalizados aceptados; se informa al aspirante la cantidad de materias y Secretaría debe enviar el cupón de pago | Intermedio |
-| 16 | `CUPON-PAG` | Pago de cupón por aspirante | Cupón enviado; esperando que el aspirante pague y cargue el comprobante | Intermedio |
-| 17 | `PAG-CTRL` | Control de pago | Comprobante cargado; Secretaría controla el pago | Intermedio |
-| 18 | `PAG-REENV` | Reenvío de comprobante | El pago fue rechazado; el aspirante debe reenviar el comprobante | Intermedio |
-| 19 | `E3-INI` | Inicio de E3 | Pago aceptado; inicio de E3. Último estado cargado en la tabla vigente | Intermedio |
+| 12 | `LEG-PEND` | Legalización pendiente | El aspirante indicó que sus documentos no están legalizados; debe legalizarlos y avisar para que el Académico los analice | Intermedio |
+| 13 | `INSC-RECH` | Inscripción rechazada | Análisis preliminar/equivalencias rechazado; se termina el proceso | **Terminal** |
+| 14 | `LEG-REV` | Análisis de documentos legalizados | El aspirante indicó la legalidad de sus documentos; el Académico los analiza | Intermedio |
+| 15 | `LEG-RECH` | Documentos legalizados rechazados | Hay observaciones sobre los documentos legalizados; el sistema guarda cuáles debe recargar el aspirante (RF-ACAD-009) | Intermedio |
+| 16 | `CUPON-SOL` | Solicitud de cupón de pago | Documentos legalizados aceptados; se informa al aspirante la cantidad de materias y Secretaría debe enviar el cupón de pago | Intermedio |
+| 17 | `CUPON-PAG` | Pago de cupón por aspirante | Cupón enviado; esperando que el aspirante pague y cargue el comprobante | Intermedio |
+| 18 | `PAG-CTRL` | Control de pago | Comprobante cargado; Secretaría controla el pago | Intermedio |
+| 19 | `PAG-REENV` | Reenvío de comprobante | El pago fue rechazado; el aspirante debe reenviar el comprobante | Intermedio |
+| 20 | `E3-INI` | Inicio de E3 | Pago aceptado; inicio de E3. Último estado cargado en la tabla vigente | Intermedio |
 
 **Tabla de transiciones:**
 
@@ -433,24 +438,29 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 9 | Aspirante | Seleccionar fechas | `REU-FEC-ASP-1` / `REU-FEC-ASP-2` | `REU-PEND` | El Académico incluye un enlace de Meet para la reunión | RF-ASP-005, RF-ACAD-003 |
 | 10 | Aspirante | Rechaza 2ª ronda de fechas | `REU-FEC-ASP-2` | `REU-CHAT` | Tanto al Académico como al aspirante se les pone por defecto el chat para que pauten una fecha | RF-ASP-005, RF-MSG-001 |
 | 11 | Académico | Fijar fecha | `REU-CHAT` | `REU-PEND` | Al tocar el botón se abre un modal preguntando la fecha pautada para la reunión | RF-ACAD-003 |
-| 12 | Académico | Indica que la reunión finalizó | `REU-PEND` | `ANAL-POST` | Espacio previo a la aceptación/rechazo de la inscripción, en donde, si hace falta, el Académico puede actualizar la matriz de equivalencias y el horario de cursada | RF-ACAD-004 |
-| 13 | Académico | Aceptar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-ACEP` | | RF-ACAD-006 |
-| 14 | Académico | Rechazar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-RECH` | Se termina el proceso | RF-ACAD-006 |
-| 15 | Aspirante | Indica la legalidad de sus documentos | `INSC-ACEP` | `LEG-REV` | El aspirante tiene que responder si su documentación está legalizada | RF-ASP-009 |
-| 16 | Académico | Rechaza documentos | `LEG-REV` | `LEG-RECH` | Marca los documentos a recargar (tilde/cruz) | RF-ACAD-005, RF-ACAD-009 |
-| 17 | Aspirante | Reenvía documentos legalizados | `LEG-RECH` | `LEG-REV` | Recarga los documentos marcados con ❌ | RF-ASP-009 |
-| 18 | Académico | Acepta documentos | `LEG-REV` | `CUPON-SOL` | Al aspirante se le informa la cantidad de materias | RF-ACAD-005 |
-| 19 | Administrativo | Envío del cupón de pago | `CUPON-SOL` | `CUPON-PAG` | | RF-SEC-001 |
-| 20 | Aspirante | Envía comprobante | `CUPON-PAG` | `PAG-CTRL` | Se realiza la transferencia y se adjunta el comprobante a modo de confirmación | RF-ASP-007 |
-| 21 | Administrativo | Pago rechazado | `PAG-CTRL` | `PAG-REENV` | | RF-SEC-002 |
-| 22 | Aspirante | Reenvía comprobante | `PAG-REENV` | `PAG-CTRL` | | RF-ASP-007 |
-| 23 | Administrativo | Pago aceptado | `PAG-CTRL` | `E3-INI` | | RF-SEC-002 |
+| 12 | Académico | Indica que el aspirante no se presentó | `REU-PEND` | `REU-FEC-ACAD` | El Académico reprograma: vuelve a proponer fechas y el aspirante elige entre ellas | RF-ACAD-004 |
+| 13 | Académico | Indica que la reunión finalizó | `REU-PEND` | `ANAL-POST` | Espacio previo a la aceptación/rechazo de la inscripción, en donde, si hace falta, el Académico puede actualizar la matriz de equivalencias y el horario de cursada | RF-ACAD-004 |
+| 14 | Académico | Aceptar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-ACEP` | | RF-ACAD-006 |
+| 15 | Académico | Rechazar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-RECH` | Se termina el proceso | RF-ACAD-006 |
+| 16 | Aspirante | Indica que sus documentos SÍ están legalizados | `INSC-ACEP` | `LEG-REV` | El aspirante tiene que responder si su documentación está legalizada | RF-ASP-009 |
+| 17 | Aspirante | Indica que sus documentos NO están legalizados | `INSC-ACEP` | `LEG-PEND` | El aspirante debe legalizarlos y avisar cuando estén listos | RF-ASP-009 |
+| 18 | Aspirante | Avisa que ya legalizó sus documentos | `LEG-PEND` | `LEG-REV` | Recarga los documentos ya legalizados | RF-ASP-009 |
+| 19 | Académico | Rechaza documentos | `LEG-REV` | `LEG-RECH` | Marca los documentos a recargar (tilde/cruz) | RF-ACAD-005, RF-ACAD-009 |
+| 20 | Aspirante | Reenvía documentos legalizados | `LEG-RECH` | `LEG-REV` | Recarga los documentos marcados con ❌ | RF-ASP-009 |
+| 21 | Académico | Acepta documentos | `LEG-REV` | `CUPON-SOL` | Al aspirante se le informa la cantidad de materias | RF-ACAD-005 |
+| 22 | Administrativo | Envío del cupón de pago | `CUPON-SOL` | `CUPON-PAG` | | RF-SEC-001 |
+| 23 | Aspirante | Envía comprobante | `CUPON-PAG` | `PAG-CTRL` | Se realiza la transferencia y se adjunta el comprobante a modo de confirmación | RF-ASP-007 |
+| 24 | Administrativo | Pago rechazado | `PAG-CTRL` | `PAG-REENV` | | RF-SEC-002 |
+| 25 | Aspirante | Reenvía comprobante | `PAG-REENV` | `PAG-CTRL` | | RF-ASP-007 |
+| 26 | Administrativo | Pago aceptado | `PAG-CTRL` | `E3-INI` | | RF-SEC-002 |
 
 **Notas sobre las transiciones:**
 - **Rondas de fechas (transiciones 6 a 10):** cada ronda es un estado distinto (`REU-FEC-ASP-1` y `REU-FEC-ASP-2`), por lo que el límite de 2 rondas queda codificado en el grafo. En la 1ª ronda el aspirante puede seleccionar fecha (9) o solicitar otras (7); en la 2ª puede seleccionar fecha (9) o rechazar la ronda (10). La 2ª ronda solo se alcanza por la transición 8; no existe una transición hacia una 3ª ronda
 - **Selección de fecha:** al seleccionar fecha el aspirante pasa directamente a `REU-PEND`; no hay confirmación posterior del Académico
-- **Rechazos con marca por documento (transiciones 3 y 16):** en ambos casos se aplica la revisión por documento de RF-ACAD-009 (al menos un ❌ y ningún documento en `PENDIENTE`)
-- **Casos sin transición definida (pendientes):** que el aspirante responda que sus documentos NO están legalizados (`INSC-ACEP`); que el aspirante no se presente a la reunión (`REU-PEND`); reapertura de expedientes (RF-ADMIN-006); estados posteriores a `E3-INI`
+- **Rechazos con marca por documento (transiciones 3 y 19):** en ambos casos se aplica la revisión por documento de RF-ACAD-009 (al menos un ❌ y ningún documento en `PENDIENTE`)
+- **No asistencia a la reunión (transición 12):** si el aspirante no se presenta, el Académico reprograma (`REU-PEND` → `REU-FEC-ACAD`); el aspirante vuelve a elegir fecha por el flujo normal de rondas
+- **Legalización (transiciones 16 a 18):** si el aspirante responde que sus documentos NO están legalizados pasa a `LEG-PEND`; una vez legalizados, avisa (18) y vuelve a `LEG-REV` para el análisis del Académico
+- **Casos sin transición definida (pendientes):** reapertura de expedientes (RF-ADMIN-006); estados posteriores a `E3-INI`
 
 #### RF-ESTADO-002: Notificaciones por Cambio de Estado
 
@@ -470,10 +480,13 @@ Cuando el estado cambia, el sistema envía mail automático al actor siguiente r
 | Reunión pendiente de fechas aspirante (2ª ronda) | Resolución fecha por chat | Académico y Aspirante | 🆕 "La 2ª ronda de fechas fue rechazada. Pauten la fecha de la reunión por el chat de la solicitud. ID: [...]" |
 | Resolución fecha por chat | Reunión pendiente de realización | (interno) | - |
 | Reunión pendiente de realización | Análisis pos reunión | Aspirante | "La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción." |
+| Reunión pendiente de realización | Reunión pendiente de fechas académico | Aspirante | 🆕 "No registramos tu asistencia a la reunión. El Académico va a proponer nuevas fechas. ID: [...]" |
 | Análisis pos reunión | Inscripción aceptada | Aspirante | "Tu inscripción fue aceptada. Ingresá a tu cuenta e indicá si tus documentos están legalizados." |
 | Análisis pos reunión | Inscripción rechazada | Aspirante | "Lamentablemente tu solicitud no pudo ser aprobada. Motivo: [...]" |
 | Análisis pos reunión | Análisis pos reunión (sin cambio de estado) | Aspirante | 🆕 "El Académico actualizó la matriz de equivalencias / el horario de cursada de tu solicitud. ID: [...]" |
 | Inscripción aceptada | Análisis de documentos legalizados | Académico | 🆕 "El aspirante indicó que su documentación está legalizada. Revisá los documentos. ID: [...]" |
+| Inscripción aceptada | Legalización pendiente | Aspirante | 🆕 "Tu documentación aún no está legalizada. Seguí las indicaciones para legalizarla y avisanos cuando esté lista. ID: [...]" |
+| Legalización pendiente | Análisis de documentos legalizados | Académico | 🆕 "El aspirante avisó que ya legalizó su documentación. Revisá los documentos. ID: [...]" |
 | Análisis de documentos legalizados | Documentos legalizados rechazados | Aspirante | 🆕 "Observaciones en tus documentos legalizados. Motivo: [comentario del Académico]. Documentos a recargar: [lista de documentos marcados con ❌]" |
 | Documentos legalizados rechazados | Análisis de documentos legalizados | Académico | 🆕 "Aspirante ha reenviado documentos legalizados. ID: [...]" |
 | Análisis de documentos legalizados | Solicitud de cupón de pago | Secretaría | "Solicitud lista para gestión de pago. ID: [...]" |
@@ -526,7 +539,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 
 ##### RF-PROC-001: Bandeja de Solicitudes (ordenamiento)
 - **Listado con filtros:**
-  - Por estado (dropdown con los 19 estados)
+  - Por estado (dropdown con los 20 estados)
   - Por fecha (última actualización, rango)
   - Búsqueda por ID solicitud, nombre aspirante, carrera
   - Mis asignadas vs. Todas
@@ -569,7 +582,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
      - Calendario si está en etapa de propuesta
      - Horarios propuestos (editable si es académico asignado)
      - Fecha elegida por el aspirante
-     - Botones del Académico según el estado: "Sugerir 2ª ronda de fechas" (`REU-FEC-ACAD`), "Fijar fecha" (`REU-CHAT`), campo "Enlace de Meet" (`REU-PEND`), "Indicar que la reunión finalizó" (`REU-PEND`)
+     - Botones del Académico según el estado: "Sugerir 2ª ronda de fechas" (`REU-FEC-ACAD`), "Fijar fecha" (`REU-CHAT`), campo "Enlace de Meet" (`REU-PEND`), "Indicar que la reunión finalizó" (`REU-PEND`), "Indicar que el aspirante no se presentó" (`REU-PEND`)
   5. **Chat:**
      - Historial de mensajes
      - Campo para enviar mensaje
@@ -697,7 +710,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - En `ANAL-POST` el Académico puede **actualizar la matriz de equivalencias y el horario de cursada** si hace falta, antes de decidir la aceptación o el rechazo (RF-ACAD-006)
   - Cada actualización crea una versión nueva en `analisis_academico` (RF-ACAD-002); solo la versión vigente es visible para los usuarios
   - Se envía mail al aspirante (RF-ESTADO-002) y se registra en auditoría
-- ⚠ **Pendiente de definir:** si el aspirante no se presentó, la tabla de estados vigente no tiene una transición para volver a coordinar la reunión
+- Si el aspirante **no se presentó** a la reunión, el Académico puede marcar "el aspirante no se presentó": el SISTEMA cambia estado a **"Reunión pendiente de fechas académico"** (`REU-FEC-ACAD`) para reprogramar una nueva fecha; el aspirante vuelve a elegir por el flujo normal de rondas
 
 ##### RF-ACAD-005: Análisis de Documentos Legalizados
 - **Acciona:** Desde estado **"Análisis de documentos legalizados"** (`LEG-REV`)
@@ -746,7 +759,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   - ❌ **Cruz (`RECARGAR`):** el aspirante debe recargarlo; el Académico puede escribir un comentario por documento (qué está mal)
   - ⏳ **Sin marcar (`PENDIENTE`):** documento recién cargado o todavía no revisado
 - Puede agregar un **documento requerido faltante** (ítem sin archivo, tipo + descripción, ej: "Programa de Análisis Matemático II"), que queda marcado con ❌
-- **Etapas de revisión:** la marca vigente de cada documento pertenece a una etapa (`DOCUMENTACION` o `LEGALIZACION`). Al entrar a `LEG-REV` por primera vez (transición 15), el sistema reinicia a `PENDIENTE` las marcas de las versiones vigentes y pasa la etapa a `LEGALIZACION`; las marcas anteriores quedan en auditoría
+  - **Etapas de revisión:** la marca vigente de cada documento pertenece a una etapa (`DOCUMENTACION` o `LEGALIZACION`). Al entrar a `LEG-REV` por primera vez (etapa `LEGALIZACION`), el sistema reinicia a `PENDIENTE` las marcas de las versiones vigentes y pasa la etapa a `LEGALIZACION`; las marcas anteriores quedan en auditoría
 - **Reglas:**
   - Marcar es opcional en las acciones que avanzan el proceso (aceptar documentación, aceptar documentos legalizados), pero para aceptar documentos legalizados no puede haber ❌
   - Para pasar a **"Documentación rechazada"** (`DOC-RECH`) o a **"Documentos legalizados rechazados"** (`LEG-RECH`) es **obligatorio**: (a) al menos un documento con ❌ y (b) ningún documento en `PENDIENTE` (todos quedan con ✅ o ❌)
@@ -1269,6 +1282,7 @@ WHERE user_id = ? AND career_id = ?;
 37. ✅ **v9:** RF-ASP-009 nuevo; RF-ACAD-007 sin uso; pendientes de estados no definidos: RF-ASP-008, RF-ACAD-008, RF-SEC-003, RF-SEC-004 y RF-ADMIN-006
 38. ✅ **v10:** la matriz de equivalencias y el horario de cursada se pueden actualizar desde `ANAL-POST` (RF-ACAD-004), se guardan versionados en `analisis_academico` (solo la versión vigente es visible) y su actualización notifica al aspirante y queda en auditoría
 39. ✅ **v11:** `REU-FEC-ASP` se divide en `REU-FEC-ASP-1` (1ª ronda) y `REU-FEC-ASP-2` (2ª ronda), de modo que el límite de 2 rondas queda codificado como transiciones del grafo (sin contador externo ni campos extra)
+40. ✅ **v12:** se agrega el estado `LEG-PEND` (el aspirante indica que sus documentos NO están legalizados y avisa cuando los legaliza) y la transición `REU-PEND` → `REU-FEC-ACAD` para cuando el aspirante no se presenta a la reunión; quedan resueltos los casos sin transición de `INSC-ACEP` y `REU-PEND`
 
 ---
 
@@ -1324,7 +1338,7 @@ Los IDs de la columna izquierda corresponden a la numeración de la v6; los de l
 | RF-CARR-002 y RF-ADMIN-002 | RF-ADMIN-003 | Unificados |
 | RF-ESTADO-BD-001, 002 | RF-ESTADO-003 | Unificados |
 | RF-ESTADO-BD-003 | RF-ESTADO-004 | |
-| (nuevo) | RF-ESTADO-001, RF-ESTADO-002 | Catálogo de estados, transiciones y notificaciones (v11: 19 estados y 23 transiciones, sin diagrama) |
+| (nuevo) | RF-ESTADO-001, RF-ESTADO-002 | Catálogo de estados, transiciones y notificaciones (v12: 20 estados y 26 transiciones, sin diagrama) |
 | RF-DATOS-001, RF-SOL-001, RF-ASIGN-001 | RF-ASP-001 | Unificados (crear solicitud) |
 | RF-SOL-002 | RF-ASP-002 | |
 | RF-SOL-003 y RF-ASIGN-003 | RF-ASP-003 | Unificados (estado + responsables) |
@@ -1357,7 +1371,7 @@ Los IDs de la columna izquierda corresponden a la numeración de la v6; los de l
 
 ---
 
-**Versión:** 11.0
+**Versión:** 12.0
 **Fecha:** Octubre 2026
 **Autores:** Lautaro Gomizelj, [Compañero 2], [Compañero 3]
 **Estado:** LISTO PARA ARQUITECTURA DE BD Y HITOS DE DESARROLLO (los estados posteriores a `E3-INI` están pendientes de definición)

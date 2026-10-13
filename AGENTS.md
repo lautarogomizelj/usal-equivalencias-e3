@@ -3,6 +3,10 @@ name: lauti-guidelines-mk1
 description: "Úsalas al escribir, editar, revisar o refactorizar código para seguir el flujo de trabajo general de lauti: exponer suposiciones, señalar ambigüedades, preferir implementaciones simples y acotadas, evitar abstracciones especulativas, realizar cambios quirúrgicos y verificar el trabajo frente a criterios de éxito claros."
 ---
 
+## 0. Lee la documentación antes de actuar
+
+Antes de escribir, editar o refactorizar cualquier cosa, lee **toda** la documentación del proyecto: `README.md` (raíz) y todos los `Docs/*.md` (`Sistema_Equivalencias_Requisitos.md`, `frontend-interfaces.md`, `ARQUITECTURA_E3.md`, `GESTION_CAMBIOS.md`). Los cambios deben ser coherentes con lo que ahí se define; si algo la contradice o no está previsto, detente y pregúntalo.
+
 ## 1. Piensa antes de programar
 
 **No asumas nada. No ocultes la confusión. Expón las compensaciones (trade-offs).**

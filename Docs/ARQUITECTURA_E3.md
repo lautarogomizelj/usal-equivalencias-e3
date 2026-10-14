@@ -6,6 +6,7 @@
 |---------|-------|-------|-------------|
 | 1.0 | 2026-09-28 | lautarogomizelj | Versión inicial: estructura del monorepo, flujo de comunicación y capas |
 | 1.1 | 2026-09-29 | lautarogomizelj | Alineación con el código real: `fetch` nativo, React 19 y Design Tokens |
+| 1.2 | 2026-10-14 | jumaluc | Alta de `Docs/API.md` (contrato de la API) en el árbol del monorepo |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). Este documento se limita a la estructura del monorepo, el flujo de comunicación y las capas.
 
@@ -66,6 +67,7 @@ usal-equivalencias-e3/
 │   └── vite.config.ts
 │
 └── Docs/
+    ├── API.md                      # Contrato de la API REST (a acordar con backend)
     ├── ARQUITECTURA_E3.md          # Este archivo
     ├── GESTION_CAMBIOS.md          # Registro de cambios de requisitos y diseño
     ├── frontend-interfaces.md      # Especificación de interfaces
@@ -85,7 +87,6 @@ Estos archivos todavía no existen. Van a aparecer cuando se implemente el backe
 | `backend/src/main/resources/logback-spring.xml` | Configuración de logging |
 | `backend/src/main/resources/db/migration/V*.sql` | Migraciones Flyway |
 | `docker-compose.yml` | Stack de contenedores (backend + PostgreSQL + pgAdmin) |
-| `Docs/API.md` | Contrato de la API |
 | `db/schema.md` | Diagrama de tablas |
 | `Docs/demo-credentials.md` | Credenciales de las cuentas demo |
 

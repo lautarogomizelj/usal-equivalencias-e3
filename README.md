@@ -9,6 +9,7 @@
 | 1.2 | 2026-10-07 | lautarogomizelj | Corrección de rutas de documentos y alta de Gestión de Cambios |
 | 1.3 | 2026-10-07 | lautarogomizelj | Unificación de las guías de Frontend y Backend en este documento |
 | 1.4 | 2026-10-07 | lautarogomizelj | Sección de control de versiones y gestión de cambios; regla de versionado en AGENTS.md |
+| 1.5 | 2026-10-14 | jumaluc | Enlace al contrato de la API propuesto en `Docs/API.md` |
 
 Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad Nacional de San Luis.
 
@@ -190,7 +191,7 @@ Pantallas y reglas: [`Docs/frontend-interfaces.md`](Docs/frontend-interfaces.md)
 ### Pendiente
 
 - Los colores de `tokens/colors.css` son **provisorios** hasta tener el Design System definitivo.
-- Falta definir con backend el contrato de la API (rutas, DTOs y formato de errores en `types/api.ts`).
+- El contrato de la API (rutas, DTOs y formato de errores) está propuesto en [`Docs/API.md`](Docs/API.md); falta acordarlo con backend.
 
 ---
 

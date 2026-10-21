@@ -10,6 +10,7 @@
 | 1.3 | 2026-10-07 | lautarogomizelj | Unificación de las guías de Frontend y Backend en este documento |
 | 1.4 | 2026-10-07 | lautarogomizelj | Sección de control de versiones y gestión de cambios; regla de versionado en AGENTS.md |
 | 1.5 | 2026-10-14 | jumaluc | Enlace al contrato de la API propuesto en `Docs/API.md` |
+| 1.6 | 2026-10-20 | jumaluc | Alta del sprint planning en `Docs/SPRINT_PLANNING.md` |
 
 Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad Nacional de San Luis.
 
@@ -397,5 +398,6 @@ Importar con el alias `@/` (ej: `import { Button } from '@/components/ui'`).
 | `Docs/frontend-interfaces.md` | Especificación de interfaces: cada pantalla, campo, estado de carga y acción por rol, más los estándares obligatorios de Frontend (tokens, accesibilidad, responsive, validaciones). Es el contrato entre el negocio y la capa de presentación, y es el documento que manda cuando hay que decidir cómo mostrar algo. |
 | `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, flujo de comunicación entre Frontend y Backend y las tres capas. Los puertos y el stack están en este README, no se repiten ahí. |
 | `Docs/GESTION_CAMBIOS.md` | Registro de cambios de requisito y de diseño que surgen durante el desarrollo. Cada cambio aprobado se refleja en el documento fuente y en su tabla de control de versiones. |
+| `Docs/SPRINT_PLANNING.md` | Planificación del desarrollo en 4 hitos y 8 sprints de 2 semanas, con las tareas de backend y frontend de cada sprint, los criterios de cierre de cada hito y los riesgos. |
 | `Docs/Diagramas/` (3 archivos `.jpeg`) | Diagramas de actividades y de los flujos de análisis preliminar y revisión legal. |
 | `AGENTS.md` | Pautas de trabajo para las herramientas de asistencia: cómo encarar un cambio, reglas de UI y prefijos de commit. |

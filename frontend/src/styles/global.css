@@ -1,12 +1,59 @@
 @import 'tailwindcss';
 @import '../tokens/index.css';
 
+/* El inicio necesita una pantalla al menos tan apaisada como el diseño (3:2). */
+@custom-variant escritorio (@media (min-width: 64rem) and (min-aspect-ratio: 3/2));
+
 @layer base {
   html {
     @apply bg-background font-sans text-base text-text antialiased;
   }
 
+  h1,
+  h2,
+  h3 {
+    @apply font-serif font-normal text-heading;
+  }
+
   :focus-visible {
     @apply outline-2 outline-offset-2 outline-focus;
+  }
+
+  /* Escala toda la pantalla de autenticación para que entre sin scroll, como el diseño. */
+  @media (min-width: 64rem) {
+    html:has(.escala-auth) {
+      font-size: var(--escala-auth);
+    }
+
+  }
+
+  @media (min-width: 64rem) and (min-aspect-ratio: 3/2) {
+    html:has(.escala-inicio) {
+      font-size: var(--escala-inicio);
+    }
+  }
+
+  /* Los controles de la tarjeta de inicio son más bajos que los del login. */
+  .tarjeta-inicio {
+    --size-input-lg: 3.375rem;
+    --size-input-sangria: 3.625rem;
+    --size-button-xl: 3.375rem;
+    --size-icon-xl: 1.5rem;
+    --text-control-lg: 1.125rem;
+    --text-subtitulo: 1.125rem;
+  }
+
+  /* Los controles del registro son más grandes que los del resto del sistema. */
+  .formulario-registro {
+    --size-input: 3.25rem;
+    --size-button-lg: 3.5rem;
+    --size-campo-icono: 1.625rem;
+    --size-campo-icono-x: 1.25rem;
+    --size-campo-sangria: 4.5rem;
+    --text-base: 1.25rem;
+    --text-sm: 1.125rem;
+    --text-sm--line-height: 1.625rem;
+    --text-xs: 0.9375rem;
+    --text-xs--line-height: 1.375rem;
   }
 }

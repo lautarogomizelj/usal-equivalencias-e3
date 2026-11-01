@@ -14,6 +14,11 @@ interface Opciones {
 }
 
 async function request<T>(metodo: Metodo, ruta: string, { body, signal }: Opciones = {}): Promise<T> {
+  if (ENV.USAR_MOCKS) {
+    const { resolverMock } = await import('@/services/mocks')
+    return resolverMock<T>(metodo, ruta, body)
+  }
+
   const esFormData = body instanceof FormData
   let respuesta: Response
 

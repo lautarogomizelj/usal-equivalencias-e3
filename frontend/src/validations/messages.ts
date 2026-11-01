@@ -4,6 +4,7 @@ export const MENSAJES = {
   EMAIL_INVALIDO: 'Ingresá un email válido.',
   PASSWORD_INVALIDA:
     'La contraseña debe tener al menos 8 caracteres, una mayúscula, un número y un carácter especial.',
+  PASSWORD_NO_COINCIDE: 'Las contraseñas no coinciden.',
   DNI_INVALIDO: 'Ingresá un DNI válido (7 u 8 dígitos, sin puntos).',
   TELEFONO_INVALIDO: 'Ingresá un teléfono válido.',
   CODIGO_INVALIDO: 'El código debe tener 6 dígitos.',

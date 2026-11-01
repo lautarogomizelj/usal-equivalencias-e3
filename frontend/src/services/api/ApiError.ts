@@ -5,16 +5,20 @@ const MENSAJES_POR_TIPO: Record<ApiErrorKind, string> = {
   unauthorized: 'Tu sesión expiró. Volvé a iniciar sesión.',
   forbidden: 'No tenés permiso para realizar esta acción.',
   not_found: 'El recurso solicitado no existe.',
+  conflict: 'Esta acción ya no está disponible.',
+  locked: 'Tu cuenta está bloqueada.',
   server: 'Ocurrió un error en el servidor. Intentá nuevamente más tarde.',
   network: 'No se pudo conectar con el servidor. Revisá tu conexión.',
   unknown: 'Ocurrió un error inesperado.',
 }
 
 function tipoDesdeStatus(status: number): ApiErrorKind {
-  if (status === 400 || status === 422) return 'bad_request'
+  if (status === 400 || status === 413 || status === 422) return 'bad_request'
   if (status === 401) return 'unauthorized'
   if (status === 403) return 'forbidden'
   if (status === 404) return 'not_found'
+  if (status === 409) return 'conflict'
+  if (status === 423) return 'locked'
   if (status >= 500) return 'server'
   return 'unknown'
 }

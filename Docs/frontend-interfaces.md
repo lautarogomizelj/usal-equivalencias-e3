@@ -1,13 +1,13 @@
 # Frontend Interfaces Specification
 ## Sistema de Tramitación de Equivalencias Electrónicas (E3)
 
-Versión: 2.0  
-Documento objetivo: Equipo Frontend  
-Basado en: Especificación de Requisitos Funcionales y No Funcionales v8.0 (16 estados)  
+Versión: 3.0
+Documento objetivo: Equipo Frontend
+Basado en: Especificación de Requisitos Funcionales y No Funcionales v12.0 (20 estados, 26 transiciones)
 
-> ⚠ **DOCUMENTO DESACTUALIZADO:** este documento sigue basado en los requisitos v8.0 (16 estados). El modelo de estados evolucionó a **20 estados (v12.0)**, con códigos y transiciones distintos (`DOC-REV`, `ANAL-PEND`, `REU-FEC-ASP-1/2`, `REU-PEND`, `LEG-PEND`, etc.). Las interfaces por estado todavía no reflejan ese modelo; **queda pendiente su re-derivación**. Mientras tanto, la fuente de verdad de estados, transiciones y notificaciones es `Docs/Sistema_Equivalencias_Requisitos.md`.
+A partir del punto 4 las interfaces están definidas **por estado de la solicitud**. Para cada estado en que un rol tiene que hacer algo (o esperar algo) existe una interfaz propia, con su código (`ASP-…`, `ACAD-…`, `SEC-…`). La fuente de verdad de estados, transiciones y notificaciones es `Docs/Sistema_Equivalencias_Requisitos.md`.
 
-**Cambio principal respecto de v1.0:** a partir del punto 4 las interfaces están definidas **por estado de la solicitud**. Para cada estado en que un rol tiene que hacer algo (o esperar algo) existe una interfaz propia, con su código (`ASP-…`, `ACAD-…`, `SEC-…`). El listado completo de puntos que requieren decisión de negocio está en el Anexo A.
+Los diseños visuales están en la carpeta compartida de Google Drive **Interfaces**. Cada interfaz indica el archivo de referencia cuando existe. Los puntos que requieren decisión de negocio están en el Anexo A y las diferencias entre el diseño y los requisitos, en el Anexo B.
 
 ## Control de versiones
 
@@ -16,6 +16,8 @@ Basado en: Especificación de Requisitos Funcionales y No Funcionales v8.0 (16 e
 | 1.0 | 2026-09-28 | lautarogomizelj | Versión inicial: estándares frontend, componentes globales e interfaces por rol, basada en requisitos v5.0 |
 | 2.0 | 2026-09-29 | lautarogomizelj | Interfaces reorganizadas por estado de la solicitud (16 estados) con códigos `ASP-…`/`ACAD-…`/`SEC-…`, basadas en requisitos v8.0 |
 | 2.1 | 2026-10-13 | lautarogomizelj | Nota de obsolescencia: el documento sigue basado en requisitos v8.0 (16 estados); queda pendiente su re-derivación al modelo vigente (v12.0, 20 estados) |
+| 3.0 | 2026-10-31 | jumaluc | Interfaces re-derivadas a los 20 estados y 26 transiciones de requisitos v12.0; referencia a los diseños de Drive y Anexo B con las diferencias entre diseño y requisitos |
+| 3.1 | 2026-10-31 | jumaluc | Registro con Nombre y Apellido separados, como el diseño (§3.2 y Anexo B, punto 1) |
 
 ---
 
@@ -585,7 +587,7 @@ Sin modificar los requerimientos funcionales definidos en este documento.
 
 ## 0.16 Arquitectura de UI basada en estado (State-driven UI)
 
-El sistema E3 es una aplicación **guiada por estado**: una misma solicitud se ve y se comporta distinto en cada uno de sus 16 estados, y distinto para cada rol.
+El sistema E3 es una aplicación **guiada por estado**: una misma solicitud se ve y se comporta distinto en cada uno de sus 20 estados, y distinto para cada rol.
 
 ### 0.16.1 Regla general
 
@@ -595,7 +597,7 @@ La interfaz que se muestra dentro de una solicitud se decide por la combinación
 (rol del usuario, ¿participante u observador?, estado_codigo, flags auxiliares)
 ```
 
-Flags auxiliares definidos hasta ahora: `reunion_realizada`, ronda de horarios (1 o 2), horario elegido por el aspirante, existencia de responsable académico / administrativo.
+Flags auxiliares definidos hasta ahora: existencia de responsable académico / administrativo. Las rondas de reunión ya no son un flag: cada ronda es un estado (`REU-FEC-ASP-1` y `REU-FEC-ASP-2`).
 
 ### 0.16.2 Registro de interfaces por estado
 
@@ -605,7 +607,7 @@ Debe existir un único registro (archivo de configuración) que asocie cada comb
 stateViews = {
   ASPIRANTE: {
     'SOL-INI':  CargaDocumentalInicial,
-    'DOC-CAR':  DocumentacionEnRevision,
+    'DOC-REV':  DocumentacionEnRevision,
     'DOC-RECH': RecargaSelectiva,
     ...
   },
@@ -627,7 +629,7 @@ Reglas:
 |---|---|---|
 | **A – Acción** | El rol tiene algo que hacer en este estado | Sí |
 | **E – Espera** | Otro actor tiene la pelota; se informa qué pasó y qué sigue | No |
-| **T – Terminal** | El trámite terminó (`FINAL`, `RECHAZO`) | No (solo descargas / consulta) |
+| **T – Terminal** | El trámite terminó (`INSC-RECH`, único estado terminal vigente) | No (solo consulta) |
 
 ### 0.16.4 Cambio de estado en vivo y conflictos
 
@@ -639,8 +641,8 @@ Reglas:
 Cada interfaz tiene un código estable para referenciarla en tickets, QA y backend:
 
 - `ASP-<ESTADO>`: aspirante (ej. `ASP-SOL-INI`)
-- `ACAD-<ESTADO>`: académico (ej. `ACAD-DOC-CAR`)
-- `SEC-<ESTADO>`: secretaría (ej. `SEC-ENV-SECREC`)
+- `ACAD-<ESTADO>`: académico (ej. `ACAD-DOC-REV`)
+- `SEC-<ESTADO>`: secretaría (ej. `SEC-CUPON-SOL`)
 - Sufijos `-M1`, `-M2`: modales de esa interfaz
 
 ---
@@ -815,7 +817,7 @@ Marcas de revisión:
 Modos:
 
 - **Solo lectura** (aspirante en estados de espera, observadores, revisor)
-- **Carga** (aspirante en `SOL-INI` y `DOC-RECH`)
+- **Carga** (aspirante en `SOL-INI`, `DOC-RECH` y `LEG-RECH`)
 - **Revisión** (académico participante: puede cambiar marcas y comentarios)
 
 Debe mostrar versiones anteriores de un documento recargado (la versión anterior nunca se borra).
@@ -824,17 +826,17 @@ Debe mostrar versiones anteriores de un documento recargado (la versión anterio
 
 ## 2.9 Stepper de Etapas
 
-Indicador visual del avance del trámite en macro-etapas: Documentación, Análisis, Reunión, Revisión legal, Resolución, Pago, Disposición, Finalizado.
+Indicador visual del avance del trámite en macro-etapas: Documentación, Análisis, Reunión, Inscripción, Legalización, Pago, Inicio de E3.
 
 - La etapa activa se deriva del estado mediante una tabla de configuración (ver 4.5).
 - Es informativo: no navega ni permite acciones.
-- `RECHAZO` se muestra como cierre negativo.
+- `INSC-RECH` se muestra como cierre negativo.
 
 ---
 
 ## 2.10 Badge de Estado
 
-Muestra código y nombre del estado (`DOC-CAR – Documentación cargada`). Se usa en listados, tarjetas y encabezados. La paleta se define en tokens por tipo de estado (acción, espera, éxito, atención, terminal).
+Muestra el nombre del estado, con el código disponible como título (`DOC-REV`). Se usa en listados, tarjetas y encabezados. La paleta se define en tokens por tipo de estado (acción, espera, éxito, atención, neutro) y cada código se asocia a un tipo en `constants/estados.ts`.
 
 ---
 
@@ -883,7 +885,8 @@ Formulario.
 
 Campos:
 
-- Nombre completo
+- Nombre
+- Apellido
 - Email
 - Contraseña
 - Confirmación contraseña
@@ -977,38 +980,44 @@ Sesión de 1 día. Sin OAuth.
 
 ## 4.0 Principio de diseño: la interfaz depende del estado
 
-Dentro de una solicitud, el contenido principal que ve el aspirante **no es una pantalla fija**: es un **Panel de Acción** que se reemplaza según el estado (`SOL-INI`, `DOC-RECH`, `CUPON`, etc.). Ejemplo: cuando la solicitud está en `SOL-INI`, el aspirante ve una tabla grande con los documentos que tiene que subir; en `RES-HORA` ve horarios para elegir; en `CUPON` ve el cupón y el cargador de comprobante.
+Dentro de una solicitud, el contenido principal que ve el aspirante **no es una pantalla fija**: es un **Panel de Acción** que se reemplaza según el estado. Ejemplo: en `SOL-INI` el aspirante ve la carga de documentos; en `REU-FEC-ASP-1` elige una fecha de reunión; en `CUPON-PAG` descarga el cupón y carga el comprobante.
 
 Reglas (aplican a todas las interfaces de 4.6):
 
-1. Cada uno de los 16 estados tiene su interfaz `ASP-<ESTADO>`.
+1. Cada uno de los 20 estados tiene su interfaz `ASP-<ESTADO>`.
 2. Si el aspirante debe hacer algo, la interfaz es de tipo **A (Acción)**. Si otro actor tiene la pelota, es de tipo **E (Espera)**. Si el trámite terminó, es **T (Terminal)** (ver 0.16.3).
 3. Una interfaz de espera **nunca** tiene botones de trámite; siempre informa qué pasó, qué sigue y quién está a cargo.
 4. El aspirante **nunca cambia el estado manualmente**. Botones como "Enviar documentación" ejecutan una acción; la transición la hace el sistema.
 5. Los modales de confirmación del aspirante son confirmaciones simples (1 modal, 1 botón "Confirmar"). La "doble verificación" de RF-AUTH-006 aplica a acciones de Académico, Secretaría y Admin.
-6. El frontend resuelve la interfaz con el registro de 0.16.2, usando el código de estado.
+6. El frontend resuelve la interfaz con el registro de 0.16.2, usando el código de estado y `accionesDisponibles`.
 
 ### 4.0.1 Matriz general de interfaces del aspirante
 
-| Estado | Tipo | Interfaz | Qué ve / qué hace el aspirante | Transición que dispara | Req. |
+| Estado | Tipo | Interfaz | Qué ve / qué hace el aspirante | Transición | Req. |
 |---|---|---|---|---|---|
-| — (antes de existir) | A | `ASP-NUEVA` | Completa el formulario inicial (datos personales precargados + datos académicos) | crea la solicitud → `SOL-INI` | RF-ASP-001 |
-| `SOL-INI` | A | `ASP-SOL-INI` | Tabla grande de documentos a subir; envía la documentación | → `DOC-CAR` (automático) | RF-ASP-002 |
-| `DOC-CAR` | E | `ASP-DOC-CAR` | Documentación en revisión (solo lectura) | — | RF-ASP-003 |
-| `DOC-RECH` | A | `ASP-DOC-RECH` | Recarga selectiva: solo los documentos marcados ❌ | → `DOC-CAR` (automático) | RF-ASP-004 |
-| `ANAL-COMPL` | E | `ASP-ANAL-COMPL` | Espera con 2 variantes: A) reunión pendiente · B) reunión realizada, en revisión legal | — | RF-ASP-003 |
-| `RES-HORA` | A | `ASP-RES-HORA` | Elige un horario de reunión o indica "Ninguno me queda" | ninguna (el Académico confirma → `RES-CONF`) | RF-ASP-005 |
-| `RES-CONF` | E | `ASP-RES-CONF` | Reunión confirmada: fecha, hora, link Meet | — | RF-ASP-003 |
-| `REV-LEG` | E | `ASP-REV-LEG` | Revisión legal completada, esperando decisión | — | RF-ASP-003 |
-| `APROBADO` | E | `ASP-APROBADO` | Informe de materias (solo lectura) | — | RF-ASP-006 |
-| `ENV-SECREC` | E | `ASP-ENV-SECREC` | Secretaría prepara el cupón | — | RF-ASP-003 |
-| `CUPON` | A | `ASP-CUPON` | Descarga el cupón y carga el comprobante de pago | → `PAG-ESP` (automático) | RF-ASP-007 |
-| `PAG-ESP` | E | `ASP-PAG-ESP` | Pago en verificación | — | RF-ASP-003 |
-| `PAG-RECH` | A | `ASP-PAG-RECH` | Ve el motivo del rechazo y reenvía el comprobante | → `PAG-ESP` (automático) | RF-ASP-007 |
-| `PAG-VER` | E | `ASP-PAG-VER` | Pago verificado, se prepara la disposición | — | RF-ASP-003 |
-| `DISP-GEN` | E | `ASP-DISP-GEN` | Disposición generada, pendiente de cierre | — | RF-ASP-003 |
-| `FINAL` | T | `ASP-FINAL` | Expediente finalizado, descarga del ZIP | — | RF-ASP-008 |
-| `RECHAZO` | T | `ASP-RECHAZO` | Solicitud rechazada, con motivo | — | RF-ASP-003 |
+| — (antes de existir) | A | `ASP-NUEVA` | Completa el formulario inicial | 1: crea la solicitud → `SOL-INI` | RF-ASP-001 |
+| `SOL-INI` | A | `ASP-SOL-INI` | Carga los documentos y los envía | 2: → `DOC-REV` | RF-ASP-002 |
+| `DOC-REV` | E | `ASP-DOC-REV` | Documentación en revisión | — | RF-ASP-003 |
+| `DOC-RECH` | A | `ASP-DOC-RECH` | Recarga solo los documentos marcados ❌ | 4: → `DOC-REV` | RF-ASP-004 |
+| `ANAL-PEND` | E | `ASP-ANAL-PEND` | Documentación aceptada, análisis en curso | — | RF-ASP-003 |
+| `REU-FEC-ASP-1` | A | `ASP-REU-FEC-ASP-1` | Elige una fecha o solicita otras | 9: → `REU-PEND` · 7: → `REU-FEC-ACAD` | RF-ASP-005 |
+| `REU-FEC-ASP-2` | A | `ASP-REU-FEC-ASP-2` | Elige una fecha o rechaza la ronda | 9: → `REU-PEND` · 10: → `REU-CHAT` | RF-ASP-005 |
+| `REU-FEC-ACAD` | E | `ASP-REU-FEC-ACAD` | Espera nuevas fechas del Académico | — | RF-ASP-003 |
+| `REU-CHAT` | A | `ASP-REU-CHAT` | Pauta la fecha por chat | Ninguna: la fija el Académico | RF-MSG-001 |
+| `REU-PEND` | E | `ASP-REU-PEND` | Reunión pactada, con enlace de Meet | — | RF-ASP-003 |
+| `ANAL-POST` | E | `ASP-ANAL-POST` | Análisis posterior a la reunión | — | RF-ASP-003 |
+| `INSC-ACEP` | A | `ASP-INSC-ACEP` | Responde si sus documentos están legalizados | 16: → `LEG-REV` · 17: → `LEG-PEND` | RF-ASP-009 |
+| `LEG-PEND` | A | `ASP-LEG-PEND` | Avisa que ya legalizó | 18: → `LEG-REV` | RF-ASP-009 |
+| `INSC-RECH` | T | `ASP-INSC-RECH` | Inscripción rechazada, con motivo | — | RF-ASP-003 |
+| `LEG-REV` | E | `ASP-LEG-REV` | Documentos legalizados en revisión | — | RF-ASP-003 |
+| `LEG-RECH` | A | `ASP-LEG-RECH` | Recarga los legalizados marcados ❌ | 20: → `LEG-REV` | RF-ASP-009 |
+| `CUPON-SOL` | E | `ASP-CUPON-SOL` | Informe de materias; Secretaría prepara el cupón | — | RF-ASP-006 |
+| `CUPON-PAG` | A | `ASP-CUPON-PAG` | Descarga el cupón y carga el comprobante | 23: → `PAG-CTRL` | RF-ASP-007 |
+| `PAG-CTRL` | E | `ASP-PAG-CTRL` | Pago en verificación | — | RF-ASP-003 |
+| `PAG-REENV` | A | `ASP-PAG-REENV` | Ve el motivo y reenvía el comprobante | 25: → `PAG-CTRL` | RF-ASP-007 |
+| `E3-INI` | E | `ASP-E3-INI` | Pago aceptado, inicio de E3 | — | RF-ASP-003 |
+
+`E3-INI` no es terminal: los estados posteriores todavía no están definidos (RF-ESTADO-001).
 
 ---
 
@@ -1033,9 +1042,11 @@ Pantalla principal. Organiza las solicitudes según lo que se espera del aspiran
 
 ### Bloques
 
-1. **Requieren tu acción**: solicitudes en estados de tipo A (`SOL-INI`, `DOC-RECH`, `RES-HORA`, `CUPON`, `PAG-RECH`).
+1. **Requieren tu acción**: solicitudes en estados de tipo A (`SOL-INI`, `DOC-RECH`, `REU-FEC-ASP-1`, `REU-FEC-ASP-2`, `REU-CHAT`, `INSC-ACEP`, `LEG-PEND`, `LEG-RECH`, `CUPON-PAG`, `PAG-REENV`).
 2. **En curso**: solicitudes en estados de tipo E.
-3. **Finalizadas**: solicitudes en `FINAL` o `RECHAZO`.
+3. **Finalizadas**: solicitudes en `INSC-RECH`.
+
+Diseño: `Interfaces/Aspirantes/Inicio/Dashboard Aspirante 4.1.2.jpg`.
 
 ### Tarjeta de solicitud
 
@@ -1052,10 +1063,13 @@ Pantalla principal. Organiza las solicitudes según lo que se espera del aspiran
 |---|---|---|
 | `SOL-INI` | Cargar documentación | `ASP-SOL-INI` |
 | `DOC-RECH` | Recargar documentos | `ASP-DOC-RECH` |
-| `RES-HORA` | Elegir horario | `ASP-RES-HORA` |
-| `CUPON` | Pagar | `ASP-CUPON` |
-| `PAG-RECH` | Reenviar comprobante | `ASP-PAG-RECH` |
-| `FINAL` | Descargar expediente | `ASP-FINAL` |
+| `REU-FEC-ASP-1`, `REU-FEC-ASP-2` | Elegir fecha | Interfaz del estado |
+| `REU-CHAT` | Abrir chat | `ASP-REU-CHAT` |
+| `INSC-ACEP` | Indicar legalización | `ASP-INSC-ACEP` |
+| `LEG-PEND` | Avisar que legalicé | `ASP-LEG-PEND` |
+| `LEG-RECH` | Recargar legalizados | `ASP-LEG-RECH` |
+| `CUPON-PAG` | Pagar | `ASP-CUPON-PAG` |
+| `PAG-REENV` | Reenviar comprobante | `ASP-PAG-REENV` |
 | resto | Ver solicitud | interfaz del estado |
 
 ### Acciones globales
@@ -1181,7 +1195,7 @@ De arriba hacia abajo:
 | **Documentación** | Siempre | Listado de documentos con marcas (4.7.1) |
 | **Chat** | Siempre | Chat de la solicitud (4.7.2). Con contador de no leídos |
 | **Historial** | Siempre | Timeline de cambios (4.7.3) |
-| **Informe de materias** | Desde `APROBADO` hasta `FINAL` | Informe de equivalencias (4.7.4) |
+| **Informe de materias** | Desde `CUPON-SOL` en adelante | Informe de equivalencias (4.7.4) |
 
 ### 4.5.2 Etapa del stepper según el estado
 
@@ -1189,18 +1203,17 @@ Tabla de configuración (no hardcodear en componentes):
 
 | Etapa | Estados que la activan |
 |---|---|
-| Documentación | `SOL-INI`, `DOC-CAR`, `DOC-RECH` |
-| Análisis | `ANAL-COMPL` con `reunion_realizada = false` |
-| Reunión | `RES-HORA`, `RES-CONF` |
-| Revisión legal | `ANAL-COMPL` con `reunion_realizada = true`, `REV-LEG` |
-| Resolución | `APROBADO` |
-| Pago | `ENV-SECREC`, `CUPON`, `PAG-ESP`, `PAG-RECH`, `PAG-VER` |
-| Disposición | `DISP-GEN` |
-| Finalizado | `FINAL` |
+| Documentación | `SOL-INI`, `DOC-REV`, `DOC-RECH` |
+| Análisis | `ANAL-PEND` |
+| Reunión | `REU-FEC-ASP-1`, `REU-FEC-ASP-2`, `REU-FEC-ACAD`, `REU-CHAT`, `REU-PEND` |
+| Inscripción | `ANAL-POST`, `INSC-ACEP` |
+| Legalización | `LEG-PEND`, `LEG-REV`, `LEG-RECH` |
+| Pago | `CUPON-SOL`, `CUPON-PAG`, `PAG-CTRL`, `PAG-REENV` |
+| Inicio de E3 | `E3-INI` |
 
-`RECHAZO`: el stepper queda cortado en la etapa donde ocurrió y muestra "Rechazado".
+`INSC-RECH`: el stepper queda cortado en Inscripción y muestra "Rechazada".
 
-Nota: como `DOC-RECH` puede alcanzarse desde varias etapas (análisis, reunión, revisión legal) y siempre vuelve a `DOC-CAR`, el stepper puede retroceder a "Documentación". Es esperado.
+Nota: la no asistencia a la reunión vuelve de `REU-PEND` a `REU-FEC-ACAD`; el stepper se mantiene en Reunión.
 
 ### 4.5.3 Reglas del contenedor
 
@@ -1213,495 +1226,294 @@ Nota: como `DOC-RECH` puede alcanzarse desde varias etapas (análisis, reunión,
 
 ## 4.6 Interfaces del aspirante por estado
 
-Cada subsección describe lo que aparece en la pestaña **Mi trámite** cuando la solicitud está en ese estado. Se mantiene siempre el contenedor de 4.5 (encabezado, stepper, responsables, banner, pestañas).
+Cada subsección describe lo que aparece en la pestaña **Mi trámite** cuando la solicitud está en ese estado. Se mantiene siempre el contenedor de 4.5.
 
 ---
 
 ### 4.6.1 `ASP-SOL-INI` – Carga documental inicial
 
-**Estado:** `SOL-INI` – Solicitud iniciada · **Tipo:** A · **Requisito:** RF-ASP-002
+**Estado:** `SOL-INI` · **Tipo:** A · **Requisito:** RF-ASP-002 · **Diseño:** `Mis Solicitudes/Carga de Documentacion 4.6.png`
 
-**Cuándo se muestra:** la solicitud acaba de crearse y el aspirante todavía no envió documentación.
+**Banner:** "Cargá tu documentación para iniciar el análisis." Si no hay responsable: "Todavía nadie tomó tu proceso. Podés cargar tu documentación igual."
 
-**Banner:** "Cargá tu documentación para iniciar el análisis."
-Si no hay responsable: se agrega "Todavía nadie tomó tu proceso. Podés cargar tu documentación igual."
+**Indicadores:** archivos cargados, tamaño utilizado de 50 MB y límites (PDF o JPG, máximo 10 MB por archivo).
 
-**Indicadores (arriba de la tabla):**
+**Lista de documentos:** una fila por documento obligatorio, con uploader (2.11), estado de la fila (sin cargar, subiendo, cargado, error) y acciones ver, reemplazar y quitar. Obligatorios: Analítico, Plan de estudios y al menos un Programa con su materia. Botón **"+ Agregar otro programa"** (una fila por materia).
 
-- Archivos cargados: X
-- Tamaño utilizado: X MB de 50 MB (barra de progreso)
-- Recordatorio de límites: PDF o JPG, máximo 10 MB por archivo
+**Acciones:** **Enviar documentación**, habilitado cuando están los obligatorios y no hay errores. Si está deshabilitado, un texto lista lo que falta.
 
-**Tabla grande de documentos a subir**
+**Validaciones por fila:** formato, tamaño individual y tamaño total (mensajes de `validations/messages.ts`).
 
-Filas iniciales (obligatorias): 1 Analítico, 1 Plan de estudios, 1 Programa.
+**Modal `ASP-SOL-INI-M1`:** resumen de documentos y aviso "Una vez enviada, no vas a poder modificar la documentación salvo que el equipo académico te pida recargarla." Botones "Volver" / "Confirmar envío".
 
-| Columna | Contenido |
-|---|---|
-| Tipo | Analítico / Plan de estudios / Programa, con etiqueta "Obligatorio" |
-| Descripción | Analítico y Plan: texto fijo. Programa: campo "Materia" (obligatorio) |
-| Archivo | Uploader (2.11). Una vez cargado: nombre del archivo |
-| Tamaño | MB del archivo |
-| Estado de la fila | Sin cargar / Subiendo (progreso) / Cargado / Error (con motivo) |
-| Acciones | Ver, Reemplazar, Quitar |
-
-Controles de la tabla:
-
-- Botón **"+ Agregar otro programa"** (una fila nueva de tipo Programa por materia; sin límite de filas salvo los 50 MB totales).
-- Las filas de Programa agregadas pueden eliminarse; las obligatorias iniciales solo se vacían.
-
-**Acciones**
-
-- **Enviar documentación** (botón primario). Habilitado solo cuando están cargados Analítico, Plan de estudios y al menos un Programa (con su materia completa) y no hay errores. Si está deshabilitado, un texto de ayuda lista lo que falta (ej. "Falta: Plan de estudios").
-
-**Validaciones (por fila, inline)**
-
-- Formato: "Formato no permitido. Usá PDF o JPG."
-- Tamaño individual: "El archivo supera los 10 MB."
-- Tamaño total: "Superaste el límite total de 50 MB."
-
-**Modal `ASP-SOL-INI-M1` – Confirmar envío**
-
-- Resumen: tipo, materia (si aplica), nombre de archivo y tamaño de cada documento
-- Aviso: "Una vez enviada, no vas a poder modificar la documentación salvo que el equipo académico te pida recargarla."
-- Botones: "Volver" / "Confirmar envío"
-
-**Resultado**
-
-- El sistema pasa automáticamente a `DOC-CAR` (el aspirante no cambia el estado).
-- Cada documento queda registrado con revisión ⏳ pendiente.
-- Toast: "Documentación enviada." y el panel pasa a `ASP-DOC-CAR`.
-
-**Estados de UI:** skeleton de la tabla al abrir; error de subida por fila con "Reintentar"; sesión expirada durante la carga (se informa y se pide volver a ingresar sin perder la selección si es posible).
+**Resultado:** el sistema pasa a `DOC-REV`; cada documento queda con revisión ⏳.
 
 ---
 
-### 4.6.2 `ASP-DOC-CAR` – Documentación en revisión
+### 4.6.2 `ASP-DOC-REV` – Documentación en revisión
 
-**Estado:** `DOC-CAR` – Documentación cargada · **Tipo:** E · **Requisito:** RF-ASP-003
-
-**Cuándo se muestra:** tras enviar la documentación inicial, o tras una recarga (`DOC-RECH` → `DOC-CAR`).
+**Estado:** `DOC-REV` · **Tipo:** E · **Requisito:** RF-ASP-003 · **Diseño:** `Mis Solicitudes/Estado Pendiente de Revision/`
 
 **Banner:** "Tu documentación está en revisión. Te avisamos por mail si necesitamos algo más."
-Sin responsable: "Esperando que alguien tome el proceso."
 
-**Contenido:** tabla de documentos en **solo lectura** (2.8):
+**Contenido:** tabla de documentos en solo lectura (2.8). Si viene de una recarga, los ✅ conservan la marca y los recargados se muestran ⏳ con la etiqueta "Recargado (v2)". También el bloque Documentación académica, vacío hasta que el Académico suba matriz y horario.
 
-- Tipo / descripción, archivo, versión, fecha de carga, tamaño
-- Marca de revisión: ⏳ pendiente o ✅ correcto
-- Descargar
-
-Cuando viene de una recarga:
-
-- Los documentos ✅ conservan la marca.
-- Los recargados se muestran ⏳ con etiqueta "Recargado (v2)".
-
-**Acciones:** ninguna de trámite. Disponibles: descargar y abrir Chat (si hay responsable).
+**Acciones:** ninguna de trámite.
 
 ---
 
 ### 4.6.3 `ASP-DOC-RECH` – Recarga selectiva de documentos
 
-**Estado:** `DOC-RECH` – Documentación rechazada · **Tipo:** A · **Requisito:** RF-ASP-004
-
-**Cuándo se muestra:** el Académico marcó documentos con ❌. Es el mismo panel sin importar el origen (análisis preliminar, "requiere cambios" post-reunión u observaciones de la revisión legal). Lo que cambia es el motivo escrito por el Académico.
+**Estado:** `DOC-RECH` · **Tipo:** A · **Requisito:** RF-ASP-004 · **Diseño:** `Mis Solicitudes/Estado Documentación rechazada/`
 
 **Banner (variante atención):** "Necesitamos que recargues algunos documentos."
 
-**Bloque de motivo:** motivo general escrito por el Académico, con fecha y nombre.
+**Contenido:** motivo general del Académico y tabla con TODOS los documentos (2.8, modo carga):
 
-**Resumen:** "N documentos a recargar · M correctos".
+- **✅ Correcto:** fila bloqueada, solo permite descargar.
+- **❌ Debe recargar:** comentario del Académico y botón "Cargar nuevo archivo".
+- **❌ Documento faltante:** tipo y descripción pedidos, y botón "Cargar archivo".
 
-**Tabla con TODOS los documentos** (2.8, modo carga):
+**Acciones:** **Enviar documentación**, habilitado cuando **todos** los ❌ tienen archivo nuevo.
 
-| Columna | Contenido |
-|---|---|
-| Tipo / descripción | Documento |
-| Archivo actual | Nombre, versión, fecha |
-| Marca | ✅ o ❌ (no debe haber ⏳ en este estado) |
-| Comentario del Académico | Solo en filas ❌ |
-| Acción | Depende de la marca (ver abajo) |
+**Modal `ASP-DOC-RECH-M1`:** lista de documentos a enviar y aviso "Los documentos correctos no se modifican."
 
-Comportamiento por fila:
-
-- **✅ Correcto:** fila bloqueada (ícono de candado, tooltip "Este documento está correcto y no se puede reemplazar"). Solo permite Descargar.
-- **❌ Debe recargar:** fila destacada, comentario visible, botón **"Cargar nuevo archivo"** (uploader). Con archivo nuevo seleccionado: nombre y tamaño, "Quitar" para deshacer. Enlace **"Ver versión anterior"**.
-- **❌ Documento faltante** (requerido agregado por el Académico, sin archivo): se muestran el tipo y la descripción pedidos, y el botón **"Cargar archivo"**.
-
-**Indicadores:** "Recargados: X de N" y tamaño de los archivos a enviar (límites de 2.11).
-
-**Acciones**
-
-- **Enviar documentación**: habilitado solo cuando **todos** los documentos ❌ tienen archivo nuevo.
-
-**Modal `ASP-DOC-RECH-M1` – Confirmar envío**
-
-- Lista de documentos nuevos a enviar
-- Aviso: "Los documentos correctos no se modifican."
-- Botones: "Volver" / "Confirmar envío"
-
-**Resultado**
-
-- Estado → `DOC-CAR` (automático).
-- Cada archivo recargado se guarda como nueva versión con revisión ⏳. La versión anterior queda archivada y visible en "Ver versión anterior".
-- Panel → `ASP-DOC-CAR`.
-
-**Estados de UI:** igual que `ASP-SOL-INI` (errores por fila, reintento, sesión expirada).
+**Resultado:** estado → `DOC-REV`. Cada archivo recargado se guarda como nueva versión con revisión ⏳; la anterior queda archivada.
 
 ---
 
-### 4.6.4 `ASP-ANAL-COMPL` – Análisis completado (espera, 2 variantes)
+### 4.6.4 `ASP-ANAL-PEND` – Análisis preliminar pendiente
 
-**Estado:** `ANAL-COMPL` – Análisis preliminar completado · **Tipo:** E · **Requisito:** RF-ASP-003
+**Estado:** `ANAL-PEND` · **Tipo:** E · **Requisito:** RF-ASP-003
 
-Este estado se usa dos veces en el proceso: antes de la reunión y después de una reunión con resultado "Permite inscripción". La interfaz se decide con el flag `reunion_realizada`.
+**Banner:** "Tu documentación fue aceptada. Tu solicitud está siendo analizada por nuestro equipo académico."
 
-**Variante A (`reunion_realizada = false`):**
+**Contenido:** documentos en solo lectura. **Acciones:** ninguna de trámite.
 
-- Banner: "Tu análisis preliminar está completo. El próximo paso es coordinar una reunión."
-- Texto: "El equipo académico te va a proponer horarios. Te avisamos por mail."
-- Stepper en "Análisis".
+---
 
-**Variante B (`reunion_realizada = true`):**
+### 4.6.5 `ASP-REU-FEC-ASP-1` – Elegir fecha de reunión (1ª ronda)
 
-- Banner: "La reunión se realizó. Tu solicitud continúa con la revisión legal."
-- Stepper en "Revisión legal".
+**Estado:** `REU-FEC-ASP-1` · **Tipo:** A · **Requisito:** RF-ASP-005 · **Diseño:** `Mis Solicitudes/Estado Pendiente de Fecha de Reunion/` (detalle y selección de fecha)
 
-**Contenido común:** resumen de documentos en solo lectura (con marcas) y acceso a Chat.
+**Banner:** "Es necesario pactar una fecha de reunión."
+
+**Contenido:** matriz de equivalencias y posible horario de cursada (descargables) y botón **"Seleccionar fecha de reunión"**, que abre el modal `ASP-REU-FEC-M1`.
+
+**Modal `ASP-REU-FEC-M1`:** responsable académico, hasta 7 fechas de 1 hora como tarjetas de **selección única** y la opción **"No puedo en ninguno de estos horarios"** con motivo y detalle de cuándo puede reunirse (obligatorios).
+
+**Resultado:** al elegir fecha → `REU-PEND`, sin confirmación posterior del Académico. Al solicitar otras → `REU-FEC-ACAD`.
+
+---
+
+### 4.6.6 `ASP-REU-FEC-ASP-2` – Elegir fecha de reunión (2ª ronda)
+
+**Estado:** `REU-FEC-ASP-2` · **Tipo:** A · **Requisito:** RF-ASP-005
+
+Igual que 4.6.5 con el indicador "Ronda 2 de 2". En vez de solicitar otras fechas, ofrece **"Rechazar 2ª ronda de fechas"**, que lleva a `REU-CHAT`. No existe una 3ª ronda.
+
+---
+
+### 4.6.7 `ASP-REU-FEC-ACAD` – Esperando nuevas fechas
+
+**Estado:** `REU-FEC-ACAD` · **Tipo:** E · **Requisito:** RF-ASP-003
+
+**Banner:** "Estamos esperando nuevas fechas del Académico." Si viene de una inasistencia: "No registramos tu asistencia a la reunión. El Académico va a proponer nuevas fechas."
 
 **Acciones:** ninguna de trámite.
 
 ---
 
-### 4.6.5 `ASP-RES-HORA` – Selección de horario de reunión
+### 4.6.8 `ASP-REU-CHAT` – Coordinar fecha por chat
 
-**Estado:** `RES-HORA` – Esperando selección de horario · **Tipo:** A · **Requisito:** RF-ASP-005
+**Estado:** `REU-CHAT` · **Tipo:** A · **Requisito:** RF-MSG-001 · **Diseño:** `Seleccion de fecha de reunion (Por chat).png`
 
-**Cuándo se muestra:** el Académico propuso horarios (hasta 7, duración 1 hora). Hay hasta **2 rondas**.
+**Banner:** "Es necesario coordinar la fecha de la reunión por chat."
 
-**Banner:** "Elegí un horario para tu reunión." con indicador **"Ronda X de 2"**.
-
-La interfaz tiene 4 variantes según el estado interno de la coordinación:
-
-#### Variante a) Elegir horario
-
-- Lista de horarios propuestos como tarjetas seleccionables (selección única): día y fecha, hora de inicio y fin, duración.
-- Estado de cada horario: Disponible / Descartado (de una ronda anterior).
-- Botón primario **"Confirmar elección"** (deshabilitado hasta seleccionar).
-- Botón secundario **"Ninguno me queda"**.
-
-**Modal `ASP-RES-HORA-M1` – Confirmar elección:** fecha y hora elegidas + "Tu elección queda pendiente de confirmación del Académico."
-
-**Modal `ASP-RES-HORA-M2` – Ninguno me queda:**
-
-- En ronda 1: "Se habilitará una nueva propuesta de horarios (ronda 2)."
-- En ronda 2: "Vamos a coordinar la reunión por chat con tu Académico."
-
-#### Variante b) Elección enviada, esperando confirmación
-
-- Tarjeta del horario elegido destacada: "Elegiste [fecha/hora]. Esperando la confirmación del Académico."
-- Los demás horarios en gris.
-- Botón "Cambiar elección" (mientras el Académico no confirme; ver Anexo A).
-
-#### Variante c) Esperando nueva propuesta (ronda 2)
-
-- Se llega cuando el aspirante indicó "Ninguno me queda" en la ronda 1, o el Académico rechazó la elección y va a proponer nuevos horarios.
-- Mensaje: "Estamos esperando una nueva propuesta del Académico."
-- Cuando llegan los horarios de la ronda 2, se vuelve a la variante a) con "Ronda 2 de 2". Los horarios de la ronda 1 quedan en un acordeón "Horarios anteriores".
-
-#### Variante d) Coordinación manual por chat
-
-- Se llega cuando tras 2 rondas no hay acuerdo.
-- Banner: "No logramos coincidir con los horarios. Coordiná la reunión por chat con tu Académico."
-- Botón **"Abrir chat"**. No se muestran tarjetas de horarios.
-- El Académico registra el horario acordado y confirma.
-
-**Resultado:** las acciones del aspirante en este estado **no cambian el estado**. El estado pasa a `RES-CONF` cuando el Académico confirma (llega mail).
+**Contenido:** el detalle se abre en la pestaña **Chat**, por defecto. La fecha la fija el Académico; el aspirante no cambia el estado.
 
 ---
 
-### 4.6.6 `ASP-RES-CONF` – Reunión confirmada
+### 4.6.9 `ASP-REU-PEND` – Reunión pactada
 
-**Estado:** `RES-CONF` – Reunión confirmada · **Tipo:** E · **Requisito:** RF-ASP-003
+**Estado:** `REU-PEND` · **Tipo:** E · **Requisito:** RF-ASP-003 · **Diseño:** `Reunion confirmada.png`
 
-**Banner:** "Tu reunión está confirmada."
+**Banner:** "Reunión pactada, pendiente de realizarse."
 
-**Contenido:**
-
-- Tarjeta destacada: fecha, hora, duración (1 hora), Académico responsable
-- Botón **"Unirme a la reunión"** con el link de Meet (si está cargado)
-- Mientras la fecha no pasó: "Te esperamos el [fecha] a las [hora]."
-- Cuando la fecha ya pasó y el estado sigue igual: "La reunión ya se realizó. Estamos registrando el resultado."
-
-**Acciones:** ninguna de trámite. Disponible: Chat.
+**Contenido:** fecha, horario, modalidad, responsable académico y botón **"Unirme a la reunión"** cuando el Académico cargó el enlace de Meet. **Acciones:** ninguna de trámite.
 
 ---
 
-### 4.6.7 `ASP-REV-LEG` – Revisión legal completada
+### 4.6.10 `ASP-ANAL-POST` – Análisis posterior a la reunión
 
-**Estado:** `REV-LEG` – Revisión legal completada · **Tipo:** E · **Requisito:** RF-ASP-003
+**Estado:** `ANAL-POST` · **Tipo:** E · **Requisito:** RF-ASP-003
 
-**Banner:** "Revisamos tu documentación legal sin observaciones. Estamos definiendo la resolución final."
+**Banner:** "La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción."
 
-**Contenido:** resumen de documentos en solo lectura. Chat.
-
-**Acciones:** ninguna.
+**Contenido:** versión vigente de la matriz y del horario de cursada. **Acciones:** ninguna de trámite.
 
 ---
 
-### 4.6.8 `ASP-APROBADO` – Solicitud aprobada e informe de materias
+### 4.6.11 `ASP-INSC-ACEP` – Indicar legalización
 
-**Estado:** `APROBADO` – Aprobado · **Tipo:** E (con contenido informativo) · **Requisito:** RF-ASP-006
+**Estado:** `INSC-ACEP` · **Tipo:** A · **Requisito:** RF-ASP-009
 
-**Banner (variante éxito):** "¡Tu solicitud fue aprobada!" + "Próximo paso: la enviamos a Secretaría para generar tu cupón de pago."
+**Banner (variante éxito):** "Tu inscripción fue aceptada. Indicá si tus documentos están legalizados."
 
-**Contenido:** el **Informe de materias** (mismo componente que la pestaña de 4.7.4), en solo lectura:
-
-- Tabla: materia reconocida, carga horaria, correlativas
-- Cantidad de materias a adeudar
-- Observaciones
-- Monto a pagar
-
-**Acciones:** ninguna de trámite.
+**Contenido:** pregunta con dos opciones, sin carga de archivos: **"Sí, están legalizados"** (→ `LEG-REV`) y **"No, todavía no"** (→ `LEG-PEND`). Modal de confirmación simple.
 
 ---
 
-### 4.6.9 `ASP-ENV-SECREC` – Enviado a Secretaría
+### 4.6.12 `ASP-LEG-PEND` – Legalización pendiente
 
-**Estado:** `ENV-SECREC` – Enviado a secretaría · **Tipo:** E · **Requisito:** RF-ASP-003
+**Estado:** `LEG-PEND` · **Tipo:** A · **Requisito:** RF-ASP-009 · **Diseño:** `Estado Documentacion Legalizada/Documentacion legalizada (Envio de docs).png` (ver Anexo B #9)
 
-**Banner:** "Secretaría está preparando tu cupón de pago."
+**Banner:** "Tu documentación aún no está legalizada. Seguí las indicaciones y avisanos cuando esté lista."
 
-**Contenido:**
-
-- Resumen "Monto a pagar" (del informe)
-- Responsable Administrativo (o "Esperando que Secretaría tome el proceso")
-- Acceso a la pestaña Informe de materias
-
-**Acciones:** ninguna.
+**Acciones:** **"Ya legalicé mis documentos"** → `LEG-REV`.
 
 ---
 
-### 4.6.10 `ASP-CUPON` – Efectuar pago
+### 4.6.13 `ASP-INSC-RECH` – Inscripción rechazada
 
-**Estado:** `CUPON` – Cupón generado · **Tipo:** A · **Requisito:** RF-ASP-007
-
-**Banner:** "Tu cupón de pago está listo. Descargalo, pagá y subí el comprobante."
-
-**Layout en 3 pasos:**
-
-1. **Descargar cupón**: tarjeta con fecha de generación, monto y botón "Descargar cupón (PDF)".
-2. **Pagar**: texto informativo "Realizá el pago con los datos del cupón." (sin acción en el sistema).
-3. **Cargar comprobante**: uploader único (2.11), PDF o JPG, máximo 10 MB, con vista previa. Botón **"Enviar comprobante"**, deshabilitado hasta tener un archivo válido.
-
-**Modal `ASP-CUPON-M1` – Confirmar envío:** nombre y tamaño del archivo + "Secretaría va a verificar tu pago." Botones "Volver" / "Confirmar envío".
-
-**Resultado:** estado → `PAG-ESP` (automático). Panel → `ASP-PAG-ESP`.
-
-**Estados de UI:** error al descargar el cupón (reintento), error de formato/tamaño, error de subida.
-
----
-
-### 4.6.11 `ASP-PAG-ESP` – Pago en verificación
-
-**Estado:** `PAG-ESP` – Esperando verificación de pago · **Tipo:** E · **Requisito:** RF-ASP-003
-
-**Banner:** "Estamos verificando tu pago."
-
-**Contenido:**
-
-- Comprobante enviado: nombre, fecha y tamaño, con "Ver" y "Descargar"
-- Cupón (descargable) con su monto
-- Responsable Administrativo
-
-**Acciones:** ninguna (no se puede reenviar mientras se verifica).
-
----
-
-### 4.6.12 `ASP-PAG-RECH` – Pago rechazado, reenviar comprobante
-
-**Estado:** `PAG-RECH` – Pago rechazado · **Tipo:** A · **Requisito:** RF-ASP-007
-
-**Banner (variante atención):** "Hay un problema con tu comprobante. Revisá el detalle y volvé a enviarlo."
-
-**Contenido:**
-
-- Tarjeta **"Comentario de Secretaría"**: texto, fecha y quién lo escribió
-- Comprobante anterior en solo lectura (nombre, fecha, "Ver")
-- Cupón (descargable) con su monto, para poder cotejar
-- Uploader de nuevo comprobante (PDF o JPG, máximo 10 MB)
-- Botón **"Reenviar comprobante"**, deshabilitado hasta tener un archivo válido
-
-**Modal `ASP-PAG-RECH-M1` – Confirmar reenvío:** nombre y tamaño del archivo nuevo. Botones "Volver" / "Confirmar reenvío".
-
-**Resultado:** estado → `PAG-ESP` (automático). Panel → `ASP-PAG-ESP`.
-
----
-
-### 4.6.13 `ASP-PAG-VER` – Pago verificado
-
-**Estado:** `PAG-VER` – Pago verificado · **Tipo:** E · **Requisito:** RF-ASP-003
-
-**Banner (variante éxito):** "Tu pago fue verificado. Gracias."
-Texto: "Secretaría está preparando la disposición decanal."
-
-**Acciones:** ninguna.
-
----
-
-### 4.6.14 `ASP-DISP-GEN` – Disposición generada
-
-**Estado:** `DISP-GEN` – Disposición generada · **Tipo:** E · **Requisito:** RF-ASP-003
-
-**Banner:** "La disposición decanal fue generada. El Académico la va a revisar y cerrar tu expediente."
-
-**Contenido:** el aspirante todavía no accede a la disposición (se incluye en el expediente descargable al finalizar).
-
-**Acciones:** ninguna.
-
----
-
-### 4.6.15 `ASP-FINAL` – Expediente finalizado
-
-**Estado:** `FINAL` – Expediente finalizado · **Tipo:** T · **Requisito:** RF-ASP-008
-
-**Banner (variante éxito, destacado):** "¡Tu trámite de equivalencias fue completado!"
-
-**Contenido:**
-
-- Estado final, fecha de finalización, código de expediente
-- Lista de lo que contiene el expediente: solicitud inicial, documentos cargados, matriz de equivalencias, horario propuesto, disposición decanal, comprobante de pago
-- Botón **"Descargar expediente (.zip)"**. Nombre del archivo: `EXP-2024-001_Expediente_[DNI].zip`
-
-**Acciones:** descargar el ZIP. El Informe de materias, el Historial y el Chat (solo lectura) siguen accesibles.
-
----
-
-### 4.6.16 `ASP-RECHAZO` – Solicitud rechazada
-
-**Estado:** `RECHAZO` – Rechazado · **Tipo:** T · **Requisito:** RF-ASP-003
+**Estado:** `INSC-RECH` · **Tipo:** T · **Requisito:** RF-ASP-003
 
 **Banner (variante cierre negativo):** "Lamentablemente tu solicitud no pudo ser aprobada."
 
-**Contenido:**
+**Contenido:** motivo, fecha, quién resolvió e historial. **Acciones:** ninguna. Chat en solo lectura.
 
-- Motivo (comentario del Académico), fecha y quién resolvió
-- Historial completo
+---
 
-**Acciones:** ninguna de trámite. Chat en solo lectura. No hay Informe de materias en este estado.
+### 4.6.14 `ASP-LEG-REV` – Documentos legalizados en revisión
+
+**Estado:** `LEG-REV` · **Tipo:** E · **Requisito:** RF-ASP-003 · **Diseño:** `Documentacion legalizada (Pendiente en doc).png`
+
+**Banner:** "Tus documentos legalizados están en revisión."
+
+**Contenido:** documentos en solo lectura, con sus marcas. Secciones plegables Documentación inicial y Documentación académica. **Acciones:** ninguna de trámite.
+
+---
+
+### 4.6.15 `ASP-LEG-RECH` – Recarga de documentos legalizados
+
+**Estado:** `LEG-RECH` · **Tipo:** A · **Requisito:** RF-ASP-009 · **Diseño:** `Documentacion legalizada (Error en doc).png`
+
+Mismo comportamiento que `ASP-DOC-RECH` (4.6.3) para la etapa `LEGALIZACION`. **Resultado:** estado → `LEG-REV`.
+
+---
+
+### 4.6.16 `ASP-CUPON-SOL` – Informe y cupón en preparación
+
+**Estado:** `CUPON-SOL` · **Tipo:** E · **Requisito:** RF-ASP-006
+
+**Banner:** "Tus documentos fueron aceptados. Secretaría está preparando tu cupón de pago."
+
+**Contenido:** Informe de materias (4.7.4), monto y responsable administrativo. **Acciones:** ninguna de trámite.
+
+---
+
+### 4.6.17 `ASP-CUPON-PAG` – Efectuar pago
+
+**Estado:** `CUPON-PAG` · **Tipo:** A · **Requisito:** RF-ASP-007 · **Diseño:** `Estado Pendiente de Comprobante/Detalle de Solicitud Comprobante.png`
+
+**Banner:** "Envío de comprobante de pago requerido."
+
+**Contenido:** tres pasos: descargar el cupón, pagar y cargar el comprobante (PDF o JPG, máximo 10 MB). **Acciones:** **Enviar comprobante**, deshabilitado hasta tener un archivo válido. Modal `ASP-CUPON-PAG-M1` de confirmación simple.
+
+**Resultado:** estado → `PAG-CTRL`.
+
+---
+
+### 4.6.18 `ASP-PAG-CTRL` – Pago en verificación
+
+**Estado:** `PAG-CTRL` · **Tipo:** E · **Requisito:** RF-ASP-003
+
+**Banner:** "Comprobante de pago pendiente de revisión."
+
+**Contenido:** comprobante enviado, cupón con su monto y responsable administrativo. **Acciones:** ninguna.
+
+---
+
+### 4.6.19 `ASP-PAG-REENV` – Reenviar comprobante
+
+**Estado:** `PAG-REENV` · **Tipo:** A · **Requisito:** RF-ASP-007
+
+**Banner (variante atención):** "Comprobante de pago rechazado."
+
+**Contenido:** comentario de Secretaría, comprobante anterior, cupón y uploader. **Acciones:** **Enviar nuevo comprobante**, con modal de confirmación simple.
+
+**Resultado:** estado → `PAG-CTRL`.
+
+---
+
+### 4.6.20 `ASP-E3-INI` – Inicio de E3
+
+**Estado:** `E3-INI` · **Tipo:** E · **Requisito:** RF-ASP-003
+
+**Banner (variante éxito):** "Tu pago ha sido verificado correctamente. Gracias."
+
+**Acciones:** ninguna. Lo posterior se define junto con los estados que siguen a `E3-INI`, incluida la descarga del expediente (RF-ASP-008).
 
 ---
 
 ## 4.7 Pestañas transversales del detalle (según estado)
 
-Las pestañas que no son "Mi trámite" se mantienen en todos los estados, pero su comportamiento cambia. **La carga y recarga de archivos se hace únicamente desde "Mi trámite"**, no desde otras pestañas (evita dos lugares para la misma acción).
+Las pestañas que no son "Mi trámite" se mantienen en todos los estados, pero su comportamiento cambia. **La carga y recarga de archivos se hace únicamente desde "Mi trámite"**, para que cada acción viva en un solo lugar.
 
 ### 4.7.1 Pestaña Documentación
 
-Tabla de todos los documentos de la solicitud (2.8, solo lectura): tipo, archivo, versión, fecha, tamaño, marca de revisión, comentario, descarga, y acceso a versiones anteriores.
+Tabla de todos los documentos de la solicitud (2.8, solo lectura) y acceso a versiones anteriores.
 
 | Estado | Comportamiento |
 |---|---|
-| `SOL-INI` | Lista los archivos ya seleccionados/cargados. Enlace "Ir a cargar documentación" hacia `ASP-SOL-INI` |
-| `DOC-RECH` | Muestra marcas ✅/❌ y comentarios. Enlace "Ir a recargar" hacia `ASP-DOC-RECH` |
-| `DOC-CAR` a `DISP-GEN` | Solo lectura |
-| `FINAL` | Solo lectura + botón "Descargar expediente (.zip)" |
-| `RECHAZO` | Solo lectura |
+| `SOL-INI` | Lista los archivos ya cargados. Enlace "Ir a cargar documentación" |
+| `DOC-RECH`, `LEG-RECH` | Muestra marcas y comentarios. Enlace "Ir a recargar" |
+| Resto | Solo lectura |
 
 Vacío: "Todavía no cargaste documentos."
 
 ### 4.7.2 Pestaña Chat
 
-Componente 2.5. Participantes: aspirante, Académico responsable, Administrativo responsable (RF-MSG-001).
+Componente 2.5. Participantes: aspirante, Académico responsable y Administrativo responsable (RF-MSG-001).
 
 | Situación | Comportamiento |
 |---|---|
-| Sin responsable (`SOL-INI` sin nadie que tomó el proceso, o baja/revocación) | Chat **deshabilitado**: "El chat se habilita cuando alguien tome tu proceso." |
-| Con responsable, estados `SOL-INI` a `DISP-GEN` | Chat completo |
-| `RES-HORA` en coordinación manual (variante d) | Chat completo, destacado desde el banner |
-| `FINAL` y `RECHAZO` | Solo lectura |
+| Sin responsable | Chat **deshabilitado**: "El chat se habilita cuando alguien tome tu proceso." |
+| Con responsable | Chat completo |
+| `REU-CHAT` | Chat completo y abierto por defecto |
+| `INSC-RECH` | Solo lectura |
 
-Reglas del mensaje (RF-MSG-002): avatar, nombre, texto de hasta 500 caracteres (con contador), adjunto opcional de hasta 5 MB, tipo de consulta (Documentación, Estado, Cálculos, Fechas, Otro), fecha y hora, indicador de visto.
-
-Si cambia el responsable, el chat no se borra: el historial se conserva.
+Reglas del mensaje (RF-MSG-002): avatar, nombre, texto de hasta 500 caracteres, adjunto opcional de hasta 5 MB, tipo de consulta, fecha y hora, indicador de visto. Si cambia el responsable, el historial se conserva.
 
 ### 4.7.3 Pestaña Historial
 
-Componente Timeline (2.3), orden descendente por fecha:
-
-- Fecha y hora
-- Estado anterior → estado nuevo (nombre y código)
-- Usuario que lo produjo
-- Comentario (si hay)
-- También: cambios de responsable y documentación cargada (RF-PROC-002)
-
-Es la única pestaña con contenido idéntico en todos los estados.
+Componente Timeline (2.3), orden descendente por fecha. Es la única pestaña con contenido idéntico en todos los estados.
 
 ### 4.7.4 Pestaña Informe de materias
 
-**Visible desde `APROBADO` hasta `FINAL`** (RF-ASP-006). No existe en `RECHAZO` ni en estados anteriores a la aprobación.
+**Visible desde `CUPON-SOL` en adelante** (RF-ASP-006). No existe en `INSC-RECH`.
 
-Contenido (solo lectura):
-
-- Tabla: materia reconocida, carga horaria, correlativas
-- Cantidad a adeudar
-- Observaciones
-- Monto a pagar
-
-Es el mismo componente que se muestra dentro de `ASP-APROBADO`.
+Contenido (solo lectura): materias reconocidas, carga horaria, correlativas, cantidad a adeudar, observaciones y monto a pagar.
 
 ---
 
 ## 4.8 Datos mínimos que el backend debe exponer para renderizar cada estado
 
-Para que el frontend pueda resolver las interfaces de 4.6:
-
-| Dato | Se usa en |
-|---|---|
-| `estado_codigo` | Todas |
-| `reunion_realizada` (boolean) | `ASP-ANAL-COMPL`, stepper |
-| Responsable académico / administrativo (nombre, email, fecha de asignación, o nulo) | Bloque de responsables, chat |
-| Lista de documentos con: tipo, descripción, archivo, versión, versión anterior, `estado_revision`, comentario, `es_requerido_faltante` | `ASP-SOL-INI`, `ASP-DOC-CAR`, `ASP-DOC-RECH`, pestaña Documentación |
-| Motivo general de la observación (comentario del Académico) y quién/cuándo | `ASP-DOC-RECH`, `ASP-RECHAZO` |
-| Ronda actual (1 o 2), horarios propuestos con su estado, horario elegido, indicador de coordinación manual | `ASP-RES-HORA` |
-| Fecha, hora y link de la reunión confirmada | `ASP-RES-CONF` |
-| Informe de materias (materia, carga horaria, correlativas, cantidad a adeudar, observaciones, monto) | `ASP-APROBADO`, pestaña Informe |
-| Cupón (fecha, monto, archivo) | `ASP-ENV-SECREC` a `ASP-PAG-RECH` |
-| Comprobante enviado y comentario de Secretaría | `ASP-PAG-ESP`, `ASP-PAG-RECH` |
-| Fecha de finalización y URL del ZIP | `ASP-FINAL` |
-| Motivo de rechazo | `ASP-RECHAZO` |
-| Historial de estados y de responsables | Pestaña Historial |
+Los define el contrato de la API: `SolicitudDetalle` (§6.4), `Documento` (§6.5), `Analisis`, `ReunionInfo`, `Informe` y `Pago` (§6.6). La interfaz se resuelve con `estado.codigo`, `miRelacion` y `accionesDisponibles`.
 
 ---
 
 ## 4.9 Notificaciones por mail y destino al abrir el link
 
-Los mails son solo avisos (RF-ESTADO-002). Cada link debe llevar a la solicitud, en "Mi trámite", con la interfaz del estado vigente.
-
-| Aviso (transición) | Interfaz que ve el aspirante |
-|---|---|
-| `DOC-CAR` → `ANAL-COMPL`: "Tu solicitud está siendo analizada" | `ASP-ANAL-COMPL` (variante A) |
-| → `DOC-RECH` (desde `DOC-CAR`, `RES-CONF` o `ANAL-COMPL`): "Observaciones en tu documentación" (con motivo y lista de documentos a recargar) | `ASP-DOC-RECH` |
-| `ANAL-COMPL` → `RES-HORA`: "Elegí un horario para la reunión" | `ASP-RES-HORA` |
-| `RES-HORA` → `RES-CONF`: "Tu reunión fue confirmada" | `ASP-RES-CONF` |
-| `RES-CONF` → `ANAL-COMPL`: "La reunión se realizó" | `ASP-ANAL-COMPL` (variante B) |
-| `RES-CONF` o `REV-LEG` → `RECHAZO` | `ASP-RECHAZO` |
-| `REV-LEG` → `APROBADO` | `ASP-APROBADO` |
-| `ENV-SECREC` → `CUPON`: "Tu cupón de pago está listo" | `ASP-CUPON` |
-| `PAG-ESP` → `PAG-VER` | `ASP-PAG-VER` |
-| `PAG-ESP` → `PAG-RECH`: "Hay un problema con tu comprobante" | `ASP-PAG-RECH` |
-| `DISP-GEN` → `FINAL`: "Tu trámite fue completado" | `ASP-FINAL` |
-| Reasignación de responsable (RF-ADMIN-005): "Tu proceso ha sido reasignado" | Interfaz del estado actual, con responsables actualizados |
-
-La campana de la barra superior (2.1) replica estos avisos dentro del sistema.
+Los mails son solo avisos (RF-ESTADO-002). Cada link lleva a la solicitud, en "Mi trámite", con la interfaz del estado vigente. La campana de la barra superior replica estos avisos.
 
 ---
 
-## 4.10 Regresiones, reaperturas y cambios de responsable
+## 4.10 Regresiones y cambios de responsable
 
-- **Vueltas a `DOC-RECH`:** puede ocurrir hasta tres veces en una misma solicitud (análisis, post-reunión, revisión legal). Cada vez el aspirante ve `ASP-DOC-RECH` con las marcas y motivo vigentes. Tras recargar, siempre vuelve a `DOC-CAR`.
-- **Reapertura por Admin** (`FINAL` → estado elegido, RF-ADMIN-006): el panel se resuelve con el nuevo estado. El banner suma la aclaración "Tu expediente fue reabierto", tomada de la última entrada del Historial.
-- **Baja o revocación del responsable:** el bloque de responsables vuelve a "Esperando que alguien tome el proceso" y el chat se deshabilita. El Panel de Acción **no cambia**, porque lo que el aspirante debe hacer depende del estado, no del responsable.
+- **Vueltas a `DOC-RECH` y `LEG-RECH`:** tras recargar, la solicitud vuelve a `DOC-REV` o a `LEG-REV`.
+- **No asistencia a la reunión:** `REU-PEND` vuelve a `REU-FEC-ACAD` y se reprograma por el flujo normal de rondas.
+- **Baja o revocación del responsable:** el bloque de responsables vuelve a "Esperando que alguien tome el proceso" y el chat se deshabilita. El Panel de Acción **no cambia**, porque depende del estado.
 
 ---
 
@@ -1721,24 +1533,22 @@ Reglas adicionales del rol:
 
 ### 5.0.1 Matriz general de interfaces del Académico
 
-| Estado | Tipo | Interfaz | Qué hace el Académico | Transición que dispara | Req. |
+| Estado | Tipo | Interfaz | Qué hace el Académico | Transición | Req. |
 |---|---|---|---|---|---|
 | `SOL-INI` | E | `ACAD-SOL-INI` | Espera la documentación. Puede tomar el proceso | — | RF-PROC-003 |
-| `DOC-CAR` | A | `ACAD-DOC-CAR` | Revisa documentos (✅/❌), arma matriz y horario; completa análisis o requiere correcciones | → `ANAL-COMPL` o `DOC-RECH` | RF-ACAD-001, 009 |
+| `DOC-REV` | A | `ACAD-DOC-REV` | Marca documentos; acepta o rechaza | 5: → `ANAL-PEND` · 3: → `DOC-RECH` | RF-ACAD-001, 009 |
 | `DOC-RECH` | E | `ACAD-DOC-RECH` | Espera la recarga del aspirante | — | — |
-| `ANAL-COMPL` | A | `ACAD-ANAL-COMPL` | Hub con 2 acciones: (A) coordinar reunión, (B) revisión legal (según `reunion_realizada`) | → `RES-HORA`, `REV-LEG` o `DOC-RECH` | RF-ACAD-002, 005 |
-| `RES-HORA` | A | `ACAD-RES-HORA` | Espera elección del aspirante; confirma horario o propone nueva ronda | → `RES-CONF` | RF-ACAD-003 |
-| `RES-CONF` | A | `ACAD-RES-CONF` | Registra el resultado de la reunión | → `ANAL-COMPL`, `DOC-RECH` o `RECHAZO` | RF-ACAD-004 |
-| `REV-LEG` | A | `ACAD-REV-LEG` | Decisión final: aprobar o rechazar | → `APROBADO` o `RECHAZO` | RF-ACAD-006 |
-| `APROBADO` | A | `ACAD-APROBADO` | Envía a Secretaría | → `ENV-SECREC` | RF-ACAD-007 |
-| `ENV-SECREC` | E | `ACAD-ENV-SECREC` | Seguimiento: Secretaría genera el cupón | — | — |
-| `CUPON` | E | `ACAD-CUPON` | Seguimiento: espera el pago del aspirante | — | — |
-| `PAG-ESP` | E | `ACAD-PAG-ESP` | Seguimiento: Secretaría verifica el pago | — | — |
-| `PAG-RECH` | E | `ACAD-PAG-RECH` | Seguimiento: espera reenvío del aspirante | — | — |
-| `PAG-VER` | E | `ACAD-PAG-VER` | Seguimiento: Secretaría confecciona la disposición | — | — |
-| `DISP-GEN` | A | `ACAD-DISP-GEN` | Revisa la disposición y cierra el expediente | → `FINAL` | RF-ACAD-008 |
-| `FINAL` | T | `ACAD-FINAL` | Consulta y exportación | — | RF-PROC-005 |
-| `RECHAZO` | T | `ACAD-RECHAZO` | Consulta y exportación | — | RF-PROC-005 |
+| `ANAL-PEND` | A | `ACAD-ANAL-PEND` | Sube matriz y horario, y propone fechas | 6: → `REU-FEC-ASP-1` | RF-ACAD-002 |
+| `REU-FEC-ASP-1`, `REU-FEC-ASP-2` | E | `ACAD-REU-FEC-ASP` | Espera la elección del aspirante | — | — |
+| `REU-FEC-ACAD` | A | `ACAD-REU-FEC-ACAD` | Propone la 2ª ronda de fechas | 8: → `REU-FEC-ASP-2` | RF-ACAD-003 |
+| `REU-CHAT` | A | `ACAD-REU-CHAT` | Pauta por chat y fija la fecha | 11: → `REU-PEND` | RF-ACAD-003 |
+| `REU-PEND` | A | `ACAD-REU-PEND` | Carga el Meet; indica fin o inasistencia | 13: → `ANAL-POST` · 12: → `REU-FEC-ACAD` | RF-ACAD-003, 004 |
+| `ANAL-POST` | A | `ACAD-ANAL-POST` | Actualiza análisis; acepta o rechaza la inscripción | 14: → `INSC-ACEP` · 15: → `INSC-RECH` | RF-ACAD-004, 006 |
+| `INSC-ACEP`, `LEG-PEND` | E | `ACAD-LEG-ESPERA` | Espera al aspirante | — | — |
+| `INSC-RECH` | T | `ACAD-INSC-RECH` | Consulta | — | — |
+| `LEG-REV` | A | `ACAD-LEG-REV` | Marca legalizados; acepta o rechaza | 21: → `CUPON-SOL` · 19: → `LEG-RECH` | RF-ACAD-005, 009 |
+| `LEG-RECH` | E | `ACAD-LEG-RECH` | Espera la recarga del aspirante | — | — |
+| `CUPON-SOL`, `CUPON-PAG`, `PAG-CTRL`, `PAG-REENV`, `E3-INI` | E | `ACAD-SEGUIMIENTO` | Seguimiento de la etapa de pago | — | — |
 
 ---
 
@@ -1746,12 +1556,12 @@ Reglas adicionales del rol:
 
 Widgets:
 
-- **Mis solicitudes**, agrupadas por "Requieren mi acción" (estados A del Académico: `DOC-CAR`, `ANAL-COMPL`, `RES-HORA`, `RES-CONF`, `REV-LEG`, `APROBADO`, `DISP-GEN`) y "En espera de otros"
+- **Mis solicitudes**, agrupadas por "Requieren mi acción" (estados A del Académico: `DOC-REV`, `ANAL-PEND`, `REU-FEC-ACAD`, `REU-CHAT`, `REU-PEND`, `ANAL-POST`, `LEG-REV`) y "En espera de otros"
 - **Sin responsable** (con botón "Tomar proceso")
 - **Pendientes**
-- **Reuniones próximas** (solicitudes en `RES-CONF` con fecha futura)
+- **Reuniones próximas** (solicitudes en `REU-PEND` con fecha futura)
 
-Filtros rápidos.
+Filtros rápidos. Diseño: `Interfaces/Academicos/Inicio/Dashboard Inicio.png`.
 
 ---
 
@@ -1770,7 +1580,7 @@ Tabla. Columnas:
 - Última actualización
 - Botones: "Ver detalles", "Tomar proceso" (si aplica)
 
-Filtros: estado (16 estados), fecha, búsqueda por ID / aspirante / carrera, "Mis asignadas" / "Todas".
+Filtros: estado (20 estados), fecha, búsqueda por ID / aspirante / carrera, "Mis asignadas" / "Todas".
 
 Ordenamiento:
 
@@ -1832,179 +1642,137 @@ Regla: las pestañas Documentación, Análisis y Reunión son de **consulta**. S
 
 ### 5.6.1 `ACAD-SOL-INI` – Esperando documentación (E)
 
-- Banner: "El aspirante todavía no envió su documentación."
-- Contenido: datos de la solicitud y botón "Tomar proceso" (si corresponde).
-- Sin acciones de trámite.
+Banner: "El aspirante todavía no envió su documentación." Datos de la solicitud y "Tomar proceso" si corresponde.
 
 ---
 
-### 5.6.2 `ACAD-DOC-CAR` – Análisis preliminar y revisión de documentos (A)
+### 5.6.2 `ACAD-DOC-REV` – Revisión de documentación (A)
 
-**Requisitos:** RF-ACAD-001, RF-ACAD-009. **Estado:** `DOC-CAR`.
+**Requisitos:** RF-ACAD-001, RF-ACAD-009. **Diseño:** `Analisis Preliminar/Documentacion Inicial/`
 
-**Banner:** "Documentación lista para analizar." Si viene de una recarga: "El aspirante recargó documentos" y se resaltan los recargados.
+**Banner:** "Documentación lista para revisar." Si viene de una recarga: "El aspirante recargó documentos" y se resaltan los recargados.
 
-**Bloque 1 – Revisión de documentos** (componente 2.8 en modo revisión, ver 5.7).
-
-**Bloque 2 – Matriz tentativa:** cargar archivo o escribir notas.
-
-**Bloque 3 – Horario propuesto:** cargar archivo o escribir notas.
+**Contenido:** revisión de documentos (5.7).
 
 **Acciones**
 
 - **Guardar marcas** (no cambia el estado).
-- **Completar análisis** → modal `ACAD-DOC-CAR-M1` (doble verificación) → estado `ANAL-COMPL`.
-  - Marcar documentos es opcional en esta acción.
-- **Requerir correcciones** → modal `ACAD-DOC-CAR-M2` (doble verificación) → estado `DOC-RECH`.
-  - Campo comentario general obligatorio.
-  - Requiere al menos un documento ❌ y ningún documento ⏳.
-  - El modal resume la lista de documentos a recargar.
-
-**Deshabilitado si:** es observador o no es responsable.
+- **Aceptar documentación** → modal `ACAD-DOC-REV-M1` (doble verificación) → `ANAL-PEND`. Marcar es opcional.
+- **Rechazar documentación** → modal `ACAD-DOC-REV-M2` (doble verificación) → `DOC-RECH`. Comentario general obligatorio, al menos un ❌ y ningún ⏳.
 
 ---
 
-### 5.6.3 `ACAD-DOC-RECH` – Esperando recarga del aspirante (E)
+### 5.6.3 `ACAD-DOC-RECH` – Esperando recarga (E)
 
-- Banner: "Esperando que el aspirante recargue los documentos marcados."
-- Contenido: tabla en solo lectura con las marcas y comentarios enviados, y el motivo general.
-- Sin acciones de trámite.
+Banner: "Esperando que el aspirante recargue los documentos marcados." Tabla en solo lectura y motivo general.
 
 ---
 
-### 5.6.4 `ACAD-ANAL-COMPL` – Hub: reunión o revisión legal (A)
+### 5.6.4 `ACAD-ANAL-PEND` – Análisis preliminar y fechas (A)
 
-**Requisitos:** RF-ACAD-002, RF-ACAD-005. **Estado:** `ANAL-COMPL`.
+**Requisito:** RF-ACAD-002. **Diseño:** `Analisis Preliminar/Documentos Tentativos y Horarios/`
 
-Muestra dos tarjetas de acción. Su habilitación depende de `reunion_realizada`:
+**Contenido:**
 
-| Tarjeta | `reunion_realizada = false` | `reunion_realizada = true` |
-|---|---|---|
-| **A) Coordinar reunión** | Habilitada → 5.6.4.1 | Oculta/deshabilitada ("La reunión ya se realizó") |
-| **B) Revisión legal** | Deshabilitada, tooltip "Requiere reunión realizada con resultado 'Permite inscripción'" | Habilitada → 5.6.4.2 |
+- **Matriz de equivalencias:** archivo o notas.
+- **Horario de cursada:** archivo o notas.
+- **Fechas disponibles:** hasta 7 horarios de 1 hora, entre 10:00 y 18:00, dentro de los próximos 14 a 30 días.
 
-#### 5.6.4.1 `ACAD-ANAL-COMPL-PROPUESTA` – Propuesta de horarios
-
-- Calendario integrado, próximos 14-30 días, franjas 10:00-18:00.
-- Crear, editar y eliminar horarios. Máximo **7** propuestas, 1 hora cada una.
-- Contador "X de 7".
-- Botón **"Guardar propuesta"** → modal `ACAD-ANAL-COMPL-M1` (confirmar envío) → estado `RES-HORA`. Se envía mail al aspirante.
-
-#### 5.6.4.2 `ACAD-ANAL-COMPL-LEGAL` – Revisión legal
-
-- Documentación en solo lectura, con enlaces de descarga
-- Verificaciones: validez de firmas electrónicas y concordancia entre documentos y análisis
-- Carga de archivo de observaciones (opcional)
-- Decisión (radio): **Sin observaciones** / **Con observaciones (requiere cambios)**
-- Si "Con observaciones": comentario obligatorio y marcado de documentos (al menos un ❌, ninguno ⏳), con el componente de 5.7
-- Botón **"Guardar revisión"** → modal `ACAD-ANAL-COMPL-M2` (doble verificación):
-  - Sin observaciones → `REV-LEG`
-  - Con observaciones → `DOC-RECH`
-- Aclaración visible: aprobar o rechazar la solicitud **no se decide acá** sino en `REV-LEG`.
+**Acción:** **Guardar propuesta** → modal `ACAD-ANAL-PEND-M1` (doble verificación) → `REU-FEC-ASP-1`. Se envía mail al aspirante.
 
 ---
 
-### 5.6.5 `ACAD-RES-HORA` – Coordinación de horario (A, con variantes)
+### 5.6.5 `ACAD-REU-FEC-ASP` – Esperando elección de fecha (E)
 
-**Requisito:** RF-ACAD-003. **Estado:** `RES-HORA`.
-
-Banner: "Ronda X de 2".
-
-| Variante | Qué muestra | Acciones |
-|---|---|---|
-| **Esperando elección del aspirante** | Horarios propuestos y estado de cada uno | Ninguna (o editar propuesta, a definir; ver Anexo A) |
-| **Aspirante eligió un horario** | Modal/tarjeta: "El aspirante eligió [fecha/hora]. ¿Confirmás?" | **Confirmar** (doble verificación, `ACAD-RES-HORA-M1`) → `RES-CONF` · **Rechazar / Proponer nuevos** → nueva ronda; el estado permanece en `RES-HORA` |
-| **Aspirante respondió "Ninguno me queda"** | Aviso y calendario de propuesta | Proponer nueva ronda (máx. 2) |
-| **2 rondas sin acuerdo** | Aviso "Coordinación manual por chat" y botón al chat | **Registrar horario acordado y confirmar** (doble verificación) → `RES-CONF` |
+Banner: "Ronda X de 2. Esperando que el aspirante elija una fecha." Fechas propuestas en solo lectura.
 
 ---
 
-### 5.6.6 `ACAD-RES-CONF` – Resultado de la reunión (A)
+### 5.6.6 `ACAD-REU-FEC-ACAD` – Proponer nuevas fechas (A)
 
-**Requisito:** RF-ACAD-004. **Estado:** `RES-CONF`.
+**Requisito:** RF-ACAD-003.
 
-Encabezado con fecha, hora y link de Meet de la reunión confirmada.
+Motivo y disponibilidad del aspirante, o aviso de inasistencia. Calendario de propuesta con las mismas reglas que 5.6.4.
 
-Formulario:
+**Acción:** **Sugerir 2ª ronda de fechas** → `REU-FEC-ASP-2`. Si la 2ª ronda ya se usó y el aspirante no se presentó, el comportamiento queda pendiente (Anexo A #7).
 
-- Checkbox: **Reunión realizada** / **Aspirante no se presentó**
-- Notas de la reunión (textarea)
-- Link de Meet (opcional)
-- Decisión (radio): **Permite inscripción** / **Requiere cambios en matriz** / **Rechaza solicitud**
-- Si "Requiere cambios": comentario obligatorio y marcado de documentos (5.7)
-- Si "Rechaza": comentario con el motivo (visible para el aspirante en el mail)
+---
 
-Botón **"Guardar resultado"** → modal `ACAD-RES-CONF-M1` (doble verificación):
+### 5.6.7 `ACAD-REU-CHAT` – Fijar fecha por chat (A)
 
-| Decisión | Efecto |
+**Requisito:** RF-ACAD-003.
+
+Se abre el chat por defecto. **Fijar fecha** abre un modal con la fecha pautada → `REU-PEND`.
+
+---
+
+### 5.6.8 `ACAD-REU-PEND` – Realización de la reunión (A)
+
+**Requisitos:** RF-ACAD-003, RF-ACAD-004. **Diseño:** `Analisis Preliminar/Reunion Pendiente de confirmacion/`
+
+- **Enlace de Meet:** al guardarlo se avisa al aspirante; el estado no cambia.
+- **Notas de la reunión:** opcional.
+- **Indicar que la reunión finalizó** (doble verificación) → `ANAL-POST`.
+- **Indicar que el aspirante no se presentó** (doble verificación) → `REU-FEC-ACAD`.
+
+---
+
+### 5.6.9 `ACAD-ANAL-POST` – Decisión de inscripción (A)
+
+**Requisitos:** RF-ACAD-004, RF-ACAD-006.
+
+- **Actualizar matriz de equivalencias** y **Actualizar horario de cursada**: crean una versión nueva; solo la vigente es visible. Se avisa al aspirante y el estado no cambia.
+- Decisión (radio): **Aceptar** / **Rechazar** (comentario obligatorio).
+- **Guardar decisión** → modal `ACAD-ANAL-POST-M1` (doble verificación) → `INSC-ACEP` o `INSC-RECH`.
+
+---
+
+### 5.6.10 `ACAD-LEG-ESPERA` – Esperando al aspirante (E)
+
+**Estados:** `INSC-ACEP`, `LEG-PEND`. Banner: "Esperando que el aspirante indique la legalización de sus documentos."
+
+---
+
+### 5.6.11 `ACAD-LEG-REV` – Análisis de documentos legalizados (A)
+
+**Requisitos:** RF-ACAD-005, RF-ACAD-009. **Diseño:** `Analisis Preliminar/Documentacion Legalizada/`
+
+Revisión de documentos (5.7) en etapa `LEGALIZACION`, con carga opcional de un archivo de observaciones.
+
+**Acción:** **Guardar revisión** → modal `ACAD-LEG-REV-M1` (doble verificación):
+
+- Aceptar → `CUPON-SOL`. No puede haber ❌.
+- Rechazar → `LEG-RECH`. Comentario obligatorio, al menos un ❌ y ningún ⏳.
+
+---
+
+### 5.6.12 `ACAD-LEG-RECH` – Esperando recarga (E)
+
+Banner: "Esperando que el aspirante recargue los documentos legalizados."
+
+---
+
+### 5.6.13 `ACAD-SEGUIMIENTO` – Etapa de pago (E)
+
+| Estado | Banner |
 |---|---|
-| Permite inscripción | `reunion_realizada = true` → `ANAL-COMPL` |
-| Requiere cambios | → `DOC-RECH` |
-| Rechaza solicitud | → `RECHAZO` |
-
-Si marca "No se presentó": ver Anexo A (no hay transición definida en la tabla de RF-ESTADO-001).
-
----
-
-### 5.6.7 `ACAD-REV-LEG` – Decisión final (A)
-
-**Requisito:** RF-ACAD-006. **Estado:** `REV-LEG`.
-
-- Resumen de la solicitud: matriz, documentación, resultado de reunión y revisión legal
-- Decisión (radio): **Aprobar** / **Rechazar** (comentario obligatorio con el motivo)
-- Botón **"Guardar decisión"** → modal `ACAD-REV-LEG-M1` (doble verificación):
-  - Aprobar → `APROBADO`
-  - Rechazar → `RECHAZO`
+| `CUPON-SOL` | "Secretaría está generando el cupón de pago." |
+| `CUPON-PAG` | "Cupón generado. Esperando el pago del aspirante." |
+| `PAG-CTRL` | "El aspirante envió su comprobante. Secretaría lo está verificando." |
+| `PAG-REENV` | "Pago rechazado. Esperando que el aspirante reenvíe el comprobante." |
+| `E3-INI` | "Pago aceptado. Inicio de E3." |
 
 ---
 
-### 5.6.8 `ACAD-APROBADO` – Envío a Secretaría (A)
+### 5.6.14 `ACAD-INSC-RECH` – Terminal (T)
 
-**Requisito:** RF-ACAD-007. **Estado:** `APROBADO`.
-
-- Resumen de equivalencias aprobadas
-- Botón **"Enviar a secretaría"** → modal `ACAD-APROBADO-M1` (doble verificación) → `ENV-SECREC`
-
----
-
-### 5.6.9 `ACAD-ENV-SECREC`, `ACAD-CUPON`, `ACAD-PAG-ESP`, `ACAD-PAG-RECH`, `ACAD-PAG-VER` – Seguimiento (E)
-
-Cinco interfaces de espera. Mismo layout, cambia el banner:
-
-| Interfaz | Banner |
-|---|---|
-| `ACAD-ENV-SECREC` | "Secretaría está generando el cupón de pago." |
-| `ACAD-CUPON` | "Cupón generado. Esperando el pago del aspirante." |
-| `ACAD-PAG-ESP` | "El aspirante envió su comprobante. Secretaría lo está verificando." |
-| `ACAD-PAG-RECH` | "Pago rechazado por Secretaría. Esperando que el aspirante reenvíe el comprobante." |
-| `ACAD-PAG-VER` | "Pago verificado. Secretaría está preparando la disposición decanal." |
-
-Contenido común: responsable administrativo, datos de pago en solo lectura, chat. Sin acciones de trámite.
-
----
-
-### 5.6.10 `ACAD-DISP-GEN` – Cierre de expediente (A)
-
-**Requisito:** RF-ACAD-008. **Estado:** `DISP-GEN`.
-
-- Visor de la disposición decanal generada por Secretaría
-- Archivos finales del expediente
-- Botón **"Cierre y finalización"** → modal `ACAD-DISP-GEN-M1` (doble verificación) → `FINAL`
-
----
-
-### 5.6.11 `ACAD-FINAL` y `ACAD-RECHAZO` – Terminales (T)
-
-- Banner de cierre (éxito o negativo, con motivo).
-- Solo lectura de todas las pestañas.
-- Exportación del expediente (5.9).
-- En `FINAL`, el Admin puede reabrir (7.13).
+Banner de cierre con el motivo. Solo lectura de todas las pestañas.
 
 ---
 
 ## 5.7 Componente de revisión de documentos (marcas ✅ / ❌)
 
-**Requisito:** RF-ACAD-009. Es el modo "Revisión" de 2.8, usado en `ACAD-DOC-CAR`, `ACAD-ANAL-COMPL-LEGAL` y `ACAD-RES-CONF`.
+**Requisito:** RF-ACAD-009. Es el modo "Revisión" de 2.8, usado en `ACAD-DOC-REV` y `ACAD-LEG-REV`.
 
 Por cada documento:
 
@@ -2021,11 +1789,11 @@ Controles:
 
 Reglas visuales:
 
-- Para **Requerir correcciones** / decisiones que pasan a `DOC-RECH`: se exige al menos un ❌ y ninguno ⏳. Si no se cumple, el botón queda deshabilitado con explicación.
-- Marcar es opcional en las acciones que avanzan el proceso.
+- Para rechazar (`DOC-RECH` o `LEG-RECH`): se exige al menos un ❌ y ninguno ⏳. Si no se cumple, el botón queda deshabilitado con explicación.
+- Marcar es opcional en las acciones que avanzan el proceso, pero para aceptar legalizados no puede haber ❌.
 - Cada cambio de marca se audita (lo hace el backend).
 - Los observadores ven las marcas pero no pueden cambiarlas.
-- Cuando el aspirante recarga (`DOC-RECH` → `DOC-CAR`), se resaltan los recargados (⏳) y se mantienen los ✅; el Académico puede cambiar cualquier marca.
+- Cuando el aspirante recarga (`DOC-RECH` → `DOC-REV` o `LEG-RECH` → `LEG-REV`), se resaltan los recargados (⏳) y se mantienen los ✅; el Académico puede cambiar cualquier marca.
 
 ---
 
@@ -2081,15 +1849,13 @@ Reglas:
 
 | Estado | Tipo | Interfaz | Qué hace Secretaría | Transición | Req. |
 |---|---|---|---|---|---|
-| `SOL-INI` a `APROBADO` | E | `SEC-SEGUIMIENTO` | Seguimiento de la solicitud; puede tomar el proceso administrativo | — | RF-PROC-003 |
-| `ENV-SECREC` | A | `SEC-ENV-SECREC` | Gestión de pago: genera el cupón | → `CUPON` | RF-SEC-001 |
-| `CUPON` | E | `SEC-CUPON` | Espera el pago del aspirante | — | — |
-| `PAG-ESP` | A | `SEC-PAG-ESP` | Verifica el comprobante | → `PAG-VER` o `PAG-RECH` | RF-SEC-002 |
-| `PAG-RECH` | E | `SEC-PAG-RECH` | Espera el reenvío del aspirante | — | — |
-| `PAG-VER` | A | `SEC-PAG-VER` | Confecciona la disposición decanal | → `DISP-GEN` | RF-SEC-003 |
-| `DISP-GEN` | E | `SEC-DISP-GEN` | Espera el cierre del Académico | — | — |
-| `FINAL` | A (sin cambio de estado) | `SEC-FINAL` | Archivo administrativo | ninguna | RF-SEC-004 |
-| `RECHAZO` | T | `SEC-RECHAZO` | Consulta | — | — |
+| `SOL-INI` a `LEG-RECH` (sin `INSC-RECH`) | E | `SEC-SEGUIMIENTO` | Seguimiento; puede tomar el proceso administrativo | — | RF-PROC-003 |
+| `CUPON-SOL` | A | `SEC-CUPON-SOL` | Genera y envía el cupón | 22: → `CUPON-PAG` | RF-SEC-001 |
+| `CUPON-PAG` | E | `SEC-CUPON-PAG` | Espera el pago del aspirante | — | — |
+| `PAG-CTRL` | A | `SEC-PAG-CTRL` | Verifica el comprobante | 26: → `E3-INI` · 24: → `PAG-REENV` | RF-SEC-002 |
+| `PAG-REENV` | E | `SEC-PAG-REENV` | Espera el reenvío del aspirante | — | — |
+| `E3-INI` | E | `SEC-E3-INI` | Consulta | — | — |
+| `INSC-RECH` | T | `SEC-INSC-RECH` | Consulta | — | — |
 
 ---
 
@@ -2097,10 +1863,8 @@ Reglas:
 
 Widgets:
 
-- **Pendientes de generar cupón** (`ENV-SECREC`)
-- **Pagos pendientes de verificar** (`PAG-ESP`)
-- **Disposiciones pendientes** (`PAG-VER`)
-- **Pendientes de archivo administrativo** (`FINAL` sin archivar)
+- **Pendientes de generar cupón** (`CUPON-SOL`)
+- **Pagos pendientes de verificar** (`PAG-CTRL`)
 - **Mis solicitudes**
 
 ---
@@ -2119,112 +1883,51 @@ Misma estructura que Académico (5.4): encabezado, responsables, banner de estad
 
 ## 6.4 Interfaces de Secretaría por estado
 
+No hay diseños de Secretaría en Drive todavía (Anexo B #13).
+
 ### 6.4.1 `SEC-SEGUIMIENTO` – Seguimiento previo a la gestión de pago (E)
 
-**Estados:** `SOL-INI`, `DOC-CAR`, `DOC-RECH`, `ANAL-COMPL`, `RES-HORA`, `RES-CONF`, `REV-LEG`, `APROBADO`.
-
-- Banner con el estado actual y a quién le toca ("En etapa académica").
-- Datos de la solicitud y botón "Tomar proceso" (como responsable administrativo, si corresponde).
-- Sin acciones de trámite.
+Banner con el estado actual y "En etapa académica". Datos de la solicitud y botón "Tomar proceso" como responsable administrativo, si corresponde.
 
 ---
 
-### 6.4.2 `SEC-ENV-SECREC` – Gestión de pago: generar cupón (A)
+### 6.4.2 `SEC-CUPON-SOL` – Generar y enviar cupón (A)
 
-**Requisito:** RF-SEC-001. **Estado:** `ENV-SECREC`.
+**Requisito:** RF-SEC-001.
 
-Banner: "Solicitud aprobada lista para gestión de pago."
+Banner: "Solicitud lista para gestión de pago." ID de la solicitud, datos del aspirante, monto prellenado e Informe de materias en solo lectura.
 
-Sección "Gestión de Pago":
-
-- ID de la solicitud y datos del aspirante
-- Monto (prellenado según política; editable solo si negocio lo permite, ver Anexo A)
-- Informe de materias en solo lectura
-
-Acciones:
-
-- **Generar cupón** → vista previa del PDF (`SEC-ENV-SECREC-M1`) → botón "Confirmar generación" (doble verificación: 1er click muestra preview, 2do ejecuta) → estado `CUPON`.
-
-Resultado: se genera y guarda el PDF, se envía mail al aspirante.
+**Acción:** **Generar y enviar cupón** → vista previa del PDF (`SEC-CUPON-SOL-M1`) → confirmar (doble verificación) → `CUPON-PAG`.
 
 ---
 
-### 6.4.3 `SEC-CUPON` – Esperando pago (E)
+### 6.4.3 `SEC-CUPON-PAG` – Esperando pago (E)
 
-- Banner: "Cupón generado. Esperando el comprobante del aspirante."
-- Contenido: cupón generado (descargable), monto.
-- Sin acciones.
+Banner: "Cupón generado. Esperando el comprobante del aspirante."
 
 ---
 
-### 6.4.4 `SEC-PAG-ESP` – Verificación de pago (A)
+### 6.4.4 `SEC-PAG-CTRL` – Verificación de pago (A)
 
-**Requisito:** RF-SEC-002. **Estado:** `PAG-ESP`.
+**Requisito:** RF-SEC-002.
 
 Banner: "El aspirante cargó su comprobante." Si viene de un reenvío: "El aspirante reenvió el comprobante."
 
-Contenido:
+Visor del comprobante, monto del cupón, comentarios (obligatorios si el pago es incorrecto) y decisión (radio): **Pago correcto** / **Pago incorrecto / monto no coincide**.
 
-- Visor del comprobante (imagen o PDF, descargable)
-- Monto del cupón y monto reportado (si existe, ver Anexo A)
-- Campo de comentarios (obligatorio si el pago es incorrecto)
-- Decisión (radio): **Pago correcto** / **Pago incorrecto / monto no coincide**
-
-Acciones:
-
-- **Guardar verificación** → modal `SEC-PAG-ESP-M1` (doble verificación):
-  - Correcto → `PAG-VER`
-  - Incorrecto → `PAG-RECH` (el comentario llega al aspirante por mail)
+**Acción:** **Guardar verificación** → modal `SEC-PAG-CTRL-M1` (doble verificación) → `E3-INI` o `PAG-REENV`.
 
 ---
 
-### 6.4.5 `SEC-PAG-RECH` – Esperando reenvío (E)
+### 6.4.5 `SEC-PAG-REENV` – Esperando reenvío (E)
 
-- Banner: "Pago rechazado. Esperando que el aspirante reenvíe el comprobante."
-- Contenido: comprobante rechazado y comentario enviado, en solo lectura.
-- Sin acciones.
+Banner: "Pago rechazado. Esperando que el aspirante reenvíe el comprobante."
 
 ---
 
-### 6.4.6 `SEC-PAG-VER` – Disposición decanal (A)
+### 6.4.6 `SEC-E3-INI` y `SEC-INSC-RECH` – Consulta
 
-**Requisito:** RF-SEC-003. **Estado:** `PAG-VER`.
-
-Banner: "Pago verificado. Falta la disposición decanal."
-
-Opciones (excluyentes):
-
-- **Subir PDF** generado externamente (uploader 2.11)
-- **Generar desde plantilla del sistema**
-
-Acción:
-
-- **Generar disposición** → modal `SEC-PAG-VER-M1` (doble verificación) → estado `DISP-GEN`. Se envía mail al Académico.
-
----
-
-### 6.4.7 `SEC-DISP-GEN` – Esperando cierre (E)
-
-- Banner: "Disposición generada. El Académico la va a revisar y cerrar el expediente."
-- Contenido: disposición en solo lectura.
-- Sin acciones.
-
----
-
-### 6.4.8 `SEC-FINAL` – Archivo administrativo (A, sin cambio de estado)
-
-**Requisito:** RF-SEC-004. **Estado:** `FINAL`.
-
-- Banner: "Expediente finalizado. Falta el archivo administrativo."
-- Campos: número de expediente final (ej. `EXP-2024-001-E3`), archivo de la copia de la disposición.
-- Estado archivado: pendiente / archivado.
-- Acción: **Guardar archivo administrativo**. **No cambia el estado** (`FINAL` es terminal). Se registra en auditoría.
-
----
-
-### 6.4.9 `SEC-RECHAZO` – Terminal (T)
-
-Solo lectura y exportación.
+Solo lectura. La disposición decanal y el archivo administrativo (RF-SEC-003 y RF-SEC-004) quedan pendientes hasta que se definan los estados posteriores a `E3-INI`.
 
 ---
 
@@ -2385,7 +2088,7 @@ Doble verificación. Se avisa por mail a los nuevos responsables, al anterior y 
 
 ## 7.13 Pantalla Reapertura de Expediente
 
-Aplica a solicitudes en `FINAL`.
+Pendiente de definición: depende de los estados posteriores a `E3-INI` (RF-ADMIN-006).
 
 Debe mostrar:
 
@@ -2579,17 +2282,13 @@ Frontend debe implementar el flujo visual de doble confirmación (1er click abre
 
 - Tomar proceso
 - Darse de baja como responsable
-- Completar análisis
-- Requerir correcciones
-- Confirmar horario de reunión
-- Guardar resultado de reunión
-- Guardar revisión legal
-- Guardar decisión final (aprobar / rechazar)
-- Enviar a secretaría
-- Generar cupón
-- Verificar pago
-- Generar disposición
-- Cierre y finalización
+- Aceptar o rechazar documentación
+- Guardar propuesta de análisis y fechas
+- Indicar que la reunión finalizó o que el aspirante no se presentó
+- Guardar decisión de inscripción
+- Guardar revisión de legalizados
+- Generar y enviar cupón
+- Guardar verificación de pago
 
 **Admin**
 
@@ -2617,13 +2316,13 @@ El frontend debe asumir que:
 - Los estados del expediente son controlados por backend.
 - Ningún usuario cambia estados manualmente salvo mediante acciones funcionales autorizadas.
 - **La interfaz que se muestra depende del estado y de los flags auxiliares (0.16); el estado puede cambiar en vivo.**
-- **Un mismo estado puede recorrerse más de una vez (`DOC-RECH`, `ANAL-COMPL`, `PAG-ESP`).**
+- **Un mismo estado puede recorrerse más de una vez (`DOC-RECH`, `LEG-RECH`, `PAG-CTRL`).**
 
 ---
 
 # ANEXO A. PUNTOS ABIERTOS Y SUPUESTOS
 
-Cosas que los requisitos v8 no terminan de definir y que el equipo de frontend necesita para cerrar las interfaces. Lo que está en este documento es el **supuesto adoptado** hasta que negocio confirme.
+Cosas que los requisitos v12 no terminan de definir y que el equipo de frontend necesita para cerrar las interfaces. Lo que está en este documento es el **supuesto adoptado** hasta que negocio confirme.
 
 | # | Tema | Supuesto adoptado en este documento |
 |---|---|---|
@@ -2632,17 +2331,40 @@ Cosas que los requisitos v8 no terminan de definir y que el equipo de frontend n
 | 3 | **Documentos obligatorios para enviar en `SOL-INI`:** RF-ASP-002 lista Analítico, Plan y Programas | Obligatorios: Analítico, Plan de estudios y al menos un Programa |
 | 4 | **Archivos como borrador:** si el aspirante sube archivos y sale sin enviar, ¿se conservan? | Se asume que sí (cada archivo se sube al elegirlo). Confirmar con backend |
 | 5 | **Límite de 50 MB en la recarga** (`DOC-RECH`) | Se aplica a los archivos que se envían en esa recarga |
-| 6 | **`RES-HORA`:** ¿el aspirante puede cambiar su elección antes de que el Académico confirme? ¿El Académico puede editar la propuesta antes de que el aspirante elija? | Aspirante: sí puede cambiarla. Académico: no edita una propuesta ya enviada |
-| 7 | **"Aspirante no se presentó"** (RF-ACAD-004): dice que el Académico puede volver a coordinar, pero desde `RES-CONF` no hay transición hacia `RES-HORA` en RF-ESTADO-001 | Pendiente. Falta definir la transición |
-| 8 | **Estructura del informe de materias:** RF-ACAD-001 dice que la matriz es un archivo o notas libres, pero `ASP-APROBADO` muestra una tabla (materia, carga horaria, correlativas, monto) | Se asume que el backend expone estos datos estructurados. Falta definir cómo los carga el Académico |
+| 6 | **Cambiar la fecha elegida:** al seleccionar fecha el estado pasa directo a `REU-PEND` | No se puede cambiar desde la interfaz; se resuelve por chat |
+| 7 | **Reprogramación tras la 2ª ronda:** si el aspirante no se presenta y ya se usó la 2ª ronda, `REU-FEC-ACAD` solo tiene la transición hacia `REU-FEC-ASP-2` | Se reutiliza la 2ª ronda hasta que negocio defina otra cosa |
+| 8 | **Estructura del informe de materias:** RF-ACAD-001 dice que la matriz es un archivo o notas libres, pero `ASP-CUPON-SOL` muestra una tabla (materia, carga horaria, correlativas, monto) | Se asume que el backend expone estos datos estructurados. Falta definir cómo los carga el Académico |
 | 9 | **Monto reportado por el aspirante:** RF-SEC-002 menciona "Monto reportado", pero RF-ASP-007 no pide que el aspirante lo ingrese | El aspirante solo sube el comprobante |
-| 10 | **`RECHAZO`:** ¿el aspirante puede iniciar una nueva solicitud? ¿el chat queda en solo lectura? | Chat en solo lectura. "Nueva solicitud" sigue disponible en el menú |
+| 10 | **`INSC-RECH`:** ¿el aspirante puede iniciar una nueva solicitud? ¿el chat queda en solo lectura? | Chat en solo lectura. "Nueva solicitud" sigue disponible en el menú |
 | 11 | **Varias solicitudes por aspirante:** ¿puede tener más de una activa? | Sí (el dashboard agrupa varias) |
 | 12 | **Editar el formulario inicial** después de crear la solicitud | No editable. Los cambios se resuelven por chat |
 | 13 | **Desbloqueo de cuenta:** RF-AUTH-006 lo lista como acción con doble verificación, pero RF-AUTH-002 y RF-ADMIN-007 dicen que se hace sin doble verificación | Se implementa **sin** doble verificación hasta que negocio decida |
 | 14 | **Monto del cupón:** ¿Secretaría puede modificar el monto prellenado? | Solo lectura por defecto |
-| 15 | **Comprobantes rechazados:** ¿se archivan como versión anterior, como los documentos? | Se muestra el anterior en `ASP-PAG-RECH`. Confirmar conservación con backend |
+| 15 | **Comprobantes rechazados:** ¿se archivan como versión anterior, como los documentos? | Se muestra el anterior en `ASP-PAG-REENV`. Confirmar conservación con backend |
 | 16 | **Adjuntos de chat:** formatos permitidos (solo se define el límite de 5 MB) | Mismos formatos que documentación más imágenes |
+
+---
+
+# ANEXO B. DIFERENCIAS ENTRE EL DISEÑO DE DRIVE Y LOS REQUISITOS
+
+Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indicado en "Criterio vigente": los requisitos para las reglas de negocio y el diseño para la apariencia.
+
+| # | Tema | Diseño de Drive | Requisitos o contrato | Criterio vigente |
+|---|---|---|---|---|
+| 1 | Registro | Nombre y Apellido separados | Nombre completo | Diseño para la pantalla; al enviar, `nombre` del contrato une ambos campos |
+| 2 | Contraseña | Mayúscula, minúscula y número | Mayúscula, número y carácter especial | Requisitos |
+| 3 | Expiración del código | Contador desde 04:59 | 10 minutos | Requisitos |
+| 4 | Formatos de archivo | PDF, JPG y PNG | PDF y JPG | Requisitos |
+| 5 | Documentos obligatorios | Analítico, Programa, Plan y DNI | Analítico, Plan y Programas por materia | Requisitos |
+| 6 | Código de expediente | `EQ-2024-001` | `EXP-2026-001` | Requisitos |
+| 7 | Formulario inicial | Dirección y listas desplegables de origen | Sin dirección; origen en texto libre | Requisitos |
+| 8 | Elección de fecha | Selección múltiple | Una sola fecha | Requisitos |
+| 9 | Legalización | Carga de Plan de estudios y Cronograma de materias | RF-ASP-009 solo pide responder y avisar; la transición 18 habla de recargar | Requisitos, con la contradicción pendiente |
+| 10 | Menú y perfil del Académico | Mis tareas, Calendario, disponibilidad en Mi perfil, Ayuda y LU del estudiante | No están definidos | Se implementan cuando se aprueben |
+| 11 | Revisión del Académico | Estado por documento, "Guardar borrador" y "Enviar evaluación" | "Guardar marcas", aceptar y rechazar | Requisitos para las acciones; diseño para la tabla |
+| 12 | Nombres de estados | "Con observaciones", "En evaluación", "Error en documentación" | Nombres del catálogo de 20 estados | Requisitos |
+| 13 | Pantallas sin diseño | No hay Secretaría, Admin, Revisor, Login @usal ni Login Admin | Definidas en este documento | Se aplican los componentes y tokens existentes |
+| 14 | Pantalla de inicio | El login está integrado en el inicio | Inicio y login son pantallas separadas (3.1 y 3.4) | Diseño, porque no cambia reglas de negocio |
 
 ---
 

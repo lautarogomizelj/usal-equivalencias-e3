@@ -10,8 +10,10 @@
 | 1.3 | 2026-10-07 | lautarogomizelj | Unificación de las guías de Frontend y Backend en este documento |
 | 1.4 | 2026-10-07 | lautarogomizelj | Sección de control de versiones y gestión de cambios; regla de versionado en AGENTS.md |
 | 1.5 | 2026-10-14 | jumaluc | Enlace al contrato de la API propuesto en `Docs/API.md` |
+| 1.6 | 2026-10-31 | jumaluc | Sprint 1: estado del backend, Docker Compose, Flyway, mocks y tokens del diseño; corrige el nombre de la universidad y el enlace al contrato |
+| 1.7 | 2026-10-31 | jumaluc | Estado actual: pantallas públicas de acceso construidas contra mocks |
 
-Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad Nacional de San Luis.
+Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad del Salvador (USAL).
 
 ---
 
@@ -25,13 +27,13 @@ Este sistema reemplaza ese circuito por una plataforma web donde cada rol tiene 
 
 ## Estado actual
 
-**El proyecto está en etapa de scaffolding. No hay nada desplegado ni en ejecución.**
+**El proyecto está en el Hito 1 (base técnica y acceso). No hay nada desplegado.**
 
-El backend es un esqueleto vacío. Existen las carpetas del package de Java con la separación por capas prevista, pero todas contienen únicamente un archivo `.gitkeep`. No hay `pom.xml`, ni Dockerfile, ni migraciones de Flyway, ni una sola clase de Java. Tampoco existe la orquestación con Docker Compose que la documentación describe.
+El backend corre en Docker Compose junto con PostgreSQL y pgAdmin. Tiene las migraciones Flyway de las tablas base (`roles`, `usuarios`, `aspirantes`, `carreras`, `estados` y `auditoria_sistema`) con sus catálogos, el formato de error común, CORS, Swagger UI y el health check. Todavía no expone endpoints de negocio ni autenticación.
 
-El frontend sí es una base funcional: tiene el sistema de Design Tokens completo, el cliente HTTP centralizado con manejo tipado de errores, el router, el layout público, la página de inicio, la página de error 404 y un componente base de botón. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
+El frontend tiene los Design Tokens del diseño de interfaces, el cliente HTTP centralizado con manejo tipado de errores, una capa de mocks del contrato, el router, el layout público, la página de error 404 y los componentes base (botón, campos de formulario, modales, tabla, paginador y badge de estado). Las pantallas públicas de inicio, login de aspirante, registro, verificación del correo y recuperación de contraseña siguen el diseño de Drive; registro, verificación y recuperación funcionan contra mocks y el login solo valida el formulario. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
 
-En resumen: la base técnica y la especificación están sólidas, la implementación de negocio está sin empezar.
+En resumen: el Sprint 1 está completo y el Sprint 2 tiene avanzadas sus pantallas públicas. Falta la autenticación real en el backend, el login institucional, el perfil, `AuthContext`, las rutas protegidas y el layout privado.
 
 ---
 
@@ -45,6 +47,7 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Lenguaje** | TypeScript 6 |
 | **Build / Dev server** | Vite 8 |
 | **Estilos** | Tailwind CSS v4 + Design Tokens del proyecto |
+| **Tipografías** | DM Serif Display (títulos) e Inter (texto), servidas con `@fontsource` |
 | **Navegación** | React Router 8 |
 | **Íconos** | `lucide-react` (única librería de íconos) |
 | **Estado global** | Context API de React, sin librería externa |
@@ -52,7 +55,7 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Cliente HTTP** | `fetch` nativo, centralizado en `src/services/api/client.ts` |
 | **Entorno** | Node 24 + npm · alias `@` para apuntar a `src` |
 
-### Backend (a implementar)
+### Backend
 
 | Capa | Tecnología |
 |-------|------------|
@@ -65,7 +68,7 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Logging** | SLF4J + Logback |
 | **Testing** | JUnit 5 + Mockito |
 
-### Infraestructura (a implementar)
+### Infraestructura
 
 | Capa | Tecnología |
 |-------|------------|
@@ -129,7 +132,7 @@ La documentación de este repo es fuente de verdad: se versiona en lugar de dupl
 
 ## Cómo correr el proyecto
 
-Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Solo hay tareas de frontend: el backend todavía no existe. Cuando se implemente, sus tareas van a llevar el prefijo `backend-` para no chocar con las del frontend.
+Hace falta Node 24 y npm para el frontend, y Docker para el backend. El punto de entrada es el Makefile de la raíz. Las tareas del backend llevan el prefijo `backend-` para no chocar con las del frontend.
 
 ### Comandos del Makefile
 
@@ -142,7 +145,12 @@ Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que en
 | `make lint` | Corre oxlint. |
 | `make preview` | Sirve localmente el build de producción. |
 | `make clean` | Borra el directorio de build. Es el único target que no envuelve un script de npm. |
-| `make down` | Detiene el stack de contenedores. Hoy no hace nada porque todavía no hay `docker-compose.yml`: avisa por pantalla en lugar de fallar, y pasa a hacer el teardown real de Docker Compose en cuanto ese archivo exista. |
+| `make down` | Detiene el stack de contenedores. |
+| `make backend-up-dev` | Levanta backend, PostgreSQL y pgAdmin desde cero. |
+| `make backend-up-infra` | Levanta solo PostgreSQL y pgAdmin. |
+| `make backend-test` | Corre los tests del backend dentro de Docker. |
+| `make backend-build` | Construye la imagen del backend. |
+| `make backend-logs` | Sigue los logs del backend. |
 
 Para levantar el entorno de desarrollo:
 
@@ -154,7 +162,7 @@ make install
 make dev          # http://localhost:5173
 ```
 
-El `.env` se crea una sola vez y es donde se define la URL del backend. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
+El `.env` se crea una sola vez y es donde se define la URL del backend. Con `VITE_USE_MOCKS=true` el frontend responde con los mocks del contrato y no necesita backend. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
 
 ### Correr solo el frontend
 
@@ -190,53 +198,48 @@ Pantallas y reglas: [`Docs/frontend-interfaces.md`](Docs/frontend-interfaces.md)
 
 ### Pendiente
 
-- Los colores de `tokens/colors.css` son **provisorios** hasta tener el Design System definitivo.
-- El contrato de la API (rutas, DTOs y formato de errores) está propuesto en [`Docs/API.md`](Docs/API.md); falta acordarlo con backend.
+- El contrato de la API (rutas, DTOs y formato de errores) está propuesto en [`Docs/Contratos API REST.md`](Docs/Contratos%20API%20REST.md); falta cerrar los puntos abiertos de su §10.3.
+- Las diferencias entre el diseño de Drive y los requisitos están en el Anexo B de `frontend-interfaces.md`.
 
 ---
 
 ## Guía de Backend
 
-Todas las secciones de esta guía están marcadas "(a implementar)": el servicio todavía no existe y describen el diseño previsto, no el estado actual.
+Las secciones marcadas "(a implementar)" describen el diseño previsto, no el estado actual.
 
-### Cómo arrancar el servicio (a implementar)
+### Cómo arrancar el servicio
 
-El único prerequisito va a ser Docker. No vas a necesitar Java, Maven, ni PostgreSQL instalados localmente.
+El único prerequisito es Docker. No necesitás Java, Maven ni PostgreSQL instalados localmente. El comando crea `application.yml` desde el ejemplo si todavía no existe.
 
 ```bash
-cp backend/src/main/resources/application.yml.example backend/src/main/resources/application.yml
 make backend-up-dev
 ```
 
-El stack va a estar disponible en:
+Si el puerto 8080 está ocupado, se puede cambiar con `BACKEND_PORT=18080 make backend-up-dev`.
+
+El stack queda disponible en:
 
 | Servicio | URL |
 |----------|-----|
 | **API REST** | http://localhost:8080/api |
-| **Swagger UI** | http://localhost:8080/swagger-ui.html |
-| **Health Check** | http://localhost:8080/actuator/health |
+| **Swagger UI** | http://localhost:8080/api/swagger-ui.html |
+| **Health Check** | http://localhost:8080/api/actuator/health |
 | **pgAdmin** | http://localhost:5050 |
 
-### Comandos Make (a implementar)
+### Comandos Make
 
-Los targets del backend llevan el prefijo `backend-` para no chocar con los del frontend (`make dev`, `make build`, `make lint`, `make clean` y `make down`).
+Los disponibles están en [Comandos del Makefile](#comandos-del-makefile). Estos son los previstos para los próximos sprints:
 
 ```makefile
-make backend-up-dev      # Inicia stack completo (app + PostgreSQL + pgAdmin)
-make backend-up-infra    # Inicia solo PostgreSQL y pgAdmin (sin app)
 make backend-up-prod     # En modo producción (requiere env vars)
-make down                # Detiene todos los contenedores (compartido con el frontend)
 
-make backend-test          # Ejecuta todos los tests
 make backend-test-coverage # Ejecuta tests y abre reporte JaCoCo
 make backend-lint          # Ejecuta Checkstyle y SpotBugs
 make backend-format        # Verifica formateo (Google Java Format)
 make backend-format-fix    # Auto-formatea archivos
 make backend-pr-checks     # Ejecuta todos los checks requeridos antes de PR
 
-make backend-build      # Build del JAR
 make backend-clean      # Limpia artefactos de build
-make backend-logs       # Sigue logs del contenedor backend
 make backend-db-migrate # Ejecuta migraciones Flyway manualmente
 ```
 
@@ -271,9 +274,9 @@ Los PRs en Draft van a ser skipeados por CI hasta que se marquen como listos par
 - DTOs son Java Records y viven al lado del controller en `api/<dominio>/`.
 - La validación de permisos (`revoked_at IS NULL`) vive en `PermisosService` — **NUNCA** en controllers.
 
-### Persistencia de Datos (a implementar)
+### Persistencia de Datos
 
-PostgreSQL y Flyway van a persistir en `data/` en la raíz del monorepo (bind-mounted en Docker). Ese directorio todavía no está en el `.gitignore`: se agrega junto con el `docker-compose.yml`. Se borra para resetear el estado local.
+PostgreSQL persiste en `data/` en la raíz del monorepo (bind-mounted en Docker). Ese directorio está en el `.gitignore`. Se borra para resetear el estado local.
 
 ### Datos Demo (a implementar)
 
@@ -287,11 +290,11 @@ Se ejecuta una sola vez al iniciar y es idempotente: si los datos ya existen hac
 
 Las credenciales de las cuentas demo van a estar en `Docs/demo-credentials.md` (contraseña compartida: `Demo1234!`). Ese archivo todavía no existe.
 
-### Configuración de Ambiente (a implementar)
+### Configuración de Ambiente
 
-Se va a copiar `backend/src/main/resources/application.yml.example` a `application.yml` y ajustar según sea necesario. Ese archivo va a estar en `.gitignore` — **nunca** commitear secrets.
+`backend/src/main/resources/application.yml` se crea desde `application.yml.example` y está en `.gitignore`: **nunca** commitear secrets.
 
-Cuando se corra vía Docker Compose, las connection strings se van a setear automáticamente vía el Spring profile `docker` (`application-docker.yml`). No debería hacer falta configuración manual para `make backend-up-dev`.
+Con Docker Compose las connection strings llegan por variables de ambiente y los valores por defecto son solo para desarrollo. No hace falta configuración manual para `make backend-up-dev`.
 
 #### Variables de Ambiente Requeridas (Producción)
 
@@ -326,7 +329,7 @@ El repositorio es un monorepo con dos aplicaciones y un directorio de documentac
 
 Este README es la fuente canónica del estado actual, el stack, los puertos y las convenciones de git. Los demás documentos se vinculan a esta página en lugar de repetir esa información, para que no haya dos versiones que puedan divergir.
 
-**`backend/`** — Servicio Spring Boot (a implementar):
+**`backend/`** — Servicio Spring Boot:
 
 ```text
 src/main/java/com/usal/e3/
@@ -352,8 +355,7 @@ src/main/resources/
 ├── application-docker.yml           # Config Docker (auto)
 ├── db/migration/                    # Scripts Flyway
 │   ├── V1__initial.sql
-│   ├── V2__add_roles.sql
-│   └── V3__add_permissions.sql
+│   └── V2__catalogos.sql
 └── logback-spring.xml              # Config logging
 
 src/test/java/com/usal/e3/
@@ -362,7 +364,7 @@ src/test/java/com/usal/e3/
 └── integration/         # Tests de integración
 ```
 
-Las carpetas `api`, `domain`, `repository`, `service`, `mapper`, `security`, `exception` y `config` ya están creadas en el repo. `resources/db/migration/` y los tres niveles de prueba también, todos vacíos.
+Las carpetas `api`, `domain`, `repository`, `service`, `mapper` y `security` ya están creadas en el repo, todavía vacías.
 
 Las dependencias fluyen en una dirección: `api → service → repository → domain`. Los tests de ArchUnit refuerzan esto en tiempo de build.
 
@@ -378,7 +380,7 @@ src/
 ├── layouts/       layouts compartidos (público, dashboard, detalle...)
 ├── pages/         una carpeta por área/rol (public, aspirante, academico...)
 ├── router/        definición de rutas
-├── services/      comunicación con el backend (api/client.ts es el único que usa fetch)
+├── services/      comunicación con el backend (api/client.ts es el único que usa fetch; mocks/ responde sin backend)
 ├── store/         estado global (Context API)
 ├── styles/        estilos globales
 ├── tokens/        Design Tokens (colores, espaciado, radios, sombras, tipografía...)

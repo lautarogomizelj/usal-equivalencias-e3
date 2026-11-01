@@ -1,7 +1,8 @@
-/* Tipografía: font-sans / font-mono, text-xs … text-3xl, font-normal … font-bold. */
+/* Tipografía: font-sans / font-serif / font-mono, text-xs … text-5xl, font-normal … font-bold. */
 @theme {
   --font-*: initial;
-  --font-sans: system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-sans: 'Inter Variable', system-ui, -apple-system, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: 'DM Serif Display', Georgia, 'Times New Roman', serif;
   --font-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 
   --text-*: initial;
@@ -19,6 +20,29 @@
   --text-2xl--line-height: 2rem;
   --text-3xl: 1.875rem;
   --text-3xl--line-height: 2.25rem;
+  --text-4xl: 2.25rem;
+  --text-4xl--line-height: 2.75rem;
+  --text-5xl: 3rem;
+  --text-5xl--line-height: 3.5rem;
+  --text-6xl: 4rem;
+  --text-6xl--line-height: 4.5rem;
+  --text-7xl: 6rem;
+  --text-7xl--line-height: 6.5rem;
+  --text-control-lg: 1.375rem;
+  --text-control-lg--line-height: 1.75rem;
+  --text-subtitulo: 1.6875rem;
+  --text-subtitulo--line-height: 2.25rem;
+
+  --text-titulo-auth: 5.5rem;
+  --text-titulo-auth--line-height: 5.5rem;
+  --text-titulo-paso: 3.5rem;
+  --text-titulo-paso--line-height: 4rem;
+  --text-titulo-lema: calc(var(--size-registro-arco) * 0.0444);
+  --text-titulo-lema--line-height: 1.13;
+  --text-lema: calc(var(--size-registro-arco) * 0.021);
+  --text-lema--line-height: 1.5;
+
+  --tracking-titulo: 0.3em;
 
   --font-weight-*: initial;
   --font-weight-normal: 400;

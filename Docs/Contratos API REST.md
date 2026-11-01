@@ -5,6 +5,7 @@
 | Versión | Fecha | Autor | Descripción |
 |---------|-------|-------|-------------|
 | 1.0 | 2026-10-14 | jumaluc | Versión inicial: convenciones, entidades, endpoints por módulo y acciones del trámite, basada en requisitos v12.0 |
+| 1.1 | 2026-10-31 | jumaluc | Sprint 1: `ApiErrorKind` con `conflict` y `locked`, JSON en camelCase y `frontend-interfaces.md` en 20 estados; se quitan de los puntos abiertos |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend todavía no existe: este documento es el contrato a acordar con el equipo de backend.
 
@@ -16,7 +17,7 @@ Este documento fija el contrato entre el frontend (React, `services/api/client.t
 | --- | --- |
 | Base URL | Context path `/api` del backend (valor de `VITE_API_URL`; puertos en el [README](../README.md)). Todas las rutas de este documento son relativas a esa base. |
 | Formato | JSON UTF-8. Archivos por `multipart/form-data`. Descargas binarias con `Content-Disposition: attachment`. |
-| Nombres de campos | camelCase en JSON (default de Jackson). **Propuesta:** alinear `types/estado.ts` (`es_terminal` → `esTerminal`). |
+| Nombres de campos | camelCase en JSON (default de Jackson). |
 | Fechas | ISO 8601 con zona: `2026-10-14T15:30:00-03:00`. Solo fecha: `2026-10-14`. |
 | Identificadores | `id` numérico en las rutas. `codigoExp` (`EXP-2026-001`) solo para mostrar y buscar. |
 | Estados | Siempre por `codigo` (`DOC-REV`), nunca por nombre (RF-ESTADO-004). |
@@ -66,9 +67,9 @@ Compatible con `ApiErrorBody` (`message`, `errors`) de `types/api.ts`; suma `sta
 | 401 | Sin sesión o sesión vencida | `unauthorized` |
 | 403 | Rol sin permiso, u observador intentando actuar | `forbidden` |
 | 404 | Recurso inexistente o no visible para el usuario | `not_found` |
-| 409 | Transición inválida, proceso ya tomado, email o DNI duplicado | hoy `unknown`: agregar `conflict` |
-| 413 | Archivo de más de 10 MB o total de más de 50 MB | hoy `unknown`: mapear a `bad_request` |
-| 423 | Cuenta bloqueada (el cuerpo trae `bloqueadoHasta`) | hoy `unknown`: agregar `locked` |
+| 409 | Transición inválida, proceso ya tomado, email o DNI duplicado | `conflict` |
+| 413 | Archivo de más de 10 MB o total de más de 50 MB | `bad_request` |
+| 423 | Cuenta bloqueada (el cuerpo trae `bloqueadoHasta`) | `locked` |
 | 500 | Error del servidor | `server` |
 
 ### Códigos de negocio (`code`)
@@ -1096,11 +1097,8 @@ Los DTOs de este documento van en `frontend/src/types/` con los mismos nombres (
 ### 10.3 Puntos abiertos para cerrar con backend
 
 - [ ] Sesión por cookie `HttpOnly` o por header `Authorization: Bearer` (hoy el cliente usa `credentials: 'include'`).
-- [ ] JSON en camelCase (propuesto) o snake\_case, como hoy `types/estado.ts`.
 - [ ] Dónde se guardan los datos de origen de la solicitud y qué valores tiene "Condición académica" (Anexo A #1 y #2 de interfaces).
 - [ ] Quién carga el informe de materias estructurado y en qué estado (`CARGAR_INFORME`, Anexo A #8).
 - [ ] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables.
 - [ ] Descarga del expediente por el aspirante y reapertura: dependen de los estados posteriores a `E3-INI` (RF-ASP-008, RF-ADMIN-006).
 - [ ] Cambios CC-001 a CC-005 (permisos por facultad): si se aprueban, cambian `/admin/usuarios/{id}/permisos/…` y `Sesion.carrerasConPermiso`.
-- [ ] Agregar `conflict` (409) y `locked` (423) a `ApiErrorKind` en `types/api.ts`.
-- [ ] `frontend-interfaces.md` sigue en requisitos v8 (16 estados); este contrato usa los 20 estados de la v12.

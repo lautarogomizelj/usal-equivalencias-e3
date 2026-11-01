@@ -18,4 +18,71 @@
   --size-icon-sm: 1rem;
   --size-icon-md: 1.25rem;
   --size-icon-lg: 1.5rem;
+
+  --size-campo-icono: 1rem;
+  --size-campo-icono-x: 0.75rem;
+  --size-campo-sangria: 2rem;
+
+  --size-input-multilinea: 6rem;
+  --size-circulo-icono: 3rem;
+
+  /* Pantallas de autenticación: medidas del diseño de 1536 × 1024. */
+  --escala-auth: clamp(0.6875rem, min(1.0417vw, 1.5625vh), 1.25rem);
+  --size-panel-auth: 50.75rem;
+  --size-form-auth: 38.625rem;
+  --size-logo-auth: 19rem;
+  --size-input-lg: 4.25rem;
+  --size-input-sangria: 4.875rem;
+  --size-button-xl: 4.5rem;
+  --size-icon-xl: 1.75rem;
+  --size-filete: 7.5rem;
+  --size-filete-alto: 0.5rem;
+
+  /* Pantalla de inicio: medidas del diseño de 1536 × 1024. */
+  --escala-inicio: min(1.0417vw, 1.5625vh);
+  --size-inicio-alto: 64rem;
+  --size-inicio-arriba: calc(50vh - 32rem);
+  --size-inicio-arco: 52.25rem;
+  --size-inicio-edificio: 74.75rem;
+  --size-inicio-edificio-y: calc(var(--size-inicio-arriba) + 36.875rem);
+  --size-inicio-edificio-alto: 31.1875rem;
+  --size-inicio-verde-x: 50.8125rem;
+  --size-inicio-verde: calc(100vw - 94.125rem);
+  --size-inicio-verde-y: calc(var(--size-inicio-arriba) + 37.5rem);
+  --size-inicio-verde-alto: 27rem;
+  --size-inicio-verde-resto: 12.5rem;
+  --size-inicio-columna: calc(100vw - 44.3125rem);
+  --size-inicio-bloque: 40rem;
+  --size-inicio-items: 45.1875rem;
+  --size-logo-inicio: 25rem;
+  --size-circulo-inicio: 3.5rem;
+  --size-filete-fino: 0.1875rem;
+  --size-tarjeta-inicio: 32.3125rem;
+  --size-tarjeta-inicio-alto: 38.1875rem;
+  --size-tarjeta-inicio-x: -5.1875rem;
+  --size-tarjeta-inicio-y: 14.6875rem;
+  --size-tarjeta-inicio-padding: 2.5625rem;
+
+  /* Pantalla de registro: medidas del diseño de 1536 × 1024. */
+  --size-registro-arco: clamp(53.5rem, calc((100vw - 56rem) / 0.832), 70rem);
+  --size-registro-arco-abajo: calc((64rem - var(--size-registro-arco) * 1.1963) * 0.2);
+  --size-registro-columna: calc(100vw - var(--size-registro-arco) * 0.832);
+  --size-registro-bloque: min(48rem, calc(var(--size-registro-columna) - 6rem));
+  --size-registro-lema-x: 59.45%;
+  --size-registro-lema-y: 71.5%;
+  --size-logo-registro: 14rem;
+  --size-filete-corto: 6rem;
+  --size-filete-lema: 1.5rem;
+
+  /* Verificación del correo: medidas del diseño de 1536 × 1024. */
+  --size-verificar-panel: clamp(50rem, calc((100vw - 52rem) / 0.984), 60rem);
+  --size-verificar-margen: calc(var(--size-verificar-panel) * 0.984);
+  --size-verificar-bloque: min(46rem, calc(100vw - var(--size-verificar-margen) - 4rem));
+  --size-codigo: 4.5rem;
+
+  /* Recuperar contraseña: medidas del diseño de 1536 × 1024. */
+  --size-logo-recuperar: 19rem;
+  --size-recuperar-bloque: 44rem;
+  --size-recuperar-tarjeta: 50rem;
+  --size-pasos-linea: 1.75rem;
 }

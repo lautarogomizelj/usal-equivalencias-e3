@@ -10,8 +10,10 @@
 | 1.3 | 2026-10-07 | lautarogomizelj | Unificación de las guías de Frontend y Backend en este documento |
 | 1.4 | 2026-10-07 | lautarogomizelj | Sección de control de versiones y gestión de cambios; regla de versionado en AGENTS.md |
 | 1.5 | 2026-10-14 | jumaluc | Enlace al contrato de la API propuesto en `Docs/API.md` |
+| 1.6 | 2026-10-31 | jumaluc | Sprint 1 de frontend: mocks y tokens del diseño; corrige el nombre de la universidad y el enlace al contrato |
+| 1.7 | 2026-10-31 | jumaluc | Estado actual: pantallas públicas de acceso construidas contra mocks |
 
-Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad Nacional de San Luis.
+Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad del Salvador (USAL).
 
 ---
 
@@ -25,13 +27,13 @@ Este sistema reemplaza ese circuito por una plataforma web donde cada rol tiene 
 
 ## Estado actual
 
-**El proyecto está en etapa de scaffolding. No hay nada desplegado ni en ejecución.**
+**El proyecto está en el Hito 1 (base técnica y acceso). No hay nada desplegado.**
 
 El backend es un esqueleto vacío. Existen las carpetas del package de Java con la separación por capas prevista, pero todas contienen únicamente un archivo `.gitkeep`. No hay `pom.xml`, ni Dockerfile, ni migraciones de Flyway, ni una sola clase de Java. Tampoco existe la orquestación con Docker Compose que la documentación describe.
 
-El frontend sí es una base funcional: tiene el sistema de Design Tokens completo, el cliente HTTP centralizado con manejo tipado de errores, el router, el layout público, la página de inicio, la página de error 404 y un componente base de botón. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
+El frontend tiene los Design Tokens del diseño de interfaces, el cliente HTTP centralizado con manejo tipado de errores, una capa de mocks del contrato, el router, el layout público, la página de error 404 y los componentes base (botón, campos de formulario, modales, tabla, paginador y badge de estado). Las pantallas públicas de inicio, login de aspirante, registro, verificación del correo y recuperación de contraseña siguen el diseño de Drive; registro, verificación y recuperación funcionan contra mocks y el login solo valida el formulario. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
 
-En resumen: la base técnica y la especificación están sólidas, la implementación de negocio está sin empezar.
+En resumen: el frontend completó su parte del Sprint 1 y tiene avanzadas las pantallas públicas del Sprint 2. Falta el login institucional, el perfil, `AuthContext`, las rutas protegidas y el layout privado. El backend todavía no está integrado a esta rama.
 
 ---
 
@@ -45,6 +47,7 @@ En resumen: la base técnica y la especificación están sólidas, la implementa
 | **Lenguaje** | TypeScript 6 |
 | **Build / Dev server** | Vite 8 |
 | **Estilos** | Tailwind CSS v4 + Design Tokens del proyecto |
+| **Tipografías** | DM Serif Display (títulos) e Inter (texto), servidas con `@fontsource` |
 | **Navegación** | React Router 8 |
 | **Íconos** | `lucide-react` (única librería de íconos) |
 | **Estado global** | Context API de React, sin librería externa |
@@ -154,7 +157,7 @@ make install
 make dev          # http://localhost:5173
 ```
 
-El `.env` se crea una sola vez y es donde se define la URL del backend. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
+El `.env` se crea una sola vez y es donde se define la URL del backend. Con `VITE_USE_MOCKS=true` el frontend responde con los mocks del contrato y no necesita backend. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
 
 ### Correr solo el frontend
 
@@ -190,8 +193,8 @@ Pantallas y reglas: [`Docs/frontend-interfaces.md`](Docs/frontend-interfaces.md)
 
 ### Pendiente
 
-- Los colores de `tokens/colors.css` son **provisorios** hasta tener el Design System definitivo.
-- El contrato de la API (rutas, DTOs y formato de errores) está propuesto en [`Docs/API.md`](Docs/API.md); falta acordarlo con backend.
+- El contrato de la API (rutas, DTOs y formato de errores) está propuesto en [`Docs/Contratos API REST.md`](Docs/Contratos%20API%20REST.md); falta cerrar los puntos abiertos de su §10.3.
+- Las diferencias entre el diseño de Drive y los requisitos están en el Anexo B de `frontend-interfaces.md`.
 
 ---
 
@@ -378,7 +381,7 @@ src/
 ├── layouts/       layouts compartidos (público, dashboard, detalle...)
 ├── pages/         una carpeta por área/rol (public, aspirante, academico...)
 ├── router/        definición de rutas
-├── services/      comunicación con el backend (api/client.ts es el único que usa fetch)
+├── services/      comunicación con el backend (api/client.ts es el único que usa fetch; mocks/ responde sin backend)
 ├── store/         estado global (Context API)
 ├── styles/        estilos globales
 ├── tokens/        Design Tokens (colores, espaciado, radios, sombras, tipografía...)

@@ -1,3 +1,0 @@
-# Docker Compose inyecta DB_URL, DB_USERNAME y DB_PASSWORD; acá solo va lo propio del contenedor.
-server:
-  shutdown: graceful

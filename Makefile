@@ -1,10 +1,9 @@
 FRONTEND := frontend
 COMPOSE := docker compose
-BACKEND_CONFIG := backend/src/main/resources/application.yml
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install dev build lint preview clean down backend-config backend-up-dev backend-up-infra backend-test backend-build backend-logs
+.PHONY: help install dev build lint preview clean down
 
 help: ## Lista las tareas disponibles
 	@echo "E3 · Equivalencias USAL"
@@ -17,11 +16,7 @@ help: ## Lista las tareas disponibles
 	@echo "  make clean     Borra el directorio de build"
 	@echo "  make down      Detiene el stack de contenedores"
 	@echo ""
-	@echo "  make backend-up-dev    Levanta backend, PostgreSQL y pgAdmin"
-	@echo "  make backend-up-infra  Levanta solo PostgreSQL y pgAdmin"
-	@echo "  make backend-test      Corre los tests del backend dentro de Docker"
-	@echo "  make backend-build     Construye la imagen del backend"
-	@echo "  make backend-logs      Sigue los logs del backend"
+	@echo "Solo hay tareas de frontend: el backend todavía no está implementado."
 
 install: ## Instala las dependencias del frontend
 	cd $(FRONTEND) && npm ci
@@ -48,21 +43,3 @@ down: ## Detiene el stack de contenedores
 		echo "No hay docker-compose.yml: el stack de contenedores todavía no está definido."; \
 		echo "El único servicio en ejecución es el dev server del frontend, que se detiene con Ctrl+C."; \
 	fi
-
-backend-config: ## Crea application.yml a partir del ejemplo si todavía no existe
-	@test -f $(BACKEND_CONFIG) || cp $(BACKEND_CONFIG).example $(BACKEND_CONFIG)
-
-backend-up-dev: backend-config ## Levanta backend, PostgreSQL y pgAdmin
-	$(COMPOSE) up -d --build
-
-backend-up-infra: ## Levanta solo PostgreSQL y pgAdmin
-	$(COMPOSE) up -d postgres pgadmin
-
-backend-test: backend-config ## Corre los tests del backend dentro de Docker
-	docker build --target test -t e3-backend-test backend
-
-backend-build: backend-config ## Construye la imagen del backend
-	$(COMPOSE) build backend
-
-backend-logs: ## Sigue los logs del backend
-	$(COMPOSE) logs -f backend

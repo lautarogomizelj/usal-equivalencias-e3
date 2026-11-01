@@ -27,10 +27,3 @@ dist-ssr
 .env
 .env.*
 !.env.example
-
-# Backend
-backend/target
-backend/src/main/resources/application.yml
-
-# Datos locales de Docker
-data/

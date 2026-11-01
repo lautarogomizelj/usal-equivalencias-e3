@@ -7,7 +7,7 @@
 | 1.0 | 2026-09-28 | lautarogomizelj | Versión inicial: estructura del monorepo, flujo de comunicación y capas |
 | 1.1 | 2026-09-29 | lautarogomizelj | Alineación con el código real: `fetch` nativo, React 19 y Design Tokens |
 | 1.2 | 2026-10-14 | jumaluc | Alta de `Docs/API.md` (contrato de la API) en el árbol del monorepo |
-| 1.3 | 2026-10-31 | jumaluc | Sprint 1: Docker Compose y backend base en el árbol; corrige el nombre del contrato de la API |
+| 1.3 | 2026-10-31 | jumaluc | Corrige el nombre del contrato de la API |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). Este documento se limita a la estructura del monorepo, el flujo de comunicación y las capas.
 
@@ -19,11 +19,10 @@ Este es el árbol real del repositorio hoy. Lo que todavía no existe está en [
 usal-equivalencias-e3/
 ├── AGENTS.md                       # Pautas de trabajo para herramientas de asistencia
 ├── Makefile                        # Orquestación centralizada
-├── docker-compose.yml              # Stack: backend, PostgreSQL y pgAdmin
 ├── README.md                       # Documento canónico: estado, stack, puertos, git
 ├── .gitignore
 │
-├── backend/                        # Java + Spring Boot 3.2
+├── backend/                        # Java + Spring Boot 3.2 (a implementar)
 │   ├── src/main/java/com/usal/e3/
 │   │   ├── api/                    # Controllers REST
 │   │   │   ├── auth/
@@ -79,10 +78,16 @@ usal-equivalencias-e3/
 
 ### Estructura prevista
 
-Estos archivos todavía no existen:
+Estos archivos todavía no existen. Van a aparecer cuando se implemente el backend y el stack de contenedores:
 
 | Ruta | Qué es |
 |------|--------|
+| `backend/pom.xml` | Build de Maven |
+| `backend/Dockerfile` | Imagen del servicio Spring Boot |
+| `backend/src/main/resources/application*.yml` | Configuración por ambiente y perfil `docker` |
+| `backend/src/main/resources/logback-spring.xml` | Configuración de logging |
+| `backend/src/main/resources/db/migration/V*.sql` | Migraciones Flyway |
+| `docker-compose.yml` | Stack de contenedores (backend + PostgreSQL + pgAdmin) |
 | `db/schema.md` | Diagrama de tablas |
 | `Docs/demo-credentials.md` | Credenciales de las cuentas demo |
 
@@ -115,7 +120,7 @@ Cliente (navegador)
 http://localhost:5173
 ```
 
-### 2️⃣ Backend Inicia en Desarrollo
+### 2️⃣ Backend Inicia en Desarrollo (a implementar)
 
 ```
 Backend Developer
@@ -127,9 +132,10 @@ make backend-up-dev
 │  http://localhost:8080         │
 │  /api (context path)           │
 │                                │
+│  - OAuth Google setup          │
+│  - JWT ready                   │
 │  - PostgreSQL conectado        │
-│  - Migraciones Flyway          │
-│  - Swagger UI en /api          │
+│  - Swagger UI en /swagger-ui   │
 └────────────────────────────────┘
         ↓
 REST API ready

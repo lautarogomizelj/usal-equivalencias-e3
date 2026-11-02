@@ -23,6 +23,8 @@ public enum ErrorCode {
     LIMITE_TAMANO(HttpStatus.PAYLOAD_TOO_LARGE, "El archivo supera el tamaño permitido."),
     DOCUMENTO_BLOQUEADO(HttpStatus.CONFLICT, "El documento está correcto y no se puede reemplazar."),
     MARCAS_INCOMPLETAS(HttpStatus.CONFLICT, "Hace falta al menos un documento a recargar y ninguno pendiente."),
+    NO_AUTENTICADO(HttpStatus.UNAUTHORIZED, "Tu sesión venció. Volvé a ingresar."),
+    ACCESO_DENEGADO(HttpStatus.FORBIDDEN, "No tenés permiso para hacer esto."),
     NO_ENCONTRADO(HttpStatus.NOT_FOUND, "El recurso solicitado no existe."),
     ERROR_INTERNO(HttpStatus.INTERNAL_SERVER_ERROR, "Ocurrió un error en el servidor. Intentá nuevamente más tarde.");
 

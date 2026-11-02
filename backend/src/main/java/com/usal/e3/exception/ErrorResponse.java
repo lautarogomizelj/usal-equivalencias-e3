@@ -12,10 +12,25 @@ public record ErrorResponse(
         String code,
         String message,
         Map<String, List<String>> errors,
+        Integer intentosRestantes,
+        OffsetDateTime bloqueadoHasta,
         OffsetDateTime timestamp,
         String path) {
 
-    static ErrorResponse of(ErrorCode code, String message, Map<String, List<String>> errors, String path) {
-        return new ErrorResponse(code.status().value(), code.name(), message, errors, OffsetDateTime.now(), path);
+    public static ErrorResponse of(ErrorCode code, String message, Map<String, List<String>> errors, String path) {
+        return new ErrorResponse(
+                code.status().value(), code.name(), message, errors, null, null, OffsetDateTime.now(), path);
+    }
+
+    static ErrorResponse of(ApiException ex, String path) {
+        return new ErrorResponse(
+                ex.code().status().value(),
+                ex.code().name(),
+                ex.getMessage(),
+                ex.errors(),
+                ex.intentosRestantes(),
+                ex.bloqueadoHasta(),
+                OffsetDateTime.now(),
+                path);
     }
 }

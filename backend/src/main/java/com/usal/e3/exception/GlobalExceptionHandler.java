@@ -6,13 +6,16 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.validation.FieldError;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.HttpRequestMethodNotSupportedException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.web.multipart.MaxUploadSizeExceededException;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
 
@@ -23,7 +26,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(ApiException.class)
     ResponseEntity<ErrorResponse> negocio(ApiException ex, HttpServletRequest request) {
-        return responder(ex.code(), ex.getMessage(), null, request);
+        return ResponseEntity.status(ex.code().status()).body(ErrorResponse.of(ex, request.getRequestURI()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -35,9 +38,19 @@ public class GlobalExceptionHandler {
         return responder(ErrorCode.VALIDACION, ErrorCode.VALIDACION.mensaje(), errors, request);
     }
 
-    @ExceptionHandler(HttpMessageNotReadableException.class)
+    @ExceptionHandler({
+        HttpMessageNotReadableException.class,
+        HttpMediaTypeNotSupportedException.class,
+        MethodArgumentTypeMismatchException.class
+    })
     ResponseEntity<ErrorResponse> cuerpoInvalido(HttpServletRequest request) {
         return responder(ErrorCode.VALIDACION, ErrorCode.VALIDACION.mensaje(), null, request);
+    }
+
+    /** Dos altas simultáneas con el mismo dato: las frena el `UNIQUE` de la base. */
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    ResponseEntity<ErrorResponse> duplicado(HttpServletRequest request) {
+        return responder(ErrorCode.DUPLICADO, ErrorCode.DUPLICADO.mensaje(), null, request);
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)

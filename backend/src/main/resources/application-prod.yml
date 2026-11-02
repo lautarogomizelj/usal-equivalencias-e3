@@ -3,9 +3,19 @@ spring:
     url: ${DB_URL}
     username: ${DB_USERNAME}
     password: ${DB_PASSWORD}
+  mail:
+    properties:
+      mail.smtp.auth: true
+      mail.smtp.starttls.enable: true
 
 springdoc:
   api-docs:
     enabled: false
   swagger-ui:
     enabled: false
+
+e3:
+  sesion:
+    jwt-secret: ${JWT_SECRET}
+    cookie-secure: true
+  seed-demo: false

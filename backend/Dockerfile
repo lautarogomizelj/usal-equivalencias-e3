@@ -5,7 +5,7 @@ RUN mvn -B -q dependency:go-offline
 
 FROM deps AS test
 COPY src ./src
-RUN mvn -B test
+CMD ["mvn", "-B", "test"]
 
 FROM deps AS build
 COPY src ./src

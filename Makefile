@@ -17,8 +17,8 @@ help: ## Lista las tareas disponibles
 	@echo "  make clean     Borra el directorio de build"
 	@echo "  make down      Detiene el stack de contenedores"
 	@echo ""
-	@echo "  make backend-up-dev    Levanta backend, PostgreSQL y pgAdmin"
-	@echo "  make backend-up-infra  Levanta solo PostgreSQL y pgAdmin"
+	@echo "  make backend-up-dev    Levanta backend, PostgreSQL, pgAdmin y el mail de prueba"
+	@echo "  make backend-up-infra  Levanta solo PostgreSQL, pgAdmin y el mail de prueba"
 	@echo "  make backend-test      Corre los tests del backend dentro de Docker"
 	@echo "  make backend-build     Construye la imagen del backend"
 	@echo "  make backend-logs      Sigue los logs del backend"
@@ -52,14 +52,15 @@ down: ## Detiene el stack de contenedores
 backend-config: ## Crea application.yml a partir del ejemplo si todavía no existe
 	@test -f $(BACKEND_CONFIG) || cp $(BACKEND_CONFIG).example $(BACKEND_CONFIG)
 
-backend-up-dev: backend-config ## Levanta backend, PostgreSQL y pgAdmin
+backend-up-dev: backend-config ## Levanta backend, PostgreSQL, pgAdmin y el mail de prueba
 	$(COMPOSE) up -d --build
 
-backend-up-infra: ## Levanta solo PostgreSQL y pgAdmin
-	$(COMPOSE) up -d postgres pgadmin
+backend-up-infra: ## Levanta solo PostgreSQL, pgAdmin y el mail de prueba
+	$(COMPOSE) up -d postgres pgadmin mailpit
 
-backend-test: backend-config ## Corre los tests del backend dentro de Docker
-	docker build --target test -t e3-backend-test backend
+backend-test: backend-config ## Corre los tests del backend dentro de Docker, contra un PostgreSQL descartable
+	$(COMPOSE) --profile test run --rm --build backend-test
+	$(COMPOSE) --profile test rm -sf postgres-test
 
 backend-build: backend-config ## Construye la imagen del backend
 	$(COMPOSE) build backend

@@ -27,6 +27,12 @@ services:
     depends_on:
       - postgres
 
+  # Mail local de prueba: los códigos se ven en http://localhost:8025 (Sprint Planning, riesgos).
+  mailpit:
+    image: axllent/mailpit:v1.21
+    ports:
+      - "8025:8025"
+
   backend:
     build:
       context: ./backend
@@ -36,8 +42,48 @@ services:
       DB_URL: jdbc:postgresql://postgres:5432/${DB_NAME:-e3}
       DB_USERNAME: ${DB_USERNAME:-e3}
       DB_PASSWORD: ${DB_PASSWORD:-e3_dev}
+      MAIL_HOST: ${MAIL_HOST:-mailpit}
+      MAIL_PORT: ${MAIL_PORT:-1025}
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID:-sin-configurar}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-sin-configurar}
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
+      SEED_DEMO: ${SEED_DEMO:-false}
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:
       postgres:
         condition: service_healthy
+
+  # Tests del backend contra un PostgreSQL descartable: make backend-test.
+  postgres-test:
+    profiles: [test]
+    image: postgres:15
+    environment:
+      POSTGRES_DB: e3_test
+      POSTGRES_USER: e3
+      POSTGRES_PASSWORD: e3_dev
+    tmpfs:
+      - /var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U e3 -d e3_test"]
+      interval: 2s
+      timeout: 3s
+      retries: 15
+
+  backend-test:
+    profiles: [test]
+    build:
+      context: ./backend
+      target: test
+    environment:
+      DB_URL: jdbc:postgresql://postgres-test:5432/e3_test
+      DB_USERNAME: e3
+      DB_PASSWORD: e3_dev
+    volumes:
+      - maven-cache:/root/.m2
+    depends_on:
+      postgres-test:
+        condition: service_healthy
+
+volumes:
+  maven-cache:

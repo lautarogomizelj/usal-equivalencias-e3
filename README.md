@@ -12,6 +12,7 @@
 | 1.5 | 2026-10-14 | jumaluc | Enlace al contrato de la API propuesto en `Docs/API.md` |
 | 1.6 | 2026-10-31 | jumaluc | Sprint 1 de frontend: mocks y tokens del diseño; corrige el nombre de la universidad y el enlace al contrato |
 | 1.7 | 2026-10-31 | jumaluc | Estado actual: pantallas públicas de acceso construidas contra mocks |
+| 1.8 | 2026-11-02 | jumaluc | Backend de los sprints 1 y 2: Docker, Flyway, login por rol, sesión, RBAC y perfil; guía de backend con lo que ya existe (CC-007, CC-008) |
 
 Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad del Salvador (USAL).
 
@@ -29,11 +30,11 @@ Este sistema reemplaza ese circuito por una plataforma web donde cada rol tiene 
 
 **El proyecto está en el Hito 1 (base técnica y acceso). No hay nada desplegado.**
 
-El backend es un esqueleto vacío. Existen las carpetas del package de Java con la separación por capas prevista, pero todas contienen únicamente un archivo `.gitkeep`. No hay `pom.xml`, ni Dockerfile, ni migraciones de Flyway, ni una sola clase de Java. Tampoco existe la orquestación con Docker Compose que la documentación describe.
+El backend tiene hecha su parte de los sprints 1 y 2: Docker Compose (backend, PostgreSQL, pgAdmin y mail de prueba), migraciones Flyway, formato de error común, Swagger UI, registro de aspirante con código por mail, login con bloqueo por intentos, login con Google, login de Admin, sesión con JWT en cookie, RBAC por rol y perfil (RF-AUTH-001 a 005 y 007). El login con Google está implementado, pero no se probó contra Google porque faltan las credenciales de la USAL; en desarrollo se reemplaza con `POST /auth/dev/login`. Los permisos temporales por solicitud llegan en el Sprint 3, junto con la tabla `solicitudes`.
 
 El frontend tiene los Design Tokens del diseño de interfaces, el cliente HTTP centralizado con manejo tipado de errores, una capa de mocks del contrato, el router, el layout público, la página de error 404 y los componentes base (botón, campos de formulario, modales, tabla, paginador y badge de estado). Las pantallas públicas de inicio, login de aspirante, registro, verificación del correo y recuperación de contraseña siguen el diseño de Drive; registro, verificación y recuperación funcionan contra mocks y el login solo valida el formulario. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
 
-En resumen: el frontend completó su parte del Sprint 1 y tiene avanzadas las pantallas públicas del Sprint 2. Falta el login institucional, el perfil, `AuthContext`, las rutas protegidas y el layout privado. El backend todavía no está integrado a esta rama.
+En resumen: el frontend completó su parte del Sprint 1 y tiene avanzadas las pantallas públicas del Sprint 2. Falta el login institucional, el perfil, `AuthContext`, las rutas protegidas y el layout privado. El frontend todavía trabaja contra mocks: falta conectarlo a la API real.
 
 ---
 
@@ -55,26 +56,27 @@ En resumen: el frontend completó su parte del Sprint 1 y tiene avanzadas las pa
 | **Cliente HTTP** | `fetch` nativo, centralizado en `src/services/api/client.ts` |
 | **Entorno** | Node 24 + npm · alias `@` para apuntar a `src` |
 
-### Backend (a implementar)
+### Backend
 
 | Capa | Tecnología |
 |-------|------------|
 | **Runtime** | Java 17 / Spring Boot 3.2 |
 | **Base de datos** | PostgreSQL 15 |
-| **Autenticación** | Spring Security 6 + OAuth2 Google + JWT |
+| **Autenticación** | Spring Security 6 + OAuth2 Google + JWT en cookie `HttpOnly` |
+| **Mail** | Spring Mail (Mailpit en desarrollo) |
 | **Documentación de la API** | SpringDoc OpenAPI (Swagger UI) |
 | **Migraciones** | Flyway |
 | **Build** | Maven |
 | **Logging** | SLF4J + Logback |
 | **Testing** | JUnit 5 + Mockito |
 
-### Infraestructura (a implementar)
+### Infraestructura
 
 | Capa | Tecnología |
 |-------|------------|
 | **Contenedores** | Docker |
 | **Orquestación** | Docker Compose |
-| **Servicios del stack** | Aplicación backend, PostgreSQL y pgAdmin |
+| **Servicios del stack** | Aplicación backend, PostgreSQL, pgAdmin y Mailpit |
 
 ### Puertos
 
@@ -84,6 +86,7 @@ En resumen: el frontend completó su parte del Sprint 1 y tiene avanzadas las pa
 | **Backend (Spring)** | 8080 | http://localhost:8080/api |
 | **PostgreSQL** | 5432 | localhost:5432 |
 | **pgAdmin** | 5050 | http://localhost:5050 |
+| **Mailpit** | 8025 | http://localhost:8025 |
 
 El backend expone su API bajo el context path `/api`, que es lo que declara `VITE_API_URL` en el `.env` del frontend.
 
@@ -132,7 +135,7 @@ La documentación de este repo es fuente de verdad: se versiona en lugar de dupl
 
 ## Cómo correr el proyecto
 
-Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Solo hay tareas de frontend: el backend todavía no existe. Cuando se implemente, sus tareas van a llevar el prefijo `backend-` para no chocar con las del frontend.
+Hace falta Node 24 y npm para el frontend, y Docker para el backend. El punto de entrada es el Makefile de la raíz, que envuelve los scripts de npm. Las tareas del backend llevan el prefijo `backend-` para no chocar con las del frontend y están en la [Guía de Backend](#guía-de-backend).
 
 ### Comandos del Makefile
 
@@ -145,7 +148,7 @@ Hace falta Node 24 y npm. El punto de entrada es el Makefile de la raíz, que en
 | `make lint` | Corre oxlint. |
 | `make preview` | Sirve localmente el build de producción. |
 | `make clean` | Borra el directorio de build. Es el único target que no envuelve un script de npm. |
-| `make down` | Detiene el stack de contenedores. Hoy no hace nada porque todavía no hay `docker-compose.yml`: avisa por pantalla en lugar de fallar, y pasa a hacer el teardown real de Docker Compose en cuanto ese archivo exista. |
+| `make down` | Detiene el stack de contenedores. |
 
 Para levantar el entorno de desarrollo:
 
@@ -200,18 +203,17 @@ Pantallas y reglas: [`Docs/frontend-interfaces.md`](Docs/frontend-interfaces.md)
 
 ## Guía de Backend
 
-Todas las secciones de esta guía están marcadas "(a implementar)": el servicio todavía no existe y describen el diseño previsto, no el estado actual.
+Las secciones marcadas "(a implementar)" describen el diseño previsto, no el estado actual.
 
-### Cómo arrancar el servicio (a implementar)
+### Cómo arrancar el servicio
 
-El único prerequisito va a ser Docker. No vas a necesitar Java, Maven, ni PostgreSQL instalados localmente.
+El único prerequisito es Docker. No hace falta tener Java, Maven ni PostgreSQL instalados localmente.
 
 ```bash
-cp backend/src/main/resources/application.yml.example backend/src/main/resources/application.yml
 make backend-up-dev
 ```
 
-El stack va a estar disponible en:
+La primera vez crea `application.yml` a partir del ejemplo. El stack queda disponible en:
 
 | Servicio | URL |
 |----------|-----|
@@ -219,31 +221,39 @@ El stack va a estar disponible en:
 | **Swagger UI** | http://localhost:8080/swagger-ui.html |
 | **Health Check** | http://localhost:8080/actuator/health |
 | **pgAdmin** | http://localhost:5050 |
+| **Mails de prueba** | http://localhost:8025 |
 
-### Comandos Make (a implementar)
+Los códigos de 6 dígitos del registro y del recupero de contraseña se leen en Mailpit. En desarrollo no hacen falta credenciales de Google: `POST /auth/dev/login` con `{ "email": "..." }` inicia sesión con cualquier cuenta del personal. Esa ruta solo existe con el perfil `dev`.
+
+### Comandos Make
 
 Los targets del backend llevan el prefijo `backend-` para no chocar con los del frontend (`make dev`, `make build`, `make lint`, `make clean` y `make down`).
 
 ```makefile
-make backend-up-dev      # Inicia stack completo (app + PostgreSQL + pgAdmin)
-make backend-up-infra    # Inicia solo PostgreSQL y pgAdmin (sin app)
-make backend-up-prod     # En modo producción (requiere env vars)
+make backend-up-dev      # Inicia stack completo (app + PostgreSQL + pgAdmin + Mailpit)
+make backend-up-infra    # Inicia solo PostgreSQL, pgAdmin y Mailpit (sin app)
 make down                # Detiene todos los contenedores (compartido con el frontend)
 
-make backend-test          # Ejecuta todos los tests
+make backend-test        # Ejecuta todos los tests contra un PostgreSQL descartable
+make backend-build       # Construye la imagen del backend
+make backend-logs        # Sigue logs del contenedor backend
+```
+
+Todos los comandos corren dentro de Docker: no necesitás JDK local.
+
+### Comandos Make (a implementar)
+
+```makefile
+make backend-up-prod     # En modo producción (requiere env vars)
 make backend-test-coverage # Ejecuta tests y abre reporte JaCoCo
 make backend-lint          # Ejecuta Checkstyle y SpotBugs
 make backend-format        # Verifica formateo (Google Java Format)
 make backend-format-fix    # Auto-formatea archivos
 make backend-pr-checks     # Ejecuta todos los checks requeridos antes de PR
 
-make backend-build      # Build del JAR
 make backend-clean      # Limpia artefactos de build
-make backend-logs       # Sigue logs del contenedor backend
 make backend-db-migrate # Ejecuta migraciones Flyway manualmente
 ```
-
-Todos los comandos `make` que invoquen Maven van a correr dentro de Docker — no necesitás JDK local.
 
 ### Abrir una PR (a implementar)
 
@@ -266,7 +276,7 @@ El backend todavía no tiene CI. Estos son los checks que se van a exigir cuando
 
 Los PRs en Draft van a ser skipeados por CI hasta que se marquen como listos para review.
 
-### Reglas de Arquitectura (a implementar)
+### Reglas de Arquitectura
 
 - Controllers llaman services solamente — nunca repositories directamente.
 - Services llaman repositories solamente — nunca controllers.
@@ -274,27 +284,27 @@ Los PRs en Draft van a ser skipeados por CI hasta que se marquen como listos par
 - DTOs son Java Records y viven al lado del controller en `api/<dominio>/`.
 - La validación de permisos (`revoked_at IS NULL`) vive en `PermisosService` — **NUNCA** en controllers.
 
-### Persistencia de Datos (a implementar)
+### Persistencia de Datos
 
-PostgreSQL y Flyway van a persistir en `data/` en la raíz del monorepo (bind-mounted en Docker). Ese directorio todavía no está en el `.gitignore`: se agrega junto con el `docker-compose.yml`. Se borra para resetear el estado local.
+PostgreSQL persiste en `data/` en la raíz del monorepo (bind-mounted en Docker e ignorado por Git). Se borra para resetear el estado local.
 
-### Datos Demo (a implementar)
+### Datos Demo
 
-Para poblar una BD fresca con un conjunto de datos demo completo e interconectado — usuarios en cada rol, catálogo de carreras, solicitudes en cada estado, y auditoría — se va a setear `SEED_DEMO=true` antes del primer boot:
+Para poblar la base con una cuenta por rol, se setea `SEED_DEMO=true` al arrancar. Las solicitudes en cada estado se suman cuando exista el trámite (a implementar).
 
 ```bash
 SEED_DEMO=true make backend-up-dev
 ```
 
-Se ejecuta una sola vez al iniciar y es idempotente: si los datos ya existen hace nada, así que es seguro entre restarts (desactivado por defecto). Para re-seedear, se resetea la BD primero (`make down` y borrar `data/`, o dropear la BD Postgres) y bootear de nuevo.
+Es idempotente: si los datos ya existen no hace nada, así que es seguro entre restarts (desactivado por defecto y siempre apagado con el perfil `prod`). Para re-seedear, se resetea la BD primero (`make down` y borrar `data/`) y se bootea de nuevo.
 
-Las credenciales de las cuentas demo van a estar en `Docs/demo-credentials.md` (contraseña compartida: `Demo1234!`). Ese archivo todavía no existe.
+Las credenciales de las cuentas demo están en [`Docs/demo-credentials.md`](Docs/demo-credentials.md).
 
-### Configuración de Ambiente (a implementar)
+### Configuración de Ambiente
 
-Se va a copiar `backend/src/main/resources/application.yml.example` a `application.yml` y ajustar según sea necesario. Ese archivo va a estar en `.gitignore` — **nunca** commitear secrets.
+`make backend-up-dev` copia `backend/src/main/resources/application.yml.example` a `application.yml` si no existe. Ese archivo está en `.gitignore` — **nunca** commitear secrets. Si el ejemplo suma claves nuevas, hay que volver a copiarlo.
 
-Cuando se corra vía Docker Compose, las connection strings se van a setear automáticamente vía el Spring profile `docker` (`application-docker.yml`). No debería hacer falta configuración manual para `make backend-up-dev`.
+Cuando se corre vía Docker Compose, las connection strings se setean automáticamente. No hace falta configuración manual para `make backend-up-dev`.
 
 #### Variables de Ambiente Requeridas (Producción)
 
@@ -316,6 +326,11 @@ MAIL_HOST=smtp.tuproveedor.com
 MAIL_PORT=587
 MAIL_USERNAME=tu-email@usal.edu.ar
 MAIL_PASSWORD=tu-contraseña
+MAIL_FROM=no-responder@usal.edu.ar
+
+# Frontend (destino del login con Google y origen permitido por CORS)
+FRONTEND_URL=https://tu-frontend
+CORS_ALLOWED_ORIGINS=https://tu-frontend
 
 # Seed Demo
 SEED_DEMO=false  # Desactivado en producción
@@ -329,7 +344,7 @@ El repositorio es un monorepo con dos aplicaciones y un directorio de documentac
 
 Este README es la fuente canónica del estado actual, el stack, los puertos y las convenciones de git. Los demás documentos se vinculan a esta página en lugar de repetir esa información, para que no haya dos versiones que puedan divergir.
 
-**`backend/`** — Servicio Spring Boot (a implementar):
+**`backend/`** — Servicio Spring Boot. MapStruct, ArchUnit y los checks de PR todavía no están (a implementar):
 
 ```text
 src/main/java/com/usal/e3/
@@ -349,23 +364,21 @@ src/main/java/com/usal/e3/
 └── config/              # Configuración Spring (Security, JPA, OpenAPI)
 
 src/main/resources/
-├── application.yml                  # Config default
+├── application.yml.example          # Config default (se copia a application.yml)
 ├── application-dev.yml              # Overrides para desarrollo
 ├── application-prod.yml             # Overrides para producción
 ├── application-docker.yml           # Config Docker (auto)
 ├── db/migration/                    # Scripts Flyway
 │   ├── V1__initial.sql
-│   ├── V2__add_roles.sql
-│   └── V3__add_permissions.sql
+│   ├── V2__catalogos.sql
+│   └── V3__autenticacion.sql
 └── logback-spring.xml              # Config logging
 
 src/test/java/com/usal/e3/
 ├── service/             # Tests unitarios de servicios
 ├── repository/          # Tests de acceso a datos
-└── integration/         # Tests de integración
+└── integration/         # Tests de integración, contra PostgreSQL real
 ```
-
-Las carpetas `api`, `domain`, `repository`, `service`, `mapper`, `security`, `exception` y `config` ya están creadas en el repo. `resources/db/migration/` y los tres niveles de prueba también, todos vacíos.
 
 Las dependencias fluyen en una dirección: `api → service → repository → domain`. Los tests de ArchUnit refuerzan esto en tiempo de build.
 
@@ -400,5 +413,6 @@ Importar con el alias `@/` (ej: `import { Button } from '@/components/ui'`).
 | `Docs/frontend-interfaces.md` | Especificación de interfaces: cada pantalla, campo, estado de carga y acción por rol, más los estándares obligatorios de Frontend (tokens, accesibilidad, responsive, validaciones). Es el contrato entre el negocio y la capa de presentación, y es el documento que manda cuando hay que decidir cómo mostrar algo. |
 | `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, flujo de comunicación entre Frontend y Backend y las tres capas. Los puertos y el stack están en este README, no se repiten ahí. |
 | `Docs/GESTION_CAMBIOS.md` | Registro de cambios de requisito y de diseño que surgen durante el desarrollo. Cada cambio aprobado se refleja en el documento fuente y en su tabla de control de versiones. |
+| `Docs/demo-credentials.md` | Cuentas demo por rol para probar el sistema en desarrollo. |
 | `Docs/Diagramas/` (3 archivos `.jpeg`) | Diagramas de actividades y de los flujos de análisis preliminar y revisión legal. |
 | `AGENTS.md` | Pautas de trabajo para las herramientas de asistencia: cómo encarar un cambio, reglas de UI y prefijos de commit. |

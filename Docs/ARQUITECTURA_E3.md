@@ -8,6 +8,7 @@
 | 1.1 | 2026-09-29 | lautarogomizelj | Alineación con el código real: `fetch` nativo, React 19 y Design Tokens |
 | 1.2 | 2026-10-14 | jumaluc | Alta de `Docs/API.md` (contrato de la API) en el árbol del monorepo |
 | 1.3 | 2026-10-31 | jumaluc | Corrige el nombre del contrato de la API |
+| 1.4 | 2026-11-02 | jumaluc | Backend de los sprints 1 y 2: árbol real, flujo de autenticación y sesión (CC-007) |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). Este documento se limita a la estructura del monorepo, el flujo de comunicación y las capas.
 
@@ -22,7 +23,10 @@ usal-equivalencias-e3/
 ├── README.md                       # Documento canónico: estado, stack, puertos, git
 ├── .gitignore
 │
-├── backend/                        # Java + Spring Boot 3.2 (a implementar)
+├── docker-compose.yml              # Backend, PostgreSQL, pgAdmin, Mailpit y tests
+├── backend/                        # Java + Spring Boot 3.2
+│   ├── pom.xml
+│   ├── Dockerfile
 │   ├── src/main/java/com/usal/e3/
 │   │   ├── api/                    # Controllers REST
 │   │   │   ├── auth/
@@ -34,11 +38,12 @@ usal-equivalencias-e3/
 │   │   ├── service/                # Lógica de negocio
 │   │   ├── repository/             # Acceso a datos (JPA)
 │   │   ├── domain/                 # Entidades JPA (modelos de dominio)
-│   │   ├── mapper/                 # MapStruct: Entity ↔ DTO
-│   │   ├── security/               # JWT, OAuth2, permisos
+│   │   ├── security/               # JWT, cookie de sesión, OAuth2
 │   │   ├── exception/              # Excepciones personalizadas
 │   │   └── config/                 # Configuración Spring
 │   ├── src/main/resources/
+│   │   ├── application*.yml        # Configuración por ambiente y perfil `docker`
+│   │   ├── logback-spring.xml      # Configuración de logging
 │   │   └── db/migration/           # Scripts Flyway
 │   └── src/test/java/com/usal/e3/  # Tests (unitarios, repos, integración)
 │
@@ -72,24 +77,19 @@ usal-equivalencias-e3/
     ├── ARQUITECTURA_E3.md          # Este archivo
     ├── GESTION_CAMBIOS.md          # Registro de cambios de requisitos y diseño
     ├── frontend-interfaces.md      # Especificación de interfaces
+    ├── demo-credentials.md         # Cuentas demo por rol
     ├── Sistema_Equivalencias_Requisitos.md
     └── Diagramas/                  # DiagramaActividades.jpeg, LogicaPrincipal_*.jpeg
 ```
 
 ### Estructura prevista
 
-Estos archivos todavía no existen. Van a aparecer cuando se implemente el backend y el stack de contenedores:
+Estos archivos todavía no existen:
 
 | Ruta | Qué es |
 |------|--------|
-| `backend/pom.xml` | Build de Maven |
-| `backend/Dockerfile` | Imagen del servicio Spring Boot |
-| `backend/src/main/resources/application*.yml` | Configuración por ambiente y perfil `docker` |
-| `backend/src/main/resources/logback-spring.xml` | Configuración de logging |
-| `backend/src/main/resources/db/migration/V*.sql` | Migraciones Flyway |
-| `docker-compose.yml` | Stack de contenedores (backend + PostgreSQL + pgAdmin) |
+| `backend/src/main/java/com/usal/e3/mapper/` | MapStruct: Entity ↔ DTO. Hoy los DTOs se arman a mano en `api/` |
 | `db/schema.md` | Diagrama de tablas |
-| `Docs/demo-credentials.md` | Credenciales de las cuentas demo |
 
 ---
 
@@ -120,7 +120,7 @@ Cliente (navegador)
 http://localhost:5173
 ```
 
-### 2️⃣ Backend Inicia en Desarrollo (a implementar)
+### 2️⃣ Backend Inicia en Desarrollo
 
 ```
 Backend Developer
@@ -132,8 +132,8 @@ make backend-up-dev
 │  http://localhost:8080         │
 │  /api (context path)           │
 │                                │
-│  - OAuth Google setup          │
-│  - JWT ready                   │
+│  - OAuth Google configurado    │
+│  - Sesión JWT en cookie        │
 │  - PostgreSQL conectado        │
 │  - Swagger UI en /swagger-ui   │
 └────────────────────────────────┘
@@ -166,57 +166,49 @@ Abre http://localhost:5173
 
 ### Ejemplo: Usuario hace Login con Google
 
-> **Diseño tentativa.** La autenticación no está implementada y todavía no está decidida. El diagrama de abajo es uno de los flujos posibles —OAuth 2.0 con Google y JWT—, pero el cliente HTTP que existe hoy (`frontend/src/services/api/client.ts`) va con `credentials: 'include'`, es decir cookie de sesión, y no guarda el token en `localStorage`. Además, según la especificación funcional, no todos los roles usan OAuth: Aspirante y Admin General entram con email y contraseña. Cuando se implemente la auth hay que volver a este diagrama con el flujo real.
+Aspirante y Admin General entran con email y contraseña (`POST /auth/login` y `POST /auth/admin/login`); los tres caminos terminan igual, con la cookie de sesión. El token nunca queda al alcance de JavaScript.
 
 ```
 NAVEGADOR (Frontend)                          SERVIDOR (Backend)
     │                                             │
-    │ 1. Click "Ingresar con Google"            │
-    ├──────────────────────────────────────────>│ (Redirección a Google)
+    │ 1. Click "Ingresar con Google"              │
+    │    GET /api/auth/google                     │
+    ├────────────────────────────────────────────>│ (Redirección a Google)
     │                                             │
-    │ 2. Usuario se autentica en Google         │
-    │ 3. Google retorna código                  │
+    │ 2. Usuario se autentica en Google           │
+    │ 3. Google vuelve con un código              │
+    │    GET /api/auth/google/callback            │
+    ├────────────────────────────────────────────>│
+    │                                      ┌──────┴──────┐
+    │                                      │ Spring      │
+    │                                      │ valida el   │
+    │                                      │ código con  │
+    │                                      │ Google,     │
+    │                                      │ dominio y   │
+    │                                      │ alta en BD; │
+    │                                      │ crea fila   │
+    │                                      │ en sesiones │
+    │                                      └──────┬──────┘
+    │ 4. 302 a /dashboard                         │
+    │    Set-Cookie: E3_SESION=<JWT>; HttpOnly    │
+    │<────────────────────────────────────────────┤
     │                                             │
-    │ 4. POST /api/auth/login                   │
-    │    { code: "..." }                         │
-    ├──────────────────────────────────────────>│
-    │                                             │
-    │                                    ┌──────┴──────┐
-    │                                    │ Spring      │
-    │                                    │ valida      │
-    │                                    │ código con  │
-    │                                    │ Google      │
-    │                                    │ verifica    │
-    │                                    │ email en BD │
-    │                                    │ genera JWT  │
-    │                                    └──────┬──────┘
-    │                                             │
-    │ 5. HTTP 200 + JWT                        │
-    │    { token, usuario }                     │
-    │<──────────────────────────────────────────┤
-    │                                             │
-    │ 6. LocalStorage.setItem("token", JWT)    │
-    │                                             │
-    │ 7. GET /api/solicitudes                   │
-    │    Header: Authorization: Bearer {JWT}    │
-    ├──────────────────────────────────────────>│
-    │                                             │
-    │                                    ┌──────┴──────┐
-    │                                    │ Spring      │
-    │                                    │ valida JWT  │
-    │                                    │ verifica    │
-    │                                    │ permisos    │
-    │                                    │ consulta BD │
-    │                                    └──────┬──────┘
-    │                                             │
-    │ 8. HTTP 200 + JSON                       │
-    │    [ {solicitud}, {solicitud}, ... ]     │
-    │<──────────────────────────────────────────┤
-    │                                             │
-    │ 9. React renderiza lista                  │
-    │ 10. Usuario ve solicitudes                │
+    │ 5. GET /api/auth/me (viaja la cookie)       │
+    ├────────────────────────────────────────────>│
+    │                                      ┌──────┴──────┐
+    │                                      │ Spring      │
+    │                                      │ valida JWT, │
+    │                                      │ sesión      │
+    │                                      │ abierta y   │
+    │                                      │ cuenta      │
+    │                                      │ activa      │
+    │                                      └──────┬──────┘
+    │ 6. HTTP 200 + Sesion                        │
+    │<────────────────────────────────────────────┤
     │                                             │
 ```
+
+El JWT solo lleva el id de la sesión. Como cada pedido consulta `sesiones` y la cuenta, cerrar sesión, desconectar un dispositivo o desactivar un usuario corta el acceso al instante.
 
 ---
 
@@ -271,4 +263,4 @@ NAVEGADOR (Frontend)                          SERVIDOR (Backend)
 - **Errores tipados:** las respuestas que no son `ok` se convierten en `ApiError` con un `kind` (`unauthorized`, `forbidden`, `network`...).
 - **Servicios por dominio:** `services/solicitudes.ts`, `services/usuarios.ts`, etc.
 - **Sin fetch directo:** nunca llamar a `fetch` desde componentes o utils.
-- **Pendiente de definir:** cómo viaja la sesión (cookie `HttpOnly` o header `Authorization: Bearer`). El cliente actual usa `credentials: 'include'`.
+- **Sesión:** viaja en una cookie `HttpOnly`, por eso el cliente usa `credentials: 'include'` y no maneja tokens.

@@ -1,0 +1,3 @@
+logging:
+  level:
+    com.usal.e3: DEBUG

@@ -1,4 +1,4 @@
-# USAL E3 - Contrato de la API REST (a implementar)
+# USAL E3 - Contrato de la API REST
 
 ## Control de versiones
 
@@ -6,8 +6,9 @@
 |---------|-------|-------|-------------|
 | 1.0 | 2026-10-14 | jumaluc | Versión inicial: convenciones, entidades, endpoints por módulo y acciones del trámite, basada en requisitos v12.0 |
 | 1.1 | 2026-10-31 | jumaluc | Sprint 1: `ApiErrorKind` con `conflict` y `locked`, JSON en camelCase y `frontend-interfaces.md` en 20 estados; se quitan de los puntos abiertos |
+| 1.2 | 2026-11-02 | jumaluc | Sprint 2: sesión con JWT en cookie, códigos `NO_AUTENTICADO` y `ACCESO_DENEGADO`, login simulado de desarrollo, flujo real de `/auth/google` y errores de perfil (CC-007, CC-008) |
 
-> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend todavía no existe: este documento es el contrato a acordar con el equipo de backend.
+> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4); el resto del documento es el contrato a acordar.
 
 Este documento fija el contrato entre el frontend (React, `services/api/client.ts`) y el backend (Spring Boot, a implementar) del sistema E3. Se basa en los Requisitos v12.0 (20 estados, 26 transiciones). Donde los requisitos no definen algo, la decisión figura como **Propuesta** y hay que validarla con backend.
 
@@ -21,9 +22,9 @@ Este documento fija el contrato entre el frontend (React, `services/api/client.t
 | Fechas | ISO 8601 con zona: `2026-10-14T15:30:00-03:00`. Solo fecha: `2026-10-14`. |
 | Identificadores | `id` numérico en las rutas. `codigoExp` (`EXP-2026-001`) solo para mostrar y buscar. |
 | Estados | Siempre por `codigo` (`DOC-REV`), nunca por nombre (RF-ESTADO-004). |
-| Sesión | Cookie `HttpOnly`, `Secure`, `SameSite=Lax` emitida por el backend; el cliente ya envía `credentials: 'include'`. Pendiente de confirmar (ARQUITECTURA, "Cómo habla con Backend"). |
-| CORS | Origen `http://localhost:5173` con `Access-Control-Allow-Credentials: true`. |
-| CSRF | **Propuesta:** cookie `XSRF-TOKEN` + header `X-XSRF-TOKEN` en POST, PUT, PATCH y DELETE. Requiere agregar el header en `client.ts`. |
+| Sesión | Cookie `E3_SESION`, `HttpOnly`, `SameSite=Lax` y `Secure` en producción, emitida por el backend; el cliente ya envía `credentials: 'include'`. Lleva un JWT firmado con el id de la fila de `sesiones`, que se valida en cada pedido (CC-007). |
+| CORS | Orígenes `http://localhost:5173` y `http://localhost:5273` con `Access-Control-Allow-Credentials: true`; en producción, `CORS_ALLOWED_ORIGINS`. |
+| CSRF | **Propuesta, sin implementar:** cookie `XSRF-TOKEN` + header `X-XSRF-TOKEN` en POST, PUT, PATCH y DELETE. Requiere agregar el header en `client.ts`; hasta entonces protegen `SameSite=Lax`, el CORS con origen fijo y que la API solo acepte JSON. |
 | Paginación | `?page=0&size=20&sort=campo,desc`. Respuesta con la forma `Page<T>` (abajo). |
 | Doble verificación | Es solo de UI (RF-AUTH-006): el backend recibe una única llamada, al confirmar. |
 | Acciones disponibles | El detalle de una solicitud trae `accionesDisponibles`, calculadas por el backend según rol, permiso (participante u observador) y estado. El frontend solo muestra los botones de esa lista (frontend-interfaces §0.10 y §0.16). |
@@ -77,6 +78,8 @@ Compatible con `ApiErrorBody` (`message`, `errors`) de `types/api.ts`; suma `sta
 | `code` | HTTP | Significado |
 | --- | --- | --- |
 | `VALIDACION` | 400 | Uno o más campos inválidos; detalle en `errors` |
+| `NO_AUTENTICADO` | 401 | Sin sesión o sesión vencida |
+| `ACCESO_DENEGADO` | 403 | El rol no puede usar esa ruta |
 | `DUPLICADO` | 409 | Email, DNI o código de carrera ya existente |
 | `CREDENCIALES_INVALIDAS` | 401 | Email o contraseña incorrectos; el cuerpo trae `intentosRestantes` |
 | `CUENTA_BLOQUEADA` | 423 | 3 intentos fallidos: bloqueo de 6 h (login) o 15 min (código) |
@@ -126,6 +129,7 @@ Personal @usal (Académico, Secretaría, Revisor) y Admin General.
 | activo | boolean | Default `true` |
 | intentosLoginFallidos | int | Solo aplica al Admin (login con contraseña) |
 | bloqueadoHasta | datetime? |  |
+| fechaUltimoIntentoFallido | datetime? | **Propuesta**: el contador se reinicia a las 6 h (RF-AUTH-002). No se expone |
 | fechaCreacion | datetime |  |
 | fechaUltimoLogin | datetime? |  |
 | telefono | string? | **Propuesta** (RF-AUTH-007) |
@@ -146,6 +150,7 @@ Personal @usal (Académico, Secretaría, Revisor) y Admin General.
 | emailValidado | boolean | Sin validar no puede crear solicitudes |
 | intentosLoginFallidos | int | 3 fallidos → bloqueo 6 h |
 | bloqueadoHasta | datetime? |  |
+| fechaUltimoIntentoFallido | datetime? | **Propuesta**: el contador se reinicia a las 6 h (RF-AUTH-002). No se expone |
 | activo | boolean |  |
 | fechaCreacion | datetime |  |
 | fechaUltimoLogin | datetime? |  |
@@ -387,14 +392,14 @@ Alimenta "Historial de accesos" y "Sesiones activas" de Mi perfil (RF-AUTH-007).
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
-| id | string | UUID; es el valor de la cookie |
+| id | string | UUID; viaja firmado dentro del JWT de la cookie |
 | titularTipo | enum | `USUARIO`, `ASPIRANTE` |
 | titularId | int |  |
 | ip | string |  |
 | userAgent | string |  |
 | inicio | datetime |  |
 | ultimoUso | datetime |  |
-| expiraEn | datetime | 30 días con "recuérdame", 1 día Admin |
+| expiraEn | datetime | 30 días con "recuérdame"; 1 día en el resto de los casos |
 | cerradaEn | datetime? |  |
 
 ### 2.21 Notificación (`notificaciones`) — Propuesta
@@ -471,8 +476,9 @@ Hay tres formas de entrar: aspirante con email y contraseña, personal @usal con
 | POST | `/auth/registro/validar` | Público | Valida el código e inicia sesión | 200 `Sesion` + cookie | RF-AUTH-001 |
 | POST | `/auth/registro/reenviar-codigo` | Público | Genera un código nuevo (invalida el anterior) | 204 | RF-AUTH-001 |
 | POST | `/auth/login` | Aspirante | Login con email y contraseña | 200 `Sesion` + cookie | RF-AUTH-002 |
-| GET | `/auth/google` | Personal @usal | Redirige a Google | 302 | RF-AUTH-003 |
-| GET | `/auth/google/callback` | Google | Valida dominio y alta; crea sesión | 302 a `/dashboard` o a `/login?error=USUARIO_NO_REGISTRADO` | RF-AUTH-003 |
+| GET | `/auth/google` | Personal @usal | Redirige a Google, pasando por `/oauth2/authorization/google` | 302 | RF-AUTH-003 |
+| GET | `/auth/google/callback` | Google | Valida dominio y alta; crea sesión | 302 a `/dashboard`, a `/login?error=USUARIO_NO_REGISTRADO` o, si falla Google, a `/login?error=GOOGLE_ERROR` | RF-AUTH-003 |
+| POST | `/auth/dev/login` | Solo perfil `dev` | Login simulado del personal: `{ "email" }`. No existe en producción | 200 `Sesion` + cookie | Sprint Planning, riesgos |
 | POST | `/auth/admin/login` | Admin | Login con usuario y contraseña | 200 `Sesion` + cookie | RF-AUTH-004 |
 | POST | `/auth/password/recuperar` | Aspirante | Envía código de recupero | 204 siempre (no revela si el email existe) | RF-AUTH-002 |
 | POST | `/auth/password/restablecer` | Aspirante | Cambia la contraseña con el código | 204 | RF-AUTH-002 |
@@ -503,7 +509,7 @@ Validaciones: contraseña de 8 o más caracteres con mayúscula, número y cará
 
 Errores: 401 `CREDENCIALES_INVALIDAS` `{ "intentosRestantes": 2 }`, 423 `CUENTA_BLOQUEADA` `{ "bloqueadoHasta": "2026-10-14T21:30:00-03:00" }`, 403 `EMAIL_NO_VALIDADO`.
 
-**`POST /auth/admin/login`** — request `{ "usuario": "admin@usal.edu.ar", "password": "…" }`. Sesión de 1 día.
+**`POST /auth/admin/login`** — request `{ "usuario": "admin@usal.edu.ar", "password": "…" }`. Sesión de 1 día. Mismos errores que `/auth/login`, sin `EMAIL_NO_VALIDADO`.
 
 **`POST /auth/password/restablecer`** — request `{ "email", "codigo", "passwordNueva" }`.
 
@@ -556,6 +562,8 @@ Errores: 401 `CREDENCIALES_INVALIDAS` `{ "intentosRestantes": 2 }`, 423 `CUENTA_
 ```
 
 El catálogo de avatares vive en `frontend/src/assets/`; el backend solo guarda y valida la clave (`hombre-02`). Todos los cambios de perfil quedan en auditoría.
+
+Contraseña actual incorrecta en `PUT /perfil/password` o `PUT /perfil/email`: 400 `VALIDACION` con `errors.passwordActual`. Un usuario con Google que envía `nombre` en `PATCH /perfil`: 400 con `errors.nombre`. Al cambiar la contraseña se cierran las demás sesiones.
 
 ## 5. Catálogos: carreras, estados y roles
 
@@ -1096,7 +1104,8 @@ Los DTOs de este documento van en `frontend/src/types/` con los mismos nombres (
 
 ### 10.3 Puntos abiertos para cerrar con backend
 
-- [ ] Sesión por cookie `HttpOnly` o por header `Authorization: Bearer` (hoy el cliente usa `credentials: 'include'`).
+- [x] Sesión por cookie `HttpOnly` o por header `Authorization: Bearer`: cookie `HttpOnly` con JWT (CC-007).
+- [ ] Protección CSRF: requiere agregar el header en `client.ts` (§1).
 - [ ] Dónde se guardan los datos de origen de la solicitud y qué valores tiene "Condición académica" (Anexo A #1 y #2 de interfaces).
 - [ ] Quién carga el informe de materias estructurado y en qué estado (`CARGAR_INFORME`, Anexo A #8).
 - [ ] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables.

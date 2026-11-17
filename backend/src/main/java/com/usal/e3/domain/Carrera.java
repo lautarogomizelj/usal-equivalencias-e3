@@ -16,6 +16,9 @@ public class Carrera {
 
     private String codigo;
     private String nombre;
+    private String facultad;
+    private String descripcion;
+    private boolean activo;
 
     public Integer getId() {
         return id;
@@ -27,5 +30,17 @@ public class Carrera {
 
     public String getNombre() {
         return nombre;
+    }
+
+    public String getFacultad() {
+        return facultad;
+    }
+
+    public String getDescripcion() {
+        return descripcion;
+    }
+
+    public boolean isActivo() {
+        return activo;
     }
 }

@@ -60,3 +60,6 @@ e3:
     jwt-secret: ${JWT_SECRET:e3-secreto-solo-para-desarrollo-local-0123456789}
     cookie-secure: false
   seed-demo: ${SEED_DEMO:false}
+  # Documentos del trámite, por año y DNI. En Docker es data/archivos de la raíz del monorepo.
+  archivos:
+    directorio: ${ARCHIVOS_DIR:./archivos}

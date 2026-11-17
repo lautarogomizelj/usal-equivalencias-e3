@@ -29,9 +29,13 @@ public class EventoAuditoria {
     private String entidad;
     private Integer entidadId;
 
+    private String estadoCodigoAnterior;
+    private String estadoCodigoNuevo;
+
     @JdbcTypeCode(SqlTypes.JSON)
     private Map<String, Object> detalles;
 
+    private String comentarios;
     private String ipOrigen;
 
     protected EventoAuditoria() {}
@@ -51,6 +55,23 @@ public class EventoAuditoria {
         this.entidadId = entidadId;
         this.detalles = detalles;
         this.ipOrigen = ipOrigen;
+    }
+
+    /** Cambio de estado de una solicitud (RF-ESTADO-004). */
+    public static EventoAuditoria cambioEstado(
+            Integer usuarioId,
+            String usuarioEmail,
+            Integer solicitudId,
+            String estadoAnterior,
+            String estadoNuevo,
+            String comentarios,
+            String ipOrigen) {
+        EventoAuditoria evento =
+                new EventoAuditoria(usuarioId, usuarioEmail, "cambio_estado", "solicitud", solicitudId, null, ipOrigen);
+        evento.estadoCodigoAnterior = estadoAnterior;
+        evento.estadoCodigoNuevo = estadoNuevo;
+        evento.comentarios = comentarios;
+        return evento;
     }
 
     public String getAccion() {

@@ -48,6 +48,9 @@ services:
       GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET:-sin-configurar}
       FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5173}
       SEED_DEMO: ${SEED_DEMO:-false}
+      ARCHIVOS_DIR: /app/archivos
+    volumes:
+      - ./data/archivos:/app/archivos
     ports:
       - "${BACKEND_PORT:-8080}:8080"
     depends_on:

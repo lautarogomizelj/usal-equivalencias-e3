@@ -3,6 +3,7 @@ package com.usal.e3.integration;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -27,9 +28,11 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
@@ -75,8 +78,49 @@ abstract class IntegracionBase {
     void limpiarBase() {
         jdbc.execute("""
                 TRUNCATE sesiones, codigos_verificacion, user_career_permissions, auditoria_sistema,
+                         user_solicitud_permissions, documentos_solicitud, estados_solicitud, solicitudes,
                          aspirantes, usuarios RESTART IDENTITY CASCADE
                 """);
+    }
+
+    protected Map<String, Object> datosSolicitud(String carreraDestinoCodigo) {
+        return Map.of(
+                "universidadOrigen", "Universidad Nacional de La Plata",
+                "facultadOrigen", "Facultad de Informática",
+                "carreraOrigen", "Licenciatura en Sistemas",
+                "carreraDestinoCodigo", carreraDestinoCodigo,
+                "condicionAcademica", "REGULAR");
+    }
+
+    /** Crea una solicitud en `SOL-INI` y devuelve su id. */
+    protected int crearSolicitud(Cookie sesion) throws Exception {
+        MvcResult resultado = postear("/solicitudes", datosSolicitud("ING-INF-001"), sesion)
+                .andExpect(status().isCreated())
+                .andReturn();
+        return json.readTree(resultado.getResponse().getContentAsString()).get("id").asInt();
+    }
+
+    protected static MockMultipartFile pdf(String nombre, int tamano) {
+        byte[] contenido = new byte[tamano];
+        System.arraycopy("%PDF-1.7".getBytes(), 0, contenido, 0, 8);
+        return new MockMultipartFile("archivo", nombre, "application/pdf", contenido);
+    }
+
+    protected ResultActions subir(Cookie sesion, int solicitudId, String tipo, MockMultipartFile archivo)
+            throws Exception {
+        return mvc.perform(multipart("/solicitudes/{id}/documentos", solicitudId)
+                .file(archivo)
+                .param("tipo", tipo)
+                .cookie(sesion));
+    }
+
+    /** Sube Analítico, Plan y un Programa, y envía la documentación: la solicitud queda en `DOC-REV`. */
+    protected void enviarDocumentacion(Cookie sesion, int solicitudId) throws Exception {
+        for (String tipo : new String[] {"ANALITICO", "PLAN", "PROGRAMA"}) {
+            subir(sesion, solicitudId, tipo, pdf(tipo.toLowerCase() + ".pdf", 1024)).andExpect(status().isCreated());
+        }
+        postear("/solicitudes/" + solicitudId + "/documentacion/enviar", Map.of("estadoEsperado", "SOL-INI"), sesion)
+                .andExpect(status().isOk());
     }
 
     protected ResultActions enviar(MockHttpServletRequestBuilder pedido, Object cuerpo, Cookie... cookies)

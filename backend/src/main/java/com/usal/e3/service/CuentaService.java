@@ -30,6 +30,10 @@ public class CuentaService {
                 : aspirantes.findById(id).map(Cuenta.class::cast);
     }
 
+    public Cuenta de(SesionActual actual) {
+        return buscar(actual.tipo(), actual.id()).orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
+    }
+
     /** RF-AUTH-002: el Admin desbloquea y el contador vuelve a cero. */
     @Transactional
     public void desbloquear(SesionActual actual, TitularTipo tipo, Integer id, String ip) {

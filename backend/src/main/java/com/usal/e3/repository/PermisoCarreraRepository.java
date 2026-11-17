@@ -15,4 +15,11 @@ public interface PermisoCarreraRepository extends JpaRepository<PermisoCarrera, 
             order by p.carrera.nombre
             """)
     List<Carrera> carrerasActivas(Integer userId);
+
+    /** Requisitos v12 §6, paso 2. */
+    @Query("""
+            select count(p) > 0 from PermisoCarrera p
+            where p.userId = :userId and p.carrera.id = :carreraId and p.revokedAt is null
+            """)
+    boolean activo(Integer userId, Integer carreraId);
 }

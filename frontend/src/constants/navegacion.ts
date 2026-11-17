@@ -19,3 +19,11 @@ export const MENU_POR_ROL: Record<string, ItemMenu[]> = {
     { texto: 'Ayuda', ruta: ROUTES.AYUDA, Icono: CircleHelp },
   ],
 }
+
+/** Los demás roles todavía no tienen pantallas propias: por ahora ven el inicio y su perfil. */
+for (const rol of ['ACAD', 'SECRE', 'REVISOR', 'ADMIN']) {
+  MENU_POR_ROL[rol] = [
+    { texto: 'Inicio', ruta: ROUTES.DASHBOARD, Icono: House },
+    { texto: 'Mi perfil', ruta: ROUTES.PERFIL, Icono: User },
+  ]
+}

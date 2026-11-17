@@ -20,8 +20,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => control.abort()
   }, [])
 
-  async function ingresar(email: string, password: string) {
-    setSesion(await auth.login(email, password))
+  async function ingresar(email: string, password: string, recordarme = false) {
+    setSesion(await auth.login(email, password, recordarme))
   }
 
   async function ingresarAdmin(usuario: string, password: string) {
@@ -37,8 +37,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setSesion(null)
   }
 
+  async function refrescarSesion() {
+    setSesion(await auth.me())
+  }
+
   return (
-    <AuthContext value={{ sesion, cargando, ingresar, ingresarAdmin, ingresarDev, cerrarSesion }}>
+    <AuthContext value={{ sesion, cargando, ingresar, ingresarAdmin, ingresarDev, cerrarSesion, refrescarSesion }}>
       {children}
     </AuthContext>
   )

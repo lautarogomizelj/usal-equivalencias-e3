@@ -51,7 +51,8 @@ export function useFormularioRegistro() {
       const { email: correo } = await auth.registrar({
         email: datos.correo.trim(),
         password: datos.contrasenia,
-        nombre: `${datos.nombre.trim()} ${datos.apellido.trim()}`,
+        nombre: datos.nombre.trim(),
+        apellido: datos.apellido.trim(),
         telefono: datos.telefono.trim(),
         dni: datos.documento.trim(),
       })

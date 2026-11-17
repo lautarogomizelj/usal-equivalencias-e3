@@ -1,7 +1,9 @@
 const BYTES_POR_MB = 1024 * 1024
 const FORMATO_MB = new Intl.NumberFormat('es-AR', { maximumFractionDigits: 1 })
 
-/** Tamaño de un archivo como `1,5 MB`. */
+/** Tamaño de un archivo como `1,5 MB`. Los que redondean a 0 MB se muestran en KB. */
 export function formatearTamanio(bytes: number) {
-  return `${FORMATO_MB.format(bytes / BYTES_POR_MB)} MB`
+  const megas = bytes / BYTES_POR_MB
+  if (bytes > 0 && megas < 0.05) return `${Math.ceil(bytes / 1024)} KB`
+  return `${FORMATO_MB.format(megas)} MB`
 }

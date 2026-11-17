@@ -10,8 +10,17 @@ const CLASES_ENLACE = 'text-primary underline'
 
 /** Login del aspirante (frontend-interfaces.md §3.4). */
 export function LoginPage() {
-  const { correo, setCorreo, contrasenia, setContrasenia, errorCorreo, errorContrasenia, ingresar } =
-    useFormularioLogin()
+  const {
+    correo,
+    setCorreo,
+    contrasenia,
+    setContrasenia,
+    recordarme,
+    setRecordarme,
+    errorCorreo,
+    errorContrasenia,
+    ingresar,
+  } = useFormularioLogin()
   const [parametros] = useSearchParams()
 
   /* El backend vuelve acá cuando falla el login con Google (contrato de la API §4.1): el aviso va en el login del personal. */
@@ -69,7 +78,12 @@ export function LoginPage() {
             />
 
             <div className="flex items-center justify-between gap-4">
-              <Checkbox etiqueta="Recuérdame" name="recordarme" />
+              <Checkbox
+                etiqueta="Recuérdame"
+                name="recordarme"
+                checked={recordarme}
+                onChange={(evento) => setRecordarme(evento.target.checked)}
+              />
               <p className="text-center text-base text-text lg:text-xl">
                 ¿Olvidaste tu contraseña?
                 <br />

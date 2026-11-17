@@ -5,13 +5,13 @@
  */
 import { ApiError } from '@/services/api/ApiError'
 import type { Sesion } from '@/types/sesion'
-import { CARRERAS, ESTADOS, PERFIL, SESION_ASPIRANTE, SESIONES_USAL, SOLICITUDES } from './datos'
+import { CARRERAS, ESTADOS, PASSWORD_VALIDA, SESION_ASPIRANTE, SESIONES_USAL, SOLICITUDES } from './datos'
+import { rutasPerfil } from './perfil'
 import { RUTAS_SOLICITUDES } from './solicitudes'
 
 const DEMORA_MS = 300
 const CODIGO_VALIDO = '483920'
 const INTENTOS_CODIGO = 3
-const PASSWORD_VALIDA = 'Demo1234!'
 const CLAVE_SESION = 'e3-mock-sesion'
 
 let intentosRestantes = INTENTOS_CODIGO
@@ -82,8 +82,8 @@ const RUTAS: Record<string, (body: unknown, ids: number[]) => unknown> = {
   'POST /auth/admin/login': iniciarSesionAdmin,
   'POST /auth/dev/login': iniciarSesionDev,
   'POST /auth/logout': () => sessionStorage.removeItem(CLAVE_SESION),
-  'GET /auth/me': sesionActual,
-  'GET /perfil': () => PERFIL,
+  'GET /auth/me': () => ({ ...sesionActual() }),
+  ...rutasPerfil(sesionActual, abrirSesion),
   'GET /solicitudes': () => ({
     content: SOLICITUDES,
     page: 0,

@@ -5,6 +5,7 @@ export interface Sesion {
   tipo: 'ASPIRANTE' | 'USUARIO'
   id: number
   nombre: string
+  apellido: string
   email: string
   rol: string
   avatar: string | null

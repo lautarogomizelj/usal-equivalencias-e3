@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useLocation, useParams } from 'react-router'
 import { EncabezadoPagina } from '@/components/privado/EncabezadoPagina'
 import { DetalleSolicitud } from '@/components/solicitudes/DetalleSolicitud'
+import { StepperEtapas } from '@/components/solicitudes/StepperEtapas'
 import { VISTAS_ASPIRANTE } from '@/components/solicitudes/vistas'
 import { Aviso, Button, EstadoBadge } from '@/components/ui'
 import { ROUTES } from '@/constants/routes'
@@ -29,14 +30,17 @@ function Solicitud({ id }: { id: number }) {
   const vista = detalle && VISTAS_ASPIRANTE[detalle.estado.codigo]
   const Vista = vista?.Vista ?? DetalleSolicitud
 
+  /** El aviso va arriba de todo: se sube la página para que se vea junto con la vista nueva. */
   function actualizar(nuevo: SolicitudDetalle, mensaje: string) {
     setAviso({ tipo: 'exito', mensaje })
     setDatos(nuevo)
+    window.scrollTo(0, 0)
   }
 
   function recargarPorCambio() {
     setAviso({ tipo: 'error', mensaje: MENSAJES.ESTADO_CAMBIO })
     reintentar()
+    window.scrollTo(0, 0)
   }
 
   return (
@@ -67,7 +71,10 @@ function Solicitud({ id }: { id: number }) {
             <span className="block h-(--size-privado-foto-alto) animate-pulse rounded-lg bg-surface-muted" />
           </div>
         ) : (
-          <Vista detalle={detalle} onActualizada={actualizar} onEstadoCambio={recargarPorCambio} />
+          <>
+            <StepperEtapas codigoEstado={detalle.estado.codigo} />
+            <Vista detalle={detalle} onActualizada={actualizar} onEstadoCambio={recargarPorCambio} />
+          </>
         )}
       </div>
     </main>

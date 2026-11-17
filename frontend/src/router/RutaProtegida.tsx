@@ -7,6 +7,7 @@ export function RutaProtegida({ roles }: { roles?: string[] }) {
   const { sesion, cargando } = useAuth()
 
   if (cargando) return null
-  if (!sesion || (roles && !roles.includes(sesion.rol))) return <Navigate to={ROUTES.HOME} replace />
+  if (!sesion) return <Navigate to={ROUTES.HOME} replace />
+  if (roles && !roles.includes(sesion.rol)) return <Navigate to={ROUTES.DASHBOARD} replace />
   return <Outlet />
 }

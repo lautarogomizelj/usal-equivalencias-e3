@@ -9,6 +9,7 @@ import type {
   SolicitudResumen,
   TipoDocumento,
 } from '@/types/solicitud'
+import { nombreCompleto } from '@/utils/personas'
 import { CARRERAS, ESTADOS, PERFIL, SESION_ASPIRANTE, SOLICITUDES } from './datos'
 
 const DIA_MS = 24 * 60 * 60 * 1000
@@ -116,7 +117,7 @@ function documentoCargado({ fechaCarga, nombreArchivo }: Documento): EventoHisto
     tipo: 'DOCUMENTO_CARGADO',
     estadoAnterior: null,
     estadoNuevo: null,
-    usuario: PERFIL.nombre,
+    usuario: nombreCompleto(PERFIL),
     comentario: nombreArchivo,
   }
 }
@@ -130,7 +131,7 @@ function historialDe(id: number) {
         new Date(Date.parse(fechaCreacion) + indice * DIA_MS).toISOString(),
         recorrido[indice - 1] ?? null,
         codigo,
-        indice < 2 || !responsableAcademico ? PERFIL.nombre : responsableAcademico.nombre,
+        indice < 2 || !responsableAcademico ? nombreCompleto(PERFIL) : responsableAcademico.nombre,
       ),
     )
     historiales.set(id, [...cambios.reverse(), ...documentosDe(id).map(documentoCargado)])
@@ -147,7 +148,7 @@ function detalle(id: number): SolicitudDetalle {
     id,
     codigoExp: solicitud.codigoExp,
     estado: solicitud.estado,
-    aspirante: { ...solicitud.aspirante, email: PERFIL.email, telefono: PERFIL.telefono, dni: PERFIL.dni },
+    aspirante: { ...solicitud.aspirante, email: PERFIL.email, telefono: PERFIL.telefono ?? '', dni: PERFIL.dni ?? '' },
     datosOrigen: origenes.get(id) ?? ORIGEN_DEMO,
     carreraDestino: solicitud.carreraDestino,
     responsableAcademico: solicitud.responsableAcademico,
@@ -179,7 +180,7 @@ function crear(body: unknown) {
   const nueva: SolicitudResumen = {
     id,
     codigoExp: `EXP-2026-${String(id).padStart(3, '0')}`,
-    aspirante: { id: SESION_ASPIRANTE.id, nombre: PERFIL.nombre },
+    aspirante: { id: SESION_ASPIRANTE.id, nombre: nombreCompleto(PERFIL) },
     universidadOrigen: datos.universidadOrigen,
     carreraDestino: carrera,
     estado: estado('SOL-INI'),
@@ -198,7 +199,7 @@ function crear(body: unknown) {
     condicionAcademica: datos.condicionAcademica,
     observaciones: datos.observaciones,
   })
-  historiales.set(id, [cambioEstado(ahora, null, 'SOL-INI', PERFIL.nombre)])
+  historiales.set(id, [cambioEstado(ahora, null, 'SOL-INI', nombreCompleto(PERFIL))])
   return detalle(id)
 }
 
@@ -249,7 +250,7 @@ function enviarDocumentacion(body: unknown, [id]: number[]) {
   solicitud.fechaUltimaMod = ahora
   solicitud.requiereMiAccion = false
   historialDe(id).unshift(
-    cambioEstado(ahora, 'SOL-INI', 'DOC-REV', PERFIL.nombre),
+    cambioEstado(ahora, 'SOL-INI', 'DOC-REV', nombreCompleto(PERFIL)),
     ...cargados.map(documentoCargado),
   )
   return detalle(id)
@@ -266,7 +267,7 @@ function cancelar(body: unknown, [id]: number[]) {
   solicitud.estado = estado('SOL-CANC')
   solicitud.fechaUltimaMod = ahora
   solicitud.requiereMiAccion = false
-  historialDe(id).unshift(cambioEstado(ahora, 'SOL-INI', 'SOL-CANC', PERFIL.nombre))
+  historialDe(id).unshift(cambioEstado(ahora, 'SOL-INI', 'SOL-CANC', nombreCompleto(PERFIL)))
   return detalle(id)
 }
 

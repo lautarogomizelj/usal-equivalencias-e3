@@ -74,8 +74,9 @@ export function NuevaSolicitudPage() {
             </>
           }
         >
-          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-            <Input etiqueta="Nombre completo" value={perfil?.nombre ?? ''} disabled readOnly />
+          <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-5">
+            <Input etiqueta="Nombre" value={perfil?.nombre ?? ''} disabled readOnly />
+            <Input etiqueta="Apellido" value={perfil?.apellido ?? ''} disabled readOnly />
             <Input etiqueta="DNI" value={perfil?.dni ?? ''} disabled readOnly />
             <Input etiqueta="Email" value={perfil?.email ?? ''} disabled readOnly />
             <Input etiqueta="Teléfono" value={perfil?.telefono ?? ''} disabled readOnly />
@@ -182,7 +183,8 @@ export function NuevaSolicitudPage() {
           <section className="rounded-md border border-border p-4">
             <h3 className="text-xl">Datos personales</h3>
             <dl className="mt-3 grid gap-3 sm:grid-cols-2">
-              <Dato etiqueta="Nombre completo">{perfil?.nombre}</Dato>
+              <Dato etiqueta="Nombre">{perfil?.nombre}</Dato>
+              <Dato etiqueta="Apellido">{perfil?.apellido}</Dato>
               <Dato etiqueta="DNI">{perfil?.dni}</Dato>
               <Dato etiqueta="Email">{perfil?.email}</Dato>
               <Dato etiqueta="Teléfono">{perfil?.telefono}</Dato>

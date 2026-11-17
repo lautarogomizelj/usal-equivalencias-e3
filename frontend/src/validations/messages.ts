@@ -11,6 +11,7 @@ export const MENSAJES = {
   CREDENCIALES_INVALIDAS: 'El email o la contraseña no son correctos.',
   CREDENCIALES_ADMIN_INVALIDAS: 'El usuario o la contraseña no son correctos.',
   USUARIO_NO_REGISTRADO: 'Usuario no registrado en el sistema. Contacta al admin.',
+  EMAIL_INSTITUCIONAL: 'El email debe ser @usal.edu.ar.',
   GOOGLE_ERROR: 'No se pudo ingresar con Google. Intentá nuevamente.',
   ARCHIVO_REQUERIDO: 'Tenés que adjuntar un archivo.',
   ARCHIVO_FORMATO: 'Formato no permitido. Solo se aceptan archivos PDF o JPG.',

@@ -37,7 +37,7 @@ export function DashboardPage() {
   return (
     <main className="px-4 pt-8 pb-8 lg:pt-3 lg:pr-8 lg:pl-(--size-privado-margen)">
       <EncabezadoPagina
-        titulo={`Bienvenido, ${sesion?.nombre.split(' ')[0]}`}
+        titulo={`Bienvenido, ${sesion?.nombre}`}
         descripcion="En esta sección podés gestionar tus solicitudes de equivalencias."
       />
 

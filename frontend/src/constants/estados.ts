@@ -33,3 +33,20 @@ export const BANNER_ASPIRANTE: Record<string, string> = {
   'DOC-REV': 'Tu documentación está en revisión. Te avisamos por mail si necesitamos algo más.',
   'SOL-CANC': 'Cancelaste esta solicitud antes de enviar la documentación. Si querés retomar el trámite, creá una nueva.',
 }
+
+/** Macro-etapas del trámite y los estados que activan cada una (frontend-interfaces.md §2.9 y §4.5.2). */
+export const ETAPAS: { nombre: string; estados: string[] }[] = [
+  { nombre: 'Documentación', estados: ['SOL-INI', 'DOC-REV', 'DOC-RECH', 'SOL-CANC'] },
+  { nombre: 'Análisis', estados: ['ANAL-PEND'] },
+  { nombre: 'Reunión', estados: ['REU-FEC-ASP-1', 'REU-FEC-ASP-2', 'REU-FEC-ACAD', 'REU-CHAT', 'REU-PEND'] },
+  { nombre: 'Inscripción', estados: ['ANAL-POST', 'INSC-ACEP', 'INSC-RECH'] },
+  { nombre: 'Legalización', estados: ['LEG-PEND', 'LEG-REV', 'LEG-RECH'] },
+  { nombre: 'Pago', estados: ['CUPON-SOL', 'CUPON-PAG', 'PAG-CTRL', 'PAG-REENV'] },
+  { nombre: 'Inicio de E3', estados: ['E3-INI'] },
+]
+
+/** Estados que cortan el trámite en su etapa, con el texto que muestra el stepper. */
+export const CIERRE_NEGATIVO: Record<string, string> = {
+  'INSC-RECH': 'Rechazada',
+  'SOL-CANC': 'Cancelada',
+}

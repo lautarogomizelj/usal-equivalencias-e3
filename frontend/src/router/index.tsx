@@ -8,6 +8,7 @@ import { NuevaSolicitudPage } from '@/pages/aspirante/NuevaSolicitudPage'
 import { SolicitudPage } from '@/pages/aspirante/SolicitudPage'
 import { EnConstruccionPage } from '@/pages/errors/EnConstruccionPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
+import { PerfilPage } from '@/pages/privado/PerfilPage'
 import { HomePage } from '@/pages/public/HomePage'
 import { LoginAdminPage } from '@/pages/public/LoginAdminPage'
 import { LoginPage } from '@/pages/public/LoginPage'
@@ -19,7 +20,7 @@ import { InicioPorRol } from './InicioPorRol'
 import { RutaProtegida } from './RutaProtegida'
 
 /** Pantallas del aspirante que todavía no están construidas. */
-const RUTAS_PENDIENTES = [ROUTES.PERFIL, ROUTES.AYUDA]
+const RUTAS_PENDIENTES = [ROUTES.AYUDA]
 
 export const router = createBrowserRouter([
   { path: ROUTES.HOME, element: <HomePage /> },
@@ -36,6 +37,7 @@ export const router = createBrowserRouter([
         element: <PrivateLayout />,
         children: [
           { path: ROUTES.DASHBOARD, element: <InicioPorRol /> },
+          { path: ROUTES.PERFIL, element: <PerfilPage /> },
           {
             element: <RutaProtegida roles={['ASPIRANTE']} />,
             children: [

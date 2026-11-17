@@ -3,6 +3,7 @@ import type { Estado } from '@/types/estado'
 import type { Perfil } from '@/types/perfil'
 import type { Sesion } from '@/types/sesion'
 import type { SolicitudResumen } from '@/types/solicitud'
+import { nombreCompleto } from '@/utils/personas'
 
 export const CARRERAS: Carrera[] = [
   { id: 1, codigo: 'ING-INF-001', nombre: 'Ingeniería en Informática', facultad: 'Facultad de Ingeniería', descripcion: '', activo: true },
@@ -43,10 +44,14 @@ export const ESTADOS: Estado[] = CATALOGO.map(([codigo, nombre, esTerminal = fal
   activo: true,
 }))
 
+/** Contraseña de todas las cuentas de los mocks. */
+export const PASSWORD_VALIDA = 'Demo1234!'
+
 export const SESION_ASPIRANTE: Sesion = {
   tipo: 'ASPIRANTE',
   id: 15,
-  nombre: 'Juan Pérez',
+  nombre: 'Juan',
+  apellido: 'Pérez',
   email: 'aspirante@example.com',
   rol: 'ASPIRANTE',
   avatar: null,
@@ -56,19 +61,20 @@ export const SESION_ASPIRANTE: Sesion = {
 }
 
 /** Cuentas @usal de `Docs/demo-credentials.md`: nombre, email, rol y si tiene permiso sobre la carrera demo. */
-const CUENTAS_USAL: [nombre: string, email: string, rol: string, conCarrera?: boolean][] = [
-  ['María Gómez', 'academico@usal.edu.ar', 'ACAD', true],
-  ['Carolina Ruiz', 'secretaria@usal.edu.ar', 'SECRE', true],
-  ['Pedro Sosa', 'revisor@usal.edu.ar', 'REVISOR'],
-  ['Laura Díaz', 'observador@usal.edu.ar', 'ACAD'],
-  ['Admin General', 'admin@usal.edu.ar', 'ADMIN'],
+const CUENTAS_USAL: [nombre: string, apellido: string, email: string, rol: string, conCarrera?: boolean][] = [
+  ['María', 'Gómez', 'academico@usal.edu.ar', 'ACAD', true],
+  ['Carolina', 'Ruiz', 'secretaria@usal.edu.ar', 'SECRE', true],
+  ['Pedro', 'Sosa', 'revisor@usal.edu.ar', 'REVISOR'],
+  ['Laura', 'Díaz', 'observador@usal.edu.ar', 'ACAD'],
+  ['Admin', 'General', 'admin@usal.edu.ar', 'ADMIN'],
 ]
 
 /** `carrerasConPermiso` solo viene para Académico y Secretaría (contrato de la API §4.1). */
-export const SESIONES_USAL: Sesion[] = CUENTAS_USAL.map(([nombre, email, rol, conCarrera], indice) => ({
+export const SESIONES_USAL: Sesion[] = CUENTAS_USAL.map(([nombre, apellido, email, rol, conCarrera], indice) => ({
   tipo: 'USUARIO',
   id: indice + 1,
   nombre,
+  apellido,
   email,
   rol,
   avatar: null,
@@ -82,13 +88,14 @@ export const SESIONES_USAL: Sesion[] = CUENTAS_USAL.map(([nombre, email, rol, co
 
 export const PERFIL: Perfil = {
   nombre: SESION_ASPIRANTE.nombre,
+  apellido: SESION_ASPIRANTE.apellido,
   email: SESION_ASPIRANTE.email,
   telefono: '+54 11 2345-6789',
   dni: '40123456',
   avatar: null,
   rol: SESION_ASPIRANTE.rol,
   esOAuth: false,
-  camposEditables: ['nombre', 'telefono', 'avatar'],
+  camposEditables: ['nombre', 'apellido', 'telefono', 'avatar'],
 }
 
 /** Código de expediente, estado, responsables y fechas de creación y de última actualización. */
@@ -103,7 +110,7 @@ export const SOLICITUDES: SolicitudResumen[] = LISTADO.map(
   ([codigoExp, estado, academico, administrativo, creacion, ultimaMod], indice) => ({
     id: indice + 1,
     codigoExp,
-    aspirante: { id: SESION_ASPIRANTE.id, nombre: SESION_ASPIRANTE.nombre },
+    aspirante: { id: SESION_ASPIRANTE.id, nombre: nombreCompleto(SESION_ASPIRANTE) },
     universidadOrigen: 'Universidad Nacional de La Plata',
     carreraDestino: CARRERAS[0],
     estado: ESTADOS.find(({ codigo }) => codigo === estado)!,

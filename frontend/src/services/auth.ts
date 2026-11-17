@@ -7,12 +7,14 @@ interface DatosRegistro {
   email: string
   password: string
   nombre: string
+  apellido: string
   telefono: string
   dni: string
 }
 
 export const auth = {
-  login: (email: string, password: string) => api.post<Sesion>('/auth/login', { email, password }),
+  login: (email: string, password: string, recordarme: boolean) =>
+    api.post<Sesion>('/auth/login', { email, password, recordarme }),
   loginAdmin: (usuario: string, password: string) => api.post<Sesion>('/auth/admin/login', { usuario, password }),
   /** Reemplaza al login con Google en desarrollo: solo existe con el perfil `dev` del backend. */
   loginDev: (email: string) => api.post<Sesion>('/auth/dev/login', { email }),

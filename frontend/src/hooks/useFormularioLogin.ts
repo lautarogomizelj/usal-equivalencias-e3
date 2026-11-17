@@ -12,6 +12,7 @@ export function useFormularioLogin() {
   const { ingresar: iniciarSesion } = useAuth()
   const [correo, setCorreo] = useState('')
   const [contrasenia, setContrasenia] = useState('')
+  const [recordarme, setRecordarme] = useState(false)
   const [errorCorreo, setErrorCorreo] = useState<ResultadoValidacion>(null)
   const [errorContrasenia, setErrorContrasenia] = useState<ResultadoValidacion>(null)
 
@@ -24,8 +25,8 @@ export function useFormularioLogin() {
     if (validacionCorreo || validacionContrasenia) return
 
     try {
-      await iniciarSesion(correo.trim(), contrasenia)
-      navigate(ROUTES.MIS_SOLICITUDES)
+      await iniciarSesion(correo.trim(), contrasenia, recordarme)
+      navigate(ROUTES.DASHBOARD)
     } catch (error) {
       const codigo = error instanceof ApiError ? error.body?.code : undefined
       if (codigo === 'EMAIL_NO_VALIDADO') {
@@ -38,5 +39,15 @@ export function useFormularioLogin() {
     }
   }
 
-  return { correo, setCorreo, contrasenia, setContrasenia, errorCorreo, errorContrasenia, ingresar }
+  return {
+    correo,
+    setCorreo,
+    contrasenia,
+    setContrasenia,
+    recordarme,
+    setRecordarme,
+    errorCorreo,
+    errorContrasenia,
+    ingresar,
+  }
 }

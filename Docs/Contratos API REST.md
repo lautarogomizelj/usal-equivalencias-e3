@@ -7,10 +7,12 @@
 | 1.0 | 2026-10-14 | jumaluc | Versión inicial: convenciones, entidades, endpoints por módulo y acciones del trámite, basada en requisitos v12.0 |
 | 1.1 | 2026-10-31 | jumaluc | Sprint 1: `ApiErrorKind` con `conflict` y `locked`, JSON en camelCase y `frontend-interfaces.md` en 20 estados; se quitan de los puntos abiertos |
 | 1.2 | 2026-11-02 | jumaluc | Sprint 2: sesión con JWT en cookie, códigos `NO_AUTENTICADO` y `ACCESO_DENEGADO`, login simulado de desarrollo, flujo real de `/auth/google` y errores de perfil (CC-007, CC-008) |
+| 1.3 | 2026-11-15 | jumaluc | Sprint 3: lectura de catálogos, creación y lectura de solicitudes, documentos en borrador, `ENVIAR_DOCUMENTACION` desde `SOL-INI`, reglas del motor de transiciones y `fechaCreacion` en `SolicitudResumen` (CC-009) |
+| 1.4 | 2026-11-15 | jumaluc | Cancelación del aspirante: estado terminal `SOL-CANC` y acción `CANCELAR_SOLICITUD` (`POST /solicitudes/{id}/cancelar`) desde `SOL-INI`, que elimina los borradores (requisitos v13.0, CC-010) |
 
-> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4); el resto del documento es el contrato a acordar.
+> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos (§6, sin análisis, reunión, informe ni pago) y la acción `ENVIAR_DOCUMENTACION` desde `SOL-INI` (§7). El resto del documento es el contrato a acordar.
 
-Este documento fija el contrato entre el frontend (React, `services/api/client.ts`) y el backend (Spring Boot, a implementar) del sistema E3. Se basa en los Requisitos v12.0 (20 estados, 26 transiciones). Donde los requisitos no definen algo, la decisión figura como **Propuesta** y hay que validarla con backend.
+Este documento fija el contrato entre el frontend (React, `services/api/client.ts`) y el backend (Spring Boot, a implementar) del sistema E3. Se basa en los Requisitos v13.0 (21 estados, 27 transiciones). Donde los requisitos no definen algo, la decisión figura como **Propuesta** y hay que validarla con backend.
 
 ## 1. Convenciones generales
 
@@ -175,10 +177,10 @@ Los campos `codigoValidacion`, `fechaValidacionEnviada` y `expiracionCodigo` de 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
 | id | int | PK |
-| codigo | string | Único: los 20 códigos de RF-ESTADO-001 |
+| codigo | string | Único: los 21 códigos de RF-ESTADO-001 |
 | nombre | string | Solo para mostrar |
 | descripcion | string |  |
-| esTerminal | boolean | Hoy solo `INSC-RECH` |
+| esTerminal | boolean | Hoy `INSC-RECH` y `SOL-CANC` |
 | activo | boolean |  |
 
 ### 2.6 Solicitud (`solicitudes`)
@@ -186,7 +188,7 @@ Los campos `codigoValidacion`, `fechaValidacionEnviada` y `expiracionCodigo` de 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
 | id | int | PK |
-| codigoExp | string | Único, `EXP-2026-001` |
+| codigoExp | string | Único, `EXP-2026-001`: año de creación y un número de secuencia que no se reinicia con el año (CC-009) |
 | aspiranteId | int | FK |
 | carreraDestinoId | int | FK |
 | estadoCodigo | string | **Propuesta**: estado actual desnormalizado, para filtrar la bandeja sin recorrer el historial |
@@ -200,7 +202,7 @@ Los campos `codigoValidacion`, `fechaValidacionEnviada` y `expiracionCodigo` de 
 | universidadOrigen | string | **Propuesta** (Anexo A #1 de interfaces) |
 | facultadOrigen | string | **Propuesta** |
 | carreraOrigen | string | **Propuesta** |
-| condicionAcademica | string | **Propuesta**; valores a definir (Anexo A #2) |
+| condicionAcademica | string | **Propuesta**; valores a definir (Anexo A #2). Hasta entonces, texto libre de hasta 50 caracteres |
 | observaciones | string? | **Propuesta** |
 | documentosLegalizados | boolean? | **Propuesta**: respuesta del aspirante en `INSC-ACEP` |
 
@@ -238,7 +240,7 @@ Los campos `codigoValidacion`, `fechaValidacionEnviada` y `expiracionCodigo` de 
 | fechaRevision | datetime? |  |
 | esRequeridoFaltante | boolean | Agregado por el Académico, sin archivo |
 
-**Propuesta:** campo `borrador` (boolean), `true` mientras el aspirante subió el archivo pero todavía no ejecutó `ENVIAR_DOCUMENTACION` (Anexo A #4 de interfaces).
+Campo `borrador` (boolean): `true` mientras el aspirante subió el archivo pero todavía no ejecutó `ENVIAR_DOCUMENTACION` (Anexo A #4 de interfaces). Los borradores solo los ve el aspirante (CC-009).
 
 ### 2.9 Análisis académico (`analisis_academico`)
 
@@ -576,7 +578,7 @@ Los catálogos los carga el backend; el frontend nunca los hardcodea (interfaces
 | POST | `/carreras` | Admin | Crea carrera | 201 `Carrera` | RF-ADMIN-002 |
 | PUT | `/carreras/{id}` | Admin | Modifica datos | 200 `Carrera` | RF-ADMIN-002 |
 | PATCH | `/carreras/{id}/activo` | Admin | `{ "activo": false }` (baja lógica) | 200 `Carrera` | RF-ADMIN-002 |
-| GET | `/estados` | Autenticado | Catálogo de los 20 estados | 200 `Estado[]` | RF-ESTADO-003 |
+| GET | `/estados` | Autenticado | Catálogo de los 21 estados | 200 `Estado[]` | RF-ESTADO-003 |
 | GET | `/roles` | Admin | Roles asignables a personal @usal | 200 `Rol[]` | RF-ADMIN-001 |
 
 **`Carrera`**
@@ -638,6 +640,8 @@ Filtros de `GET /solicitudes`: `estado` (código, repetible), `carreraId`, `desd
 
 El orden por defecto lo resuelve el backend: primero las carreras con permiso del usuario, agrupadas, y después el resto alfabético por carrera (RF-PROC-001). Para el aspirante: primero las que requieren su acción, después por última actualización.
 
+Hoy `GET /solicitudes` responde solo al aspirante, con los filtros `estado` y `finalizadas`. La bandeja del personal, con el resto de los filtros, llega en el Sprint 4; hasta entonces el personal recibe 403 `ACCESO_DENEGADO`. En el aspirante, `esDeMisCarreras` siempre es `false`.
+
 **`SolicitudResumen`**
 
 ```json
@@ -650,6 +654,7 @@ El orden por defecto lo resuelve el backend: primero las carreras con permiso de
   "estado": { "codigo": "DOC-REV", "nombre": "Documentación pendiente de revisión" },
   "responsableAcademico": null,
   "responsableAdministrativo": null,
+  "fechaCreacion": "2026-10-08T11:00:00-03:00",
   "fechaUltimaMod": "2026-10-14T15:30:00-03:00",
   "requiereMiAccion": true,
   "esDeMisCarreras": true
@@ -671,7 +676,9 @@ El orden por defecto lo resuelve el backend: primero las carreras con permiso de
 }
 ```
 
-Los datos personales no se envían: salen de la cuenta. El backend genera `codigoExp`, deja la solicitud en `SOL-INI` sin responsable y notifica a quienes tienen permiso sobre la carrera. Errores: 403 `EMAIL_NO_VALIDADO`, 400 `VALIDACION` (carrera inexistente o inactiva).
+Los datos personales no se envían: salen de la cuenta. El backend genera `codigoExp`, deja la solicitud en `SOL-INI` sin responsable y notifica a quienes tienen permiso sobre la carrera. Errores: 403 `EMAIL_NO_VALIDADO`, 400 `VALIDACION` (carrera inexistente o inactiva, en `errors.carreraDestinoCodigo`). Responde 201 con `Location`.
+
+El aviso por mail a la carrera todavía no se envía: llega con el servicio de notificaciones del Sprint 4 (RF-ESTADO-002).
 
 ### 6.4 Detalle
 
@@ -705,7 +712,9 @@ Los datos personales no se envían: salen de la cuenta. El backend genera `codig
 }
 ```
 
-`miRelacion` vale `ASPIRANTE`, `PARTICIPANTE`, `OBSERVADOR`, `ADMIN` o `REVISOR`, y resuelve el modo de las interfaces (acción o solo lectura). `accionesDisponibles` usa los códigos de la sección 7.1.
+`miRelacion` vale `ASPIRANTE`, `PARTICIPANTE`, `OBSERVADOR`, `ADMIN` o `REVISOR`, y resuelve el modo de las interfaces (acción o solo lectura). `accionesDisponibles` usa los códigos de la sección 7.1 y solo incluye las acciones ya implementadas.
+
+`ultimaObservacion` es el último comentario que dejó el personal en un cambio de estado, o `null`. `resumenDocumentos` cuenta los documentos vigentes que ve quien pregunta. `chatHabilitado` es `true` cuando hay algún responsable, y `mensajesNoLeidos` vale 0 hasta que exista el chat (Sprint 6).
 
 **`EventoHistorial`**
 
@@ -720,7 +729,7 @@ Los datos personales no se envían: salen de la cuenta. El backend genera `codig
 }
 ```
 
-`tipo`: `CAMBIO_ESTADO`, `CAMBIO_RESPONSABLE` o `DOCUMENTO_CARGADO`.
+`tipo`: `CAMBIO_ESTADO`, `CAMBIO_RESPONSABLE` o `DOCUMENTO_CARGADO`. En `DOCUMENTO_CARGADO`, `comentario` trae el nombre del archivo y los borradores no aparecen. `CAMBIO_RESPONSABLE` llega con Tomar proceso (Sprint 4).
 
 ### 6.5 Documentos
 
@@ -734,6 +743,18 @@ Los datos personales no se envían: salen de la cuenta. El backend genera `codig
 | `reemplazaAId` | int | En recargas | Documento marcado `RECARGAR` que se reemplaza |
 
 Se acepta en `SOL-INI` (documentos nuevos) y en `DOC-RECH` y `LEG-RECH` (solo reemplazos de documentos `RECARGAR`). Cada archivo se sube al elegirlo y queda como borrador hasta `ENVIAR_DOCUMENTACION`. Errores: 400 `ARCHIVO_INVALIDO`, 413 `LIMITE_TAMANO`, 409 `DOCUMENTO_BLOQUEADO`, 409 `TRANSICION_INVALIDA`.
+
+Implementado hoy (CC-009):
+
+- Solo en `SOL-INI`. Los reemplazos con `reemplazaAId` llegan con la recarga selectiva (Sprint 4).
+- El formato se reconoce por el contenido del archivo, no por su nombre ni por el `Content-Type`.
+- Los 50 MB se cuentan entre los borradores todavía no enviados.
+- `tipo` fuera del catálogo: 400 `VALIDACION` con `errors.tipo`.
+- `DELETE` de un documento ya enviado: 409 `TRANSICION_INVALIDA`.
+- `CANCELAR_SOLICITUD` elimina los borradores con sus archivos; después la solicitud ya no acepta documentos.
+- Los archivos se guardan en disco por año, DNI y expediente; el nombre original solo se muestra.
+
+`ENVIAR_DOCUMENTACION` desde `SOL-INI` exige Analítico, Plan de estudios y al menos un Programa entre los borradores (Anexo A #3 de interfaces). Si falta alguno responde 400 `VALIDACION` con `errors.documentos`.
 
 **`Documento`**
 
@@ -815,12 +836,15 @@ Se acepta en `SOL-INI` (documentos nuevos) y en `DOC-RECH` y `LEG-RECH` (solo re
 
 Cada transición de RF-ESTADO-001 es un `POST` propio bajo `/solicitudes/{id}`. Todas reciben `estadoEsperado` y devuelven 200 `SolicitudDetalle` con el estado nuevo. El backend valida rol, permiso de participante y estado; si algo no cumple responde 403 `NO_PARTICIPANTE` o 409 `TRANSICION_INVALIDA`.
 
-### 7.1 Transiciones (26)
+El motor valida en este orden (CC-009): el rol (403 `ACCESO_DENEGADO`), la participación (403 `NO_PARTICIPANTE`; para el aspirante, que la solicitud sea suya) y el estado (409 `TRANSICION_INVALIDA`, también si `estadoEsperado` no coincide). La solicitud se bloquea durante la acción, así que de dos pedidos simultáneos solo uno parte del estado esperado. Cada cambio deja una fila en `estados_solicitud` y otra en auditoría, incluida la creación (`estadoAnterior` nulo). Hoy están implementadas `ENVIAR_DOCUMENTACION` y `CANCELAR_SOLICITUD`, las dos desde `SOL-INI`.
+
+### 7.1 Transiciones (27)
 
 | Código de acción | Endpoint (`POST /solicitudes/{id}…`) | Actor | De → A | Body (además de `estadoEsperado`) |
 | --- | --- | --- | --- | --- |
 | `CREAR_SOLICITUD` | `POST /solicitudes` | Aspirante | (inicio) → `SOL-INI` | Ver 6.3 |
 | `ENVIAR_DOCUMENTACION` | `/documentacion/enviar` | Aspirante | `SOL-INI` → `DOC-REV`; `DOC-RECH` → `DOC-REV`; `LEG-RECH` → `LEG-REV` | — |
+| `CANCELAR_SOLICITUD` | `/cancelar` | Aspirante | `SOL-INI` → `SOL-CANC` | — |
 | `ACEPTAR_DOCUMENTACION` | `/documentacion/aceptar` | Académico | `DOC-REV` → `ANAL-PEND` | `marcas?` |
 | `RECHAZAR_DOCUMENTACION` | `/documentacion/rechazar` | Académico | `DOC-REV` → `DOC-RECH` | `comentario`, `marcas` |
 | `PROPONER_FECHAS` | `/analisis/propuesta` (multipart) | Académico | `ANAL-PEND` → `REU-FEC-ASP-1` | Matriz, horario de cursada y `horarios` |
@@ -842,7 +866,7 @@ Cada transición de RF-ESTADO-001 es un `POST` propio bajo `/solicitudes/{id}`. 
 | `ACEPTAR_PAGO` | `/pago/aceptar` | Secretaría | `PAG-CTRL` → `E3-INI` | `comentario?` |
 | `RECHAZAR_PAGO` | `/pago/rechazar` | Secretaría | `PAG-CTRL` → `PAG-REENV` | `comentario` |
 
-Las 26 transiciones quedan en 22 acciones: el reenvío de documentación (4) y de legalizados (20) usan `ENVIAR_DOCUMENTACION`, el reenvío de comprobante (25) usa `ENVIAR_COMPROBANTE`, e `INDICAR_LEGALIZACION` cubre la 16 y la 17.
+Las 27 transiciones quedan en 23 acciones: el reenvío de documentación (4) y de legalizados (20) usan `ENVIAR_DOCUMENTACION`, el reenvío de comprobante (25) usa `ENVIAR_COMPROBANTE`, e `INDICAR_LEGALIZACION` cubre la 16 y la 17.
 
 ### 7.2 Acciones sin cambio de estado
 
@@ -1106,7 +1130,8 @@ Los DTOs de este documento van en `frontend/src/types/` con los mismos nombres (
 
 - [x] Sesión por cookie `HttpOnly` o por header `Authorization: Bearer`: cookie `HttpOnly` con JWT (CC-007).
 - [ ] Protección CSRF: requiere agregar el header en `client.ts` (§1).
-- [ ] Dónde se guardan los datos de origen de la solicitud y qué valores tiene "Condición académica" (Anexo A #1 y #2 de interfaces).
+- [x] Dónde se guardan los datos de origen de la solicitud: en `solicitudes` (CC-009).
+- [ ] Qué valores tiene "Condición académica" (Anexo A #2 de interfaces); hoy es texto libre.
 - [ ] Quién carga el informe de materias estructurado y en qué estado (`CARGAR_INFORME`, Anexo A #8).
 - [ ] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables.
 - [ ] Descarga del expediente por el aspirante y reapertura: dependen de los estados posteriores a `E3-INI` (RF-ASP-008, RF-ADMIN-006).

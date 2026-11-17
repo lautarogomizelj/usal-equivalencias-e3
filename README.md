@@ -13,6 +13,11 @@
 | 1.6 | 2026-10-31 | jumaluc | Sprint 1 de frontend: mocks y tokens del diseño; corrige el nombre de la universidad y el enlace al contrato |
 | 1.7 | 2026-10-31 | jumaluc | Estado actual: pantallas públicas de acceso construidas contra mocks |
 | 1.8 | 2026-11-02 | jumaluc | Backend de los sprints 1 y 2: Docker, Flyway, login por rol, sesión, RBAC y perfil; guía de backend con lo que ya existe (CC-007, CC-008) |
+| 1.9 | 2026-11-15 | jumaluc | Backend del Sprint 3: motor de transiciones, solicitudes, documentos, permisos temporales y catálogos; carpeta de archivos y `ARCHIVOS_DIR` (CC-009) |
+| 1.10 | 2026-11-15 | jumaluc | Frontend: sesión, rutas protegidas, layout privado con menú por rol y pantalla Mis solicitudes del aspirante |
+| 1.11 | 2026-11-15 | jumaluc | Frontend del Sprint 3: panel de inicio, Nueva solicitud y detalle de la solicitud con carga de documentos, responsables e historial |
+| 1.12 | 2026-11-15 | jumaluc | El aspirante puede cancelar su solicitud antes de enviar la documentación: estado `SOL-CANC`, backend y frontend (RF-ASP-010, CC-010) |
+| 1.13 | 2026-11-17 | jumaluc | Frontend: login del personal y login de Admin (CC-011); alta de `Docs/TEMAS_PROFESOR.md` |
 
 Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad del Salvador (USAL).
 
@@ -28,13 +33,15 @@ Este sistema reemplaza ese circuito por una plataforma web donde cada rol tiene 
 
 ## Estado actual
 
-**El proyecto está en el Hito 1 (base técnica y acceso). No hay nada desplegado.**
+**El backend está en el Hito 2 (solicitud y revisión documental). El frontend tiene las pantallas del aspirante del Sprint 3 y pendientes del Sprint 2. No hay nada desplegado.**
 
-El backend tiene hecha su parte de los sprints 1 y 2: Docker Compose (backend, PostgreSQL, pgAdmin y mail de prueba), migraciones Flyway, formato de error común, Swagger UI, registro de aspirante con código por mail, login con bloqueo por intentos, login con Google, login de Admin, sesión con JWT en cookie, RBAC por rol y perfil (RF-AUTH-001 a 005 y 007). El login con Google está implementado, pero no se probó contra Google porque faltan las credenciales de la USAL; en desarrollo se reemplaza con `POST /auth/dev/login`. Los permisos temporales por solicitud llegan en el Sprint 3, junto con la tabla `solicitudes`.
+El backend tiene hecha su parte de los sprints 1 y 2: Docker Compose (backend, PostgreSQL, pgAdmin y mail de prueba), migraciones Flyway, formato de error común, Swagger UI, registro de aspirante con código por mail, login con bloqueo por intentos, login con Google, login de Admin, sesión con JWT en cookie, RBAC por rol y perfil (RF-AUTH-001 a 005 y 007). El login con Google está implementado, pero no se probó contra Google porque faltan las credenciales de la USAL; en desarrollo se reemplaza con `POST /auth/dev/login`.
 
-El frontend tiene los Design Tokens del diseño de interfaces, el cliente HTTP centralizado con manejo tipado de errores, una capa de mocks del contrato, el router, el layout público, la página de error 404 y los componentes base (botón, campos de formulario, modales, tabla, paginador y badge de estado). Las pantallas públicas de inicio, login de aspirante, registro, verificación del correo y recuperación de contraseña siguen el diseño de Drive; registro, verificación y recuperación funcionan contra mocks y el login solo valida el formulario. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero las pantallas de negocio todavía no existen.
+Del Sprint 3, el backend tiene el motor de transiciones (rol, permiso de participante y `estadoEsperado`, con registro en `estados_solicitud` y auditoría), los permisos temporales por solicitud, los catálogos de carreras y estados, y RF-ASP-001, 002 y 010: el aspirante crea su solicitud, sube documentos en borrador y envía la documentación (`SOL-INI` → `DOC-REV`) o la cancela antes de enviarla (`SOL-INI` → `SOL-CANC`). También expone el detalle con responsables y acciones disponibles, el historial y el listado del aspirante. Los mails de cada cambio de estado, la bandeja del personal y la recarga de documentos son del Sprint 4.
 
-En resumen: el frontend completó su parte del Sprint 1 y tiene avanzadas las pantallas públicas del Sprint 2. Falta el login institucional, el perfil, `AuthContext`, las rutas protegidas y el layout privado. El frontend todavía trabaja contra mocks: falta conectarlo a la API real.
+El frontend tiene los Design Tokens del diseño de interfaces, el cliente HTTP centralizado con manejo tipado de errores, una capa de mocks del contrato, el router, los layouts público y privado, la página de error 404 y los componentes base (botón, campos de formulario, modales, tabla, paginador y badge de estado). Las pantallas públicas de inicio, login de aspirante, registro, verificación del correo y recuperación de contraseña siguen el diseño de Drive; registro, verificación y recuperación funcionan contra mocks. El login del personal (`/login-personal`, con el botón de Google y, solo en desarrollo, un bloque de cuentas demo) y el login de Admin (`/login-admin`) reutilizan el diseño del login de aspirante; se probaron solo contra mocks. El login del aspirante inicia sesión y lleva al área privada, que tiene la sesión compartida (`AuthProvider`), las rutas protegidas por rol y el menú lateral según el rol. El aspirante tiene el panel de inicio, Mis solicitudes, Nueva solicitud y el detalle de la solicitud: la carga de documentos con envío o cancelación en `SOL-INI` y, en los demás estados, el banner del estado con las pestañas Documentación, Detalles (con los responsables) e Historial. Mi perfil, Ayuda y la pestaña Chat muestran un aviso de "Próximamente". El login y las pantallas del aspirante se probaron también contra el backend real. El andamiaje de rutas, roles y tipos ya contempla los seis roles del sistema —los cinco del catálogo (`ASPIRANTE`, `ACADEMICO`, `SECRETARIA`, `REVISOR`, `ADMIN`) más `OBSERVADOR`, que no es un rol del catálogo sino el estado de un usuario sin permisos en una carrera—, pero solo el aspirante tiene pantallas de negocio: el personal y el Admin ya pueden ingresar y por ahora ven un aviso de "Próximamente".
+
+En resumen: el frontend completó su parte del Sprint 1. Del Sprint 2 falta el perfil. Del Sprint 3 tiene todas sus pantallas; del detalle faltan el stepper de etapas y la recarga de documentos, que llega con el Sprint 4. Por defecto el frontend trabaja contra mocks (`VITE_USE_MOCKS=true`); registro, verificación y recuperación todavía no se probaron contra la API real.
 
 ---
 
@@ -160,7 +167,7 @@ make install
 make dev          # http://localhost:5173
 ```
 
-El `.env` se crea una sola vez y es donde se define la URL del backend. Con `VITE_USE_MOCKS=true` el frontend responde con los mocks del contrato y no necesita backend. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
+El `.env` se crea una sola vez y es donde se define la URL del backend. Con `VITE_USE_MOCKS=true` el frontend responde con los mocks del contrato y no necesita backend; con los mocks se entra con cualquier email y la contraseña `Demo1234!`. Las variables de entorno de Vite solo se leen al arrancar el servidor, así que si modificás el `.env` tenés que reiniciar el dev server para que el cambio tome efecto.
 
 ### Correr solo el frontend
 
@@ -288,6 +295,8 @@ Los PRs en Draft van a ser skipeados por CI hasta que se marquen como listos par
 
 PostgreSQL persiste en `data/` en la raíz del monorepo (bind-mounted en Docker e ignorado por Git). Se borra para resetear el estado local.
 
+Los documentos que suben los aspirantes van a `data/archivos/`, ordenados por año, DNI y expediente. Fuera de Docker, la carpeta la define `ARCHIVOS_DIR` (por defecto, `./archivos`).
+
 ### Datos Demo
 
 Para poblar la base con una cuenta por rol, se setea `SEED_DEMO=true` al arrancar. Las solicitudes en cada estado se suman cuando exista el trámite (a implementar).
@@ -334,6 +343,9 @@ CORS_ALLOWED_ORIGINS=https://tu-frontend
 
 # Seed Demo
 SEED_DEMO=false  # Desactivado en producción
+
+# Documentos del trámite (carpeta con backup)
+ARCHIVOS_DIR=/ruta/a/archivos
 ```
 
 ---
@@ -371,7 +383,8 @@ src/main/resources/
 ├── db/migration/                    # Scripts Flyway
 │   ├── V1__initial.sql
 │   ├── V2__catalogos.sql
-│   └── V3__autenticacion.sql
+│   ├── V3__autenticacion.sql
+│   └── V4__solicitudes.sql
 └── logback-spring.xml              # Config logging
 
 src/test/java/com/usal/e3/
@@ -388,6 +401,8 @@ Las dependencias fluyen en una dirección: `api → service → repository → d
 src/
 ├── assets/        imágenes y archivos estáticos
 ├── components/
+│   ├── privado/   piezas de las pantallas del área privada (encabezado con título y foto)
+│   ├── solicitudes/  tabla, carga de documentos y detalle de una solicitud; `vistas.ts` asocia cada estado con su interfaz
 │   └── ui/        componentes base compartidos (Button, Input, Modal, Table...)
 ├── constants/     rutas, roles, límites de archivos, reglas de auth, env
 ├── hooks/         hooks reutilizables
@@ -414,5 +429,6 @@ Importar con el alias `@/` (ej: `import { Button } from '@/components/ui'`).
 | `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, flujo de comunicación entre Frontend y Backend y las tres capas. Los puertos y el stack están en este README, no se repiten ahí. |
 | `Docs/GESTION_CAMBIOS.md` | Registro de cambios de requisito y de diseño que surgen durante el desarrollo. Cada cambio aprobado se refleja en el documento fuente y en su tabla de control de versiones. |
 | `Docs/demo-credentials.md` | Cuentas demo por rol para probar el sistema en desarrollo. |
+| `Docs/TEMAS_PROFESOR.md` | Dudas del equipo para charlar con el profesor, con lo que se hizo mientras tanto. |
 | `Docs/Diagramas/` (3 archivos `.jpeg`) | Diagramas de actividades y de los flujos de análisis preliminar y revisión legal. |
 | `AGENTS.md` | Pautas de trabajo para las herramientas de asistencia: cómo encarar un cambio, reglas de UI y prefijos de commit. |

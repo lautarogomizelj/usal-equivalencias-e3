@@ -1,5 +1,5 @@
 # Sistema de Tramitación de Equivalencias Electrónicas (E3)
-## Especificación de Requisitos Funcionales y No Funcionales - Versión 12.0
+## Especificación de Requisitos Funcionales y No Funcionales - Versión 13.0
 
 ## Control de versiones
 
@@ -17,6 +17,7 @@
 | 10.0 | 2026-10-13 | lautarogomizelj | Permite al Académico actualizar la matriz de equivalencias y el horario de cursada desde `ANAL-POST` (RF-ACAD-002, RF-ACAD-004, RF-PROC-002); agrega la tabla versionada `analisis_academico`, la notificación al aspirante (RF-ESTADO-002) y la entrada de auditoría |
 | 11.0 | 2026-10-13 | lautarogomizelj | Divide el estado `REU-FEC-ASP` en `REU-FEC-ASP-1` y `REU-FEC-ASP-2` para codificar el límite de 2 rondas en el grafo (catálogo de 19 estados, 23 transiciones); actualiza RF-ASP-005, RF-ACAD-002/003, RF-ESTADO-002 y la tabla de estados (E3) |
 | 12.0 | 2026-10-13 | lautarogomizelj | Agrega el estado `LEG-PEND` (documentos sin legalizar) para resolver el caso de `INSC-ACEP` sin transición y la transición `REU-PEND` → `REU-FEC-ACAD` para cuando el aspirante no se presenta a la reunión (catálogo de 20 estados, 26 transiciones); actualiza RF-ASP-009, RF-ACAD-004, RF-ESTADO-002 y la tabla de estados (E3) |
+| 13.0 | 2026-11-15 | jumaluc | Agrega el estado terminal `SOL-CANC` (solicitud cancelada) y la transición 27 `SOL-INI` → `SOL-CANC`: el aspirante puede cancelar su solicitud antes de enviar la documentación (RF-ASP-010, CC-010). Catálogo de 21 estados y 27 transiciones |
 
 ---
 
@@ -34,7 +35,7 @@ El **Sistema de Tramitación de Equivalencias Electrónicas (E3)** es una aplica
 ### Solución propuesta:
 Plataforma web centralizada donde:
 - Cada rol (Aspirante, Académico, Secretaría Administrativa, Admin, Revisor Logs) tiene un panel personalizado
-- El proceso avanza mediante transiciones de estado explícitas (20 estados)
+- El proceso avanza mediante transiciones de estado explícitas (21 estados)
 - Los cambios de estado generan notificaciones automáticas por mail
 - Hay trazabilidad completa y auditoría detallada de cada paso
 - El almacenamiento es centralizado en la base de datos de la facultad (por año y DNI)
@@ -384,6 +385,18 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
     - Los documentos ✅ conservan su marca
     - Mail al Académico (RF-ESTADO-002)
 
+#### RF-ASP-010: Cancelar Solicitud
+- **Acciona:** Desde estado **"Solicitud iniciada"** (`SOL-INI`), antes de enviar la documentación
+- El aspirante confirma la cancelación en un modal que avisa que no se puede deshacer
+- Al confirmar:
+  - El SISTEMA cambia estado a **"Solicitud cancelada"** (`SOL-CANC`), que es terminal
+  - Los archivos cargados que no se llegaron a enviar se eliminan
+  - La solicitud queda en el listado del aspirante como finalizada, con su historial
+  - El cambio se registra en `estados_solicitud` y en auditoría, como cualquier transición
+- No se envía mail: nadie del personal trabajó todavía sobre la solicitud
+- Con la documentación ya enviada (`DOC-REV` en adelante) la solicitud no se puede cancelar desde el sistema
+- El aspirante puede crear una solicitud nueva después de cancelar
+
 ---
 
 ### 4.3 Módulo de Estados y Notificaciones
@@ -398,7 +411,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - Esta tabla es la fuente de verdad de lo que permite hacer el sistema: ninguna acción puede cambiar el estado si no figura como transición
 - La tabla está incompleta: los estados posteriores a `E3-INI` se definirán en próximas versiones
 
-**Catálogo de estados (20):**
+**Catálogo de estados (21):**
 
 | # | Código | Estado | Descripción | Tipo |
 |---|---|---|---|---|
@@ -422,6 +435,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 18 | `PAG-CTRL` | Control de pago | Comprobante cargado; Secretaría controla el pago | Intermedio |
 | 19 | `PAG-REENV` | Reenvío de comprobante | El pago fue rechazado; el aspirante debe reenviar el comprobante | Intermedio |
 | 20 | `E3-INI` | Inicio de E3 | Pago aceptado; inicio de E3. Último estado cargado en la tabla vigente | Intermedio |
+| 21 | `SOL-CANC` | Solicitud cancelada | El aspirante canceló la solicitud antes de enviar la documentación; se termina el proceso | **Terminal** |
 
 **Tabla de transiciones:**
 
@@ -453,6 +467,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 24 | Administrativo | Pago rechazado | `PAG-CTRL` | `PAG-REENV` | | RF-SEC-002 |
 | 25 | Aspirante | Reenvía comprobante | `PAG-REENV` | `PAG-CTRL` | | RF-ASP-007 |
 | 26 | Administrativo | Pago aceptado | `PAG-CTRL` | `E3-INI` | | RF-SEC-002 |
+| 27 | Aspirante | Cancelar solicitud | `SOL-INI` | `SOL-CANC` | Solo antes de enviar la documentación. Se eliminan los archivos cargados y se termina el proceso | RF-ASP-010 |
 
 **Notas sobre las transiciones:**
 - **Rondas de fechas (transiciones 6 a 10):** cada ronda es un estado distinto (`REU-FEC-ASP-1` y `REU-FEC-ASP-2`), por lo que el límite de 2 rondas queda codificado en el grafo. En la 1ª ronda el aspirante puede seleccionar fecha (9) o solicitar otras (7); en la 2ª puede seleccionar fecha (9) o rechazar la ronda (10). La 2ª ronda solo se alcanza por la transición 8; no existe una transición hacia una 3ª ronda
@@ -460,6 +475,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - **Rechazos con marca por documento (transiciones 3 y 19):** en ambos casos se aplica la revisión por documento de RF-ACAD-009 (al menos un ❌ y ningún documento en `PENDIENTE`)
 - **No asistencia a la reunión (transición 12):** si el aspirante no se presenta, el Académico reprograma (`REU-PEND` → `REU-FEC-ACAD`); el aspirante vuelve a elegir fecha por el flujo normal de rondas
 - **Legalización (transiciones 16 a 18):** si el aspirante responde que sus documentos NO están legalizados pasa a `LEG-PEND`; una vez legalizados, avisa (18) y vuelve a `LEG-REV` para el análisis del Académico
+- **Cancelación (transición 27):** el aspirante solo puede cancelar mientras la solicitud está en `SOL-INI`. Una vez enviada la documentación no hay transición de cancelación; si no quiere seguir, lo resuelve con sus responsables por el chat
 - **Casos sin transición definida (pendientes):** reapertura de expedientes (RF-ADMIN-006); estados posteriores a `E3-INI`
 
 #### RF-ESTADO-002: Notificaciones por Cambio de Estado
@@ -470,6 +486,7 @@ Cuando el estado cambia, el sistema envía mail automático al actor siguiente r
 |---|---|---|---|
 | (inicio) | Solicitud iniciada | Usuarios con acceso de proceso a la carrera | "Nueva solicitud del aspirante [nombre]. [Ver detalles] [Tomar proceso]" (RF-ASP-001) |
 | Solicitud iniciada | Documentación pendiente de revisión | Académico | "Nueva solicitud de equivalencias con documentación pendiente de revisión. ID: [...]" |
+| Solicitud iniciada | Solicitud cancelada | (interno) | - |
 | Documentación pendiente de revisión | Documentación rechazada | Aspirante | "Observaciones en tu documentación. Motivo: [comentario del Académico]. Documentos a recargar: [lista de documentos marcados con ❌]" |
 | Documentación rechazada | Documentación pendiente de revisión | Académico | "Aspirante ha recargado documentación. ID: [...]" |
 | Documentación pendiente de revisión | Análisis preliminar pendiente | Aspirante | "Tu documentación fue aceptada. Tu solicitud está siendo analizada por nuestro equipo académico." |
@@ -509,7 +526,7 @@ Cuando el estado cambia, el sistema envía mail automático al actor siguiente r
   - `codigo` (VARCHAR, UNIQUE) = "SOL-INI", "DOC-REV", "ANAL-PEND", etc.
   - `nombre` (VARCHAR) = "Solicitud iniciada", "Documentación pendiente de revisión", etc.
   - `descripcion` (TEXT)
-  - `es_terminal` (BOOLEAN) — si es estado final (`INSC-RECH`)
+  - `es_terminal` (BOOLEAN) — si es estado final (`INSC-RECH`, `SOL-CANC`)
   - `activo` (BOOLEAN)
 - Tabla `estados_solicitud` (historial de estados de cada solicitud):
   ```
@@ -539,7 +556,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 
 ##### RF-PROC-001: Bandeja de Solicitudes (ordenamiento)
 - **Listado con filtros:**
-  - Por estado (dropdown con los 20 estados)
+  - Por estado (dropdown con los 21 estados)
   - Por fecha (última actualización, rango)
   - Búsqueda por ID solicitud, nombre aspirante, carrera
   - Mis asignadas vs. Todas

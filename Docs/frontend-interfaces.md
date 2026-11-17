@@ -3,7 +3,7 @@
 
 Versión: 3.0
 Documento objetivo: Equipo Frontend
-Basado en: Especificación de Requisitos Funcionales y No Funcionales v12.0 (20 estados, 26 transiciones)
+Basado en: Especificación de Requisitos Funcionales y No Funcionales v13.0 (21 estados, 27 transiciones)
 
 A partir del punto 4 las interfaces están definidas **por estado de la solicitud**. Para cada estado en que un rol tiene que hacer algo (o esperar algo) existe una interfaz propia, con su código (`ASP-…`, `ACAD-…`, `SEC-…`). La fuente de verdad de estados, transiciones y notificaciones es `Docs/Sistema_Equivalencias_Requisitos.md`.
 
@@ -18,6 +18,11 @@ Los diseños visuales están en la carpeta compartida de Google Drive **Interfac
 | 2.1 | 2026-10-13 | lautarogomizelj | Nota de obsolescencia: el documento sigue basado en requisitos v8.0 (16 estados); queda pendiente su re-derivación al modelo vigente (v12.0, 20 estados) |
 | 3.0 | 2026-10-31 | jumaluc | Interfaces re-derivadas a los 20 estados y 26 transiciones de requisitos v12.0; referencia a los diseños de Drive y Anexo B con las diferencias entre diseño y requisitos |
 | 3.1 | 2026-10-31 | jumaluc | Registro con Nombre y Apellido separados, como el diseño (§3.2 y Anexo B, punto 1) |
+| 3.2 | 2026-11-15 | jumaluc | Anexo A: el backend del Sprint 3 guarda los datos de origen, exige los documentos obligatorios y conserva los borradores (puntos 1, 3 y 4, CC-009) |
+| 3.3 | 2026-11-15 | jumaluc | Mis solicitudes y menú del aspirante según el diseño de Drive (§4.1, §4.4 y Anexo B, puntos 15 y 16) |
+| 3.4 | 2026-11-15 | jumaluc | Panel de inicio, Nueva solicitud y detalle de la solicitud del aspirante según el diseño de Drive (§4.2, §4.3, §4.5, §4.6.1, §4.6.2 y Anexo B, puntos 17 a 19); "Condición académica" como texto libre (Anexo A, punto 2) |
+| 3.5 | 2026-11-15 | jumaluc | Cancelación de la solicitud por el aspirante: botón y modal en `ASP-SOL-INI`, interfaz `ASP-SOL-CANC` y estado terminal `SOL-CANC` en las matrices (requisitos v13.0, RF-ASP-010, CC-010) |
+| 3.6 | 2026-11-17 | jumaluc | Login del personal y login de Admin: rutas, acceso, avisos de error, destino en `/dashboard` y bloque de cuentas demo solo en desarrollo (§3.6, §3.7 y Anexo B, punto 13; CC-011) |
 
 ---
 
@@ -587,7 +592,7 @@ Sin modificar los requerimientos funcionales definidos en este documento.
 
 ## 0.16 Arquitectura de UI basada en estado (State-driven UI)
 
-El sistema E3 es una aplicación **guiada por estado**: una misma solicitud se ve y se comporta distinto en cada uno de sus 20 estados, y distinto para cada rol.
+El sistema E3 es una aplicación **guiada por estado**: una misma solicitud se ve y se comporta distinto en cada uno de sus 21 estados, y distinto para cada rol.
 
 ### 0.16.1 Regla general
 
@@ -629,7 +634,7 @@ Reglas:
 |---|---|---|
 | **A – Acción** | El rol tiene algo que hacer en este estado | Sí |
 | **E – Espera** | Otro actor tiene la pelota; se informa qué pasó y qué sigue | No |
-| **T – Terminal** | El trámite terminó (`INSC-RECH`, único estado terminal vigente) | No (solo consulta) |
+| **T – Terminal** | El trámite terminó (`INSC-RECH` o `SOL-CANC`) | No (solo consulta) |
 
 ### 0.16.4 Cambio de estado en vivo y conflictos
 
@@ -830,7 +835,7 @@ Indicador visual del avance del trámite en macro-etapas: Documentación, Análi
 
 - La etapa activa se deriva del estado mediante una tabla de configuración (ver 4.5).
 - Es informativo: no navega ni permite acciones.
-- `INSC-RECH` se muestra como cierre negativo.
+- `INSC-RECH` y `SOL-CANC` se muestran como cierre negativo.
 
 ---
 
@@ -955,22 +960,41 @@ Paso 3:
 
 ## 3.6 Login Personal @usal.edu.ar (Académico, Secretaría, Revisor)
 
+Ruta `/login-personal`. Se llega desde el enlace "¿Sos académico?" de la pantalla de inicio. No tiene diseño en Drive: reutiliza el del Login Aspirante (Anexo B, punto 13).
+
 Botón único: "Ingresar con Google".
 
 Estados:
 
 - Error de dominio o usuario inexistente/inactivo: "Usuario no registrado en el sistema. Contacta al admin." (no se crea sesión)
+- Falla de Google: "No se pudo ingresar con Google. Intentá nuevamente."
+
+El backend vuelve a `/login?error=…` cuando el ingreso falla (contrato de la API §4.1); el frontend lleva ese aviso a esta pantalla.
+
+Al ingresar, el usuario llega a `/dashboard`. Mientras su rol no tenga pantallas propias ve un aviso de "Próximamente".
+
+Solo en desarrollo, debajo del botón hay un bloque para entrar con una cuenta demo (`POST /auth/dev/login`), porque todavía no hay credenciales de Google de la USAL. No existe en el build de producción.
+
+Enlace "¿Sos administrador? Ingresá acá" al Login Admin (3.7).
 
 ---
 
 ## 3.7 Login Admin
+
+Ruta `/login-admin`. Se llega desde el enlace del Login Personal (3.6); ese acceso es provisorio y está pendiente de definir ([`TEMAS_PROFESOR.md`](TEMAS_PROFESOR.md), tema 1). Reutiliza el diseño del Login Aspirante (Anexo B, punto 13).
 
 Campos:
 
 - Usuario
 - Contraseña
 
-Sesión de 1 día. Sin OAuth.
+Acciones:
+
+- Ingresar
+
+Credenciales inválidas: "El usuario o la contraseña no son correctos."
+
+Sesión de 1 día. Sin OAuth. Al ingresar llega a `/dashboard`, igual que el personal.
 
 ---
 
@@ -984,7 +1008,7 @@ Dentro de una solicitud, el contenido principal que ve el aspirante **no es una 
 
 Reglas (aplican a todas las interfaces de 4.6):
 
-1. Cada uno de los 20 estados tiene su interfaz `ASP-<ESTADO>`.
+1. Cada uno de los 21 estados tiene su interfaz `ASP-<ESTADO>`.
 2. Si el aspirante debe hacer algo, la interfaz es de tipo **A (Acción)**. Si otro actor tiene la pelota, es de tipo **E (Espera)**. Si el trámite terminó, es **T (Terminal)** (ver 0.16.3).
 3. Una interfaz de espera **nunca** tiene botones de trámite; siempre informa qué pasó, qué sigue y quién está a cargo.
 4. El aspirante **nunca cambia el estado manualmente**. Botones como "Enviar documentación" ejecutan una acción; la transición la hace el sistema.
@@ -996,7 +1020,7 @@ Reglas (aplican a todas las interfaces de 4.6):
 | Estado | Tipo | Interfaz | Qué ve / qué hace el aspirante | Transición | Req. |
 |---|---|---|---|---|---|
 | — (antes de existir) | A | `ASP-NUEVA` | Completa el formulario inicial | 1: crea la solicitud → `SOL-INI` | RF-ASP-001 |
-| `SOL-INI` | A | `ASP-SOL-INI` | Carga los documentos y los envía | 2: → `DOC-REV` | RF-ASP-002 |
+| `SOL-INI` | A | `ASP-SOL-INI` | Carga los documentos y los envía, o cancela la solicitud | 2: → `DOC-REV` · 27: → `SOL-CANC` | RF-ASP-002, RF-ASP-010 |
 | `DOC-REV` | E | `ASP-DOC-REV` | Documentación en revisión | — | RF-ASP-003 |
 | `DOC-RECH` | A | `ASP-DOC-RECH` | Recarga solo los documentos marcados ❌ | 4: → `DOC-REV` | RF-ASP-004 |
 | `ANAL-PEND` | E | `ASP-ANAL-PEND` | Documentación aceptada, análisis en curso | — | RF-ASP-003 |
@@ -1016,6 +1040,7 @@ Reglas (aplican a todas las interfaces de 4.6):
 | `PAG-CTRL` | E | `ASP-PAG-CTRL` | Pago en verificación | — | RF-ASP-003 |
 | `PAG-REENV` | A | `ASP-PAG-REENV` | Ve el motivo y reenvía el comprobante | 25: → `PAG-CTRL` | RF-ASP-007 |
 | `E3-INI` | E | `ASP-E3-INI` | Pago aceptado, inicio de E3 | — | RF-ASP-003 |
+| `SOL-CANC` | T | `ASP-SOL-CANC` | Solicitud cancelada por el aspirante | — | RF-ASP-010 |
 
 `E3-INI` no es terminal: los estados posteriores todavía no están definidos (RF-ESTADO-001).
 
@@ -1032,6 +1057,8 @@ Menú lateral:
 
 Barra superior (2.1): notificaciones, perfil, cerrar sesión.
 
+El diseño de Drive suma "Ayuda" y "Cerrar sesión" al menú lateral y muestra el nombre y el rol del usuario arriba a la derecha (Anexo B, punto 16).
+
 Precondición: si la cuenta no validó el código de email (3.3), no puede acceder a "Nueva solicitud". Se lo redirige a la pantalla de validación.
 
 ---
@@ -1040,11 +1067,13 @@ Precondición: si la cuenta no validó el código de email (3.3), no puede acced
 
 Pantalla principal. Organiza las solicitudes según lo que se espera del aspirante.
 
+La pantalla construida sigue el diseño: saludo, contadores de solicitudes activas y finalizadas, y la misma tabla de Mis solicitudes (Anexo B, punto 17). Lo que sigue es lo que piden los requisitos.
+
 ### Bloques
 
 1. **Requieren tu acción**: solicitudes en estados de tipo A (`SOL-INI`, `DOC-RECH`, `REU-FEC-ASP-1`, `REU-FEC-ASP-2`, `REU-CHAT`, `INSC-ACEP`, `LEG-PEND`, `LEG-RECH`, `CUPON-PAG`, `PAG-REENV`).
 2. **En curso**: solicitudes en estados de tipo E.
-3. **Finalizadas**: solicitudes en `INSC-RECH`.
+3. **Finalizadas**: solicitudes en `INSC-RECH` o `SOL-CANC`.
 
 Diseño: `Interfaces/Aspirantes/Inicio/Dashboard Aspirante 4.1.2.jpg`.
 
@@ -1088,7 +1117,7 @@ Diseño: `Interfaces/Aspirantes/Inicio/Dashboard Aspirante 4.1.2.jpg`.
 
 **Requisito:** RF-ASP-001. **Acceso:** menú lateral → "Nueva solicitud".
 
-Formulario en dos secciones. Aún no existe la solicitud ni el estado.
+Formulario en dos secciones. Aún no existe la solicitud ni el estado. **Diseño:** `Interfaces/Aspirantes/Inicio/Nueva Solicitud/`, sin el campo Dirección y con el origen en texto libre (Anexo B, punto 7).
 
 ### Sección A – Datos personales (precargados, solo lectura)
 
@@ -1107,7 +1136,7 @@ Texto de ayuda: "¿Algún dato es incorrecto? Editalo en Mi perfil." (link a Mi 
 | Facultad de origen | Texto | Sí |
 | Carrera de origen | Texto | Sí |
 | Carrera destino | Dropdown con las carreras activas del catálogo (se envía el código) | Sí |
-| Condición académica | Selector (valores a definir, ver Anexo A) | Sí |
+| Condición académica | Texto de hasta 50 caracteres, hasta que se definan los valores del selector (Anexo A, punto 2) | Sí |
 | Observaciones | Textarea | No |
 
 ### Acciones
@@ -1137,7 +1166,9 @@ Texto de ayuda: "¿Algún dato es incorrecto? Editalo en Mi perfil." (link a Mi 
 
 ## 4.4 Mis Solicitudes
 
-**Acceso:** menú lateral → "Mis solicitudes".
+**Acceso:** menú lateral → "Mis solicitudes". **Diseño:** `Interfaces/Aspirantes/Inicio/Dashboard - Mis Solicitudes.jpg`.
+
+La pantalla construida sigue el diseño: columnas N° solicitud, Fecha de creación, Estado actual, Responsable académico, Responsable administrativo, Última actualización y Acciones ("Ver solicitud"), sin filtros (Anexo B, punto 15). Lo que sigue es lo que piden los requisitos.
 
 ### Listado (tabla en desktop, tarjetas en mobile)
 
@@ -1175,6 +1206,8 @@ Columnas:
 
 Es el marco que se repite en **todos** los estados. Lo único que cambia entre estados es el contenido de la pestaña "Mi trámite" (Panel de Acción, 4.6).
 
+La pantalla construida sigue el diseño: título con el código y el badge, banner del estado y las pestañas Documentación, Detalles, Chat e Historial, sin stepper; `SOL-INI` se muestra como una pantalla propia de carga, sin pestañas (Anexo B, punto 18). El Chat muestra un aviso de "Próximamente" hasta el Sprint 6. Lo que sigue es lo que piden los requisitos.
+
 ### 4.5.1 Estructura
 
 De arriba hacia abajo:
@@ -1211,7 +1244,7 @@ Tabla de configuración (no hardcodear en componentes):
 | Pago | `CUPON-SOL`, `CUPON-PAG`, `PAG-CTRL`, `PAG-REENV` |
 | Inicio de E3 | `E3-INI` |
 
-`INSC-RECH`: el stepper queda cortado en Inscripción y muestra "Rechazada".
+`INSC-RECH`: el stepper queda cortado en Inscripción y muestra "Rechazada". `SOL-CANC`: queda cortado en Documentación y muestra "Cancelada".
 
 Nota: la no asistencia a la reunión vuelve de `REU-PEND` a `REU-FEC-ACAD`; el stepper se mantiene en Reunión.
 
@@ -1246,7 +1279,11 @@ Cada subsección describe lo que aparece en la pestaña **Mi trámite** cuando l
 
 **Modal `ASP-SOL-INI-M1`:** resumen de documentos y aviso "Una vez enviada, no vas a poder modificar la documentación salvo que el equipo académico te pida recargarla." Botones "Volver" / "Confirmar envío".
 
+**Cancelar solicitud (RF-ASP-010):** botón secundario de peligro, visible cuando `accionesDisponibles` trae `CANCELAR_SOLICITUD`. Abre el modal `ASP-SOL-INI-M2`: "Vas a cancelar la solicitud EXP-…" y el aviso "La solicitud queda cerrada y se eliminan los archivos que cargaste. Esta acción no se puede deshacer." Botones "Volver" / "Sí, cancelar la solicitud". El sistema pasa a `SOL-CANC`.
+
 **Resultado:** el sistema pasa a `DOC-REV`; cada documento queda con revisión ⏳.
+
+La pantalla construida sigue el diseño de filas con zona de arrastre, con los documentos y formatos de los requisitos (Anexo B, puntos 4, 5 y 19). Cada programa pide el nombre de la materia antes de adjuntarlo. "Reemplazar" quita el borrador anterior y sube el nuevo.
 
 ---
 
@@ -1456,6 +1493,18 @@ Mismo comportamiento que `ASP-DOC-RECH` (4.6.3) para la etapa `LEGALIZACION`. **
 
 ---
 
+### 4.6.21 `ASP-SOL-CANC` – Solicitud cancelada
+
+**Estado:** `SOL-CANC` · **Tipo:** T · **Requisito:** RF-ASP-010
+
+**Banner:** "Cancelaste esta solicitud antes de enviar la documentación. Si querés retomar el trámite, creá una nueva." Indica "Trámite cerrado".
+
+**Contenido:** el detalle de solo lectura. La pestaña Documentación queda vacía, porque los archivos se eliminaron al cancelar, y el Historial muestra la cancelación.
+
+**Acciones:** ninguna de trámite. "Nueva solicitud" sigue disponible en el menú.
+
+---
+
 ## 4.7 Pestañas transversales del detalle (según estado)
 
 Las pestañas que no son "Mi trámite" se mantienen en todos los estados, pero su comportamiento cambia. **La carga y recarga de archivos se hace únicamente desde "Mi trámite"**, para que cada acción viva en un solo lugar.
@@ -1481,7 +1530,7 @@ Componente 2.5. Participantes: aspirante, Académico responsable y Administrativ
 | Sin responsable | Chat **deshabilitado**: "El chat se habilita cuando alguien tome tu proceso." |
 | Con responsable | Chat completo |
 | `REU-CHAT` | Chat completo y abierto por defecto |
-| `INSC-RECH` | Solo lectura |
+| `INSC-RECH`, `SOL-CANC` | Solo lectura |
 
 Reglas del mensaje (RF-MSG-002): avatar, nombre, texto de hasta 500 caracteres, adjunto opcional de hasta 5 MB, tipo de consulta, fecha y hora, indicador de visto. Si cambia el responsable, el historial se conserva.
 
@@ -1546,6 +1595,7 @@ Reglas adicionales del rol:
 | `ANAL-POST` | A | `ACAD-ANAL-POST` | Actualiza análisis; acepta o rechaza la inscripción | 14: → `INSC-ACEP` · 15: → `INSC-RECH` | RF-ACAD-004, 006 |
 | `INSC-ACEP`, `LEG-PEND` | E | `ACAD-LEG-ESPERA` | Espera al aspirante | — | — |
 | `INSC-RECH` | T | `ACAD-INSC-RECH` | Consulta | — | — |
+| `SOL-CANC` | T | `ACAD-INSC-RECH` | Consulta: el aspirante la canceló antes de enviar la documentación | — | RF-ASP-010 |
 | `LEG-REV` | A | `ACAD-LEG-REV` | Marca legalizados; acepta o rechaza | 21: → `CUPON-SOL` · 19: → `LEG-RECH` | RF-ACAD-005, 009 |
 | `LEG-RECH` | E | `ACAD-LEG-RECH` | Espera la recarga del aspirante | — | — |
 | `CUPON-SOL`, `CUPON-PAG`, `PAG-CTRL`, `PAG-REENV`, `E3-INI` | E | `ACAD-SEGUIMIENTO` | Seguimiento de la etapa de pago | — | — |
@@ -1580,7 +1630,7 @@ Tabla. Columnas:
 - Última actualización
 - Botones: "Ver detalles", "Tomar proceso" (si aplica)
 
-Filtros: estado (20 estados), fecha, búsqueda por ID / aspirante / carrera, "Mis asignadas" / "Todas".
+Filtros: estado (21 estados), fecha, búsqueda por ID / aspirante / carrera, "Mis asignadas" / "Todas".
 
 Ordenamiento:
 
@@ -1856,6 +1906,7 @@ Reglas:
 | `PAG-REENV` | E | `SEC-PAG-REENV` | Espera el reenvío del aspirante | — | — |
 | `E3-INI` | E | `SEC-E3-INI` | Consulta | — | — |
 | `INSC-RECH` | T | `SEC-INSC-RECH` | Consulta | — | — |
+| `SOL-CANC` | T | `SEC-INSC-RECH` | Consulta: el aspirante la canceló antes de enviar la documentación | — | RF-ASP-010 |
 
 ---
 
@@ -2326,10 +2377,10 @@ Cosas que los requisitos v12 no terminan de definir y que el equipo de frontend 
 
 | # | Tema | Supuesto adoptado en este documento |
 |---|---|---|
-| 1 | **Datos del formulario inicial:** la tabla `solicitudes` de RF-ASP-001 no tiene columnas para universidad, facultad y carrera de origen, condición académica ni observaciones | Se piden en `ASP-NUEVA`. Backend debe agregar dónde guardarlos |
-| 2 | **Valores de "Condición académica"** | Selector con valores a definir |
-| 3 | **Documentos obligatorios para enviar en `SOL-INI`:** RF-ASP-002 lista Analítico, Plan y Programas | Obligatorios: Analítico, Plan de estudios y al menos un Programa |
-| 4 | **Archivos como borrador:** si el aspirante sube archivos y sale sin enviar, ¿se conservan? | Se asume que sí (cada archivo se sube al elegirlo). Confirmar con backend |
+| 1 | **Datos del formulario inicial:** la tabla `solicitudes` de RF-ASP-001 no tiene columnas para universidad, facultad y carrera de origen, condición académica ni observaciones | Se piden en `ASP-NUEVA` y el backend los guarda en `solicitudes` (CC-009). "Condición académica" sigue siendo texto libre hasta definir sus valores |
+| 2 | **Valores de "Condición académica"** | Selector con valores a definir. Hasta entonces, `ASP-NUEVA` lo pide como texto libre de hasta 50 caracteres, igual que el contrato |
+| 3 | **Documentos obligatorios para enviar en `SOL-INI`:** RF-ASP-002 lista Analítico, Plan y Programas | Obligatorios: Analítico, Plan de estudios y al menos un Programa. El backend lo exige al enviar (CC-009) |
+| 4 | **Archivos como borrador:** si el aspirante sube archivos y sale sin enviar, ¿se conservan? | Sí: cada archivo se sube al elegirlo y queda como borrador, visible solo para el aspirante, hasta enviar (CC-009) |
 | 5 | **Límite de 50 MB en la recarga** (`DOC-RECH`) | Se aplica a los archivos que se envían en esa recarga |
 | 6 | **Cambiar la fecha elegida:** al seleccionar fecha el estado pasa directo a `REU-PEND` | No se puede cambiar desde la interfaz; se resuelve por chat |
 | 7 | **Reprogramación tras la 2ª ronda:** si el aspirante no se presenta y ya se usó la 2ª ronda, `REU-FEC-ACAD` solo tiene la transición hacia `REU-FEC-ASP-2` | Se reutiliza la 2ª ronda hasta que negocio defina otra cosa |
@@ -2362,9 +2413,14 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 | 9 | Legalización | Carga de Plan de estudios y Cronograma de materias | RF-ASP-009 solo pide responder y avisar; la transición 18 habla de recargar | Requisitos, con la contradicción pendiente |
 | 10 | Menú y perfil del Académico | Mis tareas, Calendario, disponibilidad en Mi perfil, Ayuda y LU del estudiante | No están definidos | Se implementan cuando se aprueben |
 | 11 | Revisión del Académico | Estado por documento, "Guardar borrador" y "Enviar evaluación" | "Guardar marcas", aceptar y rechazar | Requisitos para las acciones; diseño para la tabla |
-| 12 | Nombres de estados | "Con observaciones", "En evaluación", "Error en documentación" | Nombres del catálogo de 20 estados | Requisitos |
-| 13 | Pantallas sin diseño | No hay Secretaría, Admin, Revisor, Login @usal ni Login Admin | Definidas en este documento | Se aplican los componentes y tokens existentes |
+| 12 | Nombres de estados | "Con observaciones", "En evaluación", "Error en documentación" | Nombres del catálogo de 21 estados | Requisitos |
+| 13 | Pantallas sin diseño | No hay Secretaría, Admin, Revisor, Login @usal ni Login Admin | Definidas en este documento | Se aplican los componentes y tokens existentes. Los dos logins reutilizan el diseño del Login Aspirante (3.6 y 3.7) |
 | 14 | Pantalla de inicio | El login está integrado en el inicio | Inicio y login son pantallas separadas (3.1 y 3.4) | Diseño, porque no cambia reglas de negocio |
+| 15 | Mis solicitudes | Columnas con fecha de creación y un responsable por columna; botón "Ver solicitud"; sin filtros | Columnas con carrera destino, universidad de origen e indicador "Requiere tu acción"; filtros por actividad y por estado (4.4) | Diseño para la tabla. El orden por defecto lo resuelve el backend y el color del badge marca los estados que esperan al aspirante. Los filtros quedan pendientes |
+| 16 | Menú del aspirante | "Ayuda" y "Cerrar sesión" en el menú lateral; nombre y rol arriba a la derecha, sin campana | Barra superior con notificaciones, perfil y cerrar sesión (2.1 y 4.1) | Diseño. "Ayuda" no tiene contenido definido y la campana llega con las notificaciones del Sprint 8 |
+| 17 | Panel de inicio del aspirante | Saludo, contadores de solicitudes activas y finalizadas, y la tabla de Mis solicitudes con "Ver solicitud" | Tres bloques de tarjetas (requieren tu acción, en curso y finalizadas) con un botón distinto según el estado (4.2) | Diseño. "Finalizadas" cuenta los estados terminales del catálogo; el color del badge marca los estados que esperan al aspirante |
+| 18 | Detalle de la solicitud | Pestañas Documentación, Detalles, Chat e Historial; responsables dentro de Detalles; sin stepper; `SOL-INI` como pantalla propia "Carga de documentación", sin pestañas; el banner de `DOC-REV` trae una tabla con el documento recargado | Encabezado, stepper, bloque de responsables, banner y pestañas Mi trámite, Documentación, Chat, Historial e Informe (4.5) | Diseño. La pestaña Documentación cumple el papel de "Mi trámite". El stepper, la pestaña Informe y la tabla del banner quedan pendientes. En `SOL-INI` los responsables se ven en Mis solicitudes |
+| 19 | Tabla de documentos | Columnas Documento, Estado, Fecha de carga, Archivo, Observaciones y un menú de acciones; marca "Aprobado"; bloque Documentación académica con sus dos filas vacías | Columnas con versión y tamaño; marcas "Pendiente de revisión", "Correcto" y "Debe recargar" (2.8) | Diseño para las columnas, con la versión al lado del archivo cuando no es la primera y un botón de descarga en lugar del menú. Requisitos para los nombres de las marcas. La Documentación académica muestra un aviso hasta el Sprint 5 |
 
 ---
 

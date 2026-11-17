@@ -11,4 +11,4 @@
 | Revisor Logs | `revisor@usal.edu.ar` | `POST /auth/dev/login` |
 | Observador | `observador@usal.edu.ar` | `POST /auth/dev/login`: es un Académico sin permisos de carrera |
 
-El personal entra con Google en producción. `POST /auth/dev/login` lo reemplaza en desarrollo y recibe `{ "email": "..." }`.
+El personal entra con Google en producción. `POST /auth/dev/login` lo reemplaza en desarrollo y recibe `{ "email": "..." }`. Desde el frontend en desarrollo, el personal entra con el bloque "Solo en desarrollo" de `/login-personal` y el Admin, desde `/login-admin`.

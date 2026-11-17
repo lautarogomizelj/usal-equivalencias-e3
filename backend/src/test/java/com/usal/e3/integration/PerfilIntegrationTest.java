@@ -28,8 +28,10 @@ class PerfilIntegrationTest extends IntegracionBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.dni").value("40123456"))
                 .andExpect(jsonPath("$.rol").value("ASPIRANTE"))
+                .andExpect(jsonPath("$.nombre").value("Juan"))
+                .andExpect(jsonPath("$.apellido").value("Pérez"))
                 .andExpect(jsonPath("$.esOAuth").value(false))
-                .andExpect(jsonPath("$.camposEditables.length()").value(3));
+                .andExpect(jsonPath("$.camposEditables.length()").value(4));
     }
 
     @Test
@@ -41,9 +43,27 @@ class PerfilIntegrationTest extends IntegracionBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.telefono").value("+54 11 4444-0000"))
                 .andExpect(jsonPath("$.avatar").value("hombre-02"))
-                .andExpect(jsonPath("$.nombre").value("Juan Pérez"));
+                .andExpect(jsonPath("$.nombre").value("Juan"))
+                .andExpect(jsonPath("$.apellido").value("Pérez"));
 
         assertThat(filasAuditoria(EMAIL, "cambio_perfil")).isEqualTo(1);
+    }
+
+    @Test
+    void elAspiranteEditaNombreYApellidoPorSeparado() throws Exception {
+        aspiranteValidado(EMAIL, "40123456");
+        Cookie sesion = loginAspirante(EMAIL);
+
+        enviar(patch("/perfil"), Map.of("apellido", " Pérez Gómez "), sesion)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.nombre").value("Juan"))
+                .andExpect(jsonPath("$.apellido").value("Pérez Gómez"));
+        mvc.perform(get("/auth/me").cookie(sesion))
+                .andExpect(jsonPath("$.nombre").value("Juan"))
+                .andExpect(jsonPath("$.apellido").value("Pérez Gómez"));
+        enviar(patch("/perfil"), Map.of("apellido", "  "), sesion)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.apellido").exists());
     }
 
     @Test
@@ -63,6 +83,9 @@ class PerfilIntegrationTest extends IntegracionBase {
         enviar(patch("/perfil"), Map.of("nombre", "Otro"), sesion)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errors.nombre").exists());
+        enviar(patch("/perfil"), Map.of("apellido", "Otro"), sesion)
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors.apellido").exists());
         enviar(patch("/perfil"), Map.of("telefono", "+54 11 4444-0000"), sesion).andExpect(status().isOk());
     }
 

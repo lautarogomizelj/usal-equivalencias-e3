@@ -137,7 +137,8 @@ abstract class IntegracionBase {
         return Map.of(
                 "email", email,
                 "password", PASSWORD,
-                "nombre", "Juan Pérez",
+                "nombre", "Juan",
+                "apellido", "Pérez",
                 "telefono", "+54 11 5555-0000",
                 "dni", dni);
     }
@@ -163,7 +164,7 @@ abstract class IntegracionBase {
     /** Aspirante ya validado, sin sesión. */
     protected Aspirante aspiranteValidado(String email, String dni) {
         Aspirante aspirante =
-                new Aspirante(email, passwordEncoder.encode(PASSWORD), "Juan Pérez", "+54 11 5555-0000", dni);
+                new Aspirante(email, passwordEncoder.encode(PASSWORD), "Juan", "Pérez", "+54 11 5555-0000", dni);
         aspirante.setEmailValidado(true);
         return aspirantes.save(aspirante);
     }
@@ -174,11 +175,11 @@ abstract class IntegracionBase {
     }
 
     protected Usuario usuario(String email, String rol) {
-        return usuarios.save(new Usuario(email, "María Gómez", roles.findByCodigo(rol).orElseThrow()));
+        return usuarios.save(new Usuario(email, "María", "Gómez", roles.findByCodigo(rol).orElseThrow()));
     }
 
     protected Usuario admin(String email) {
-        Usuario admin = new Usuario(email, "Admin", roles.findByCodigo("ADMIN").orElseThrow());
+        Usuario admin = new Usuario(email, "Admin", "General", roles.findByCodigo("ADMIN").orElseThrow());
         admin.setPasswordHash(passwordEncoder.encode(PASSWORD));
         return usuarios.save(admin);
     }

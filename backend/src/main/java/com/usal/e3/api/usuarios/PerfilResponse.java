@@ -7,6 +7,7 @@ import java.util.List;
 /** `Perfil` del contrato (§4.2). */
 public record PerfilResponse(
         String nombre,
+        String apellido,
         String email,
         String telefono,
         String dni,
@@ -18,6 +19,7 @@ public record PerfilResponse(
     static PerfilResponse de(Cuenta cuenta) {
         return new PerfilResponse(
                 cuenta.getNombre(),
+                cuenta.getApellido(),
                 cuenta.getEmail(),
                 cuenta.getTelefono(),
                 cuenta.getDni(),

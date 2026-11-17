@@ -43,8 +43,8 @@ public class PerfilController {
             @AuthenticationPrincipal SesionActual actual,
             @Valid @RequestBody EditarPerfilRequest body,
             HttpServletRequest request) {
-        return PerfilResponse.de(
-                perfil.editar(actual, body.nombre(), body.telefono(), body.avatar(), request.getRemoteAddr()));
+        return PerfilResponse.de(perfil.editar(
+                actual, body.nombre(), body.apellido(), body.telefono(), body.avatar(), request.getRemoteAddr()));
     }
 
     @PutMapping("/password")

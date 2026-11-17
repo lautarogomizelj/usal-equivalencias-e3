@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class BloqueoCuentaTest {
 
     private final OffsetDateTime ahora = OffsetDateTime.now();
-    private final Aspirante cuenta = new Aspirante("a@b.com", "hash", "A", "1", "12345678");
+    private final Aspirante cuenta = new Aspirante("a@b.com", "hash", "A", "B", "1", "12345678");
 
     @Test
     void losDosPrimerosFallosInformanLosIntentosRestantes() {

@@ -47,7 +47,7 @@ public class PerfilService {
         }
         List<String> campos = new ArrayList<>(List.of("telefono", "avatar"));
         if (!cuenta.esOAuth()) {
-            campos.add(0, "nombre");
+            campos.addAll(0, List.of("nombre", "apellido"));
         }
         if (Rol.ADMIN.equals(cuenta.rolCodigo())) {
             campos.add("email");
@@ -56,13 +56,20 @@ public class PerfilService {
     }
 
     @Transactional
-    public Cuenta editar(SesionActual actual, String nombre, String telefono, String avatar, String ip) {
+    public Cuenta editar(
+            SesionActual actual, String nombre, String apellido, String telefono, String avatar, String ip) {
         Cuenta cuenta = cuenta(actual);
+        if (cuenta.esOAuth() && (nombre != null || apellido != null)) {
+            throw ApiException.enCampo(
+                    ErrorCode.VALIDACION,
+                    nombre != null ? "nombre" : "apellido",
+                    "El nombre viene de tu cuenta de Google.");
+        }
         if (nombre != null) {
-            if (cuenta.esOAuth()) {
-                throw ApiException.enCampo(ErrorCode.VALIDACION, "nombre", "El nombre viene de tu cuenta de Google.");
-            }
             cuenta.setNombre(nombre.trim());
+        }
+        if (apellido != null) {
+            cuenta.setApellido(apellido.trim());
         }
         if (telefono != null) {
             cuenta.setTelefono(telefono.trim());

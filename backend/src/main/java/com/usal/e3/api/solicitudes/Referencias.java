@@ -29,7 +29,7 @@ public final class Referencias {
         static ResponsableRef de(Usuario usuario, OffsetDateTime fechaAsignacion) {
             return usuario == null
                     ? null
-                    : new ResponsableRef(usuario.getId(), usuario.getNombre(), usuario.getEmail(), fechaAsignacion);
+                    : new ResponsableRef(usuario.getId(), usuario.nombreCompleto(), usuario.getEmail(), fechaAsignacion);
         }
     }
 }

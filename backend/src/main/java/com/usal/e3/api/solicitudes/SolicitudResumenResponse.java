@@ -29,7 +29,7 @@ public record SolicitudResumenResponse(
         return new SolicitudResumenResponse(
                 s.getId(),
                 s.getCodigoExp(),
-                new AspiranteRef(s.getAspirante().getId(), s.getAspirante().getNombre()),
+                new AspiranteRef(s.getAspirante().getId(), s.getAspirante().nombreCompleto()),
                 s.getDatosOrigen().getUniversidad(),
                 CarreraRef.de(s.getCarreraDestino()),
                 EstadoRef.de(resumen.estado()),

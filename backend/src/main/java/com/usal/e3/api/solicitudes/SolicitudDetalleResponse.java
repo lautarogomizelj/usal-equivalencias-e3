@@ -54,7 +54,7 @@ public record SolicitudDetalleResponse(
                 EstadoRef.de(detalle.estado()),
                 new AspiranteDatos(
                         aspirante.getId(),
-                        aspirante.getNombre(),
+                        aspirante.nombreCompleto(),
                         aspirante.getEmail(),
                         aspirante.getTelefono(),
                         aspirante.getDni()),
@@ -76,7 +76,7 @@ public record SolicitudDetalleResponse(
                         ? null
                         : new Observacion(
                                 observacion.getComentarios(),
-                                observacion.getUsuarioUltimoCambio().getNombre(),
+                                observacion.getUsuarioUltimoCambio().nombreCompleto(),
                                 observacion.getFechaAsignacion()),
                 new ResumenDocumentos(
                         contar(documentos, EstadoRevision.OK),

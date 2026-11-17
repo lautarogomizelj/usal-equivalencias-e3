@@ -38,7 +38,7 @@ class PermisosServiceTest {
 
     @Test
     void elRestoDeLosRolesNoTrabajaPorCarrera() {
-        assertThat(permisos.carrerasConPermiso(new Aspirante("a@b.com", "h", "A", "1", "12345678"))).isNull();
+        assertThat(permisos.carrerasConPermiso(new Aspirante("a@b.com", "h", "A", "B", "1", "12345678"))).isNull();
         verifyNoInteractions(repositorio);
     }
 

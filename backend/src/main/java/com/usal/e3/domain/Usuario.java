@@ -20,6 +20,7 @@ public class Usuario implements Cuenta {
 
     private String email;
     private String nombre;
+    private String apellido;
 
     @ManyToOne(optional = false)
     @JoinColumn(name = "rol_id")
@@ -38,9 +39,10 @@ public class Usuario implements Cuenta {
 
     protected Usuario() {}
 
-    public Usuario(String email, String nombre, Rol rol) {
+    public Usuario(String email, String nombre, String apellido, Rol rol) {
         this.email = email;
         this.nombre = nombre;
+        this.apellido = apellido;
         this.rol = rol;
     }
 
@@ -92,6 +94,16 @@ public class Usuario implements Cuenta {
     @Override
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    @Override
+    public String getApellido() {
+        return apellido;
+    }
+
+    @Override
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
     }
 
     @Override

@@ -12,6 +12,7 @@ public record RegistroRequest(
                 @Pattern(regexp = Validaciones.PASSWORD, message = Validaciones.PASSWORD_INVALIDA)
                 String password,
         @NotBlank(message = Validaciones.REQUERIDO) @Size(max = 255) String nombre,
+        @NotBlank(message = Validaciones.REQUERIDO) @Size(max = 255) String apellido,
         @NotBlank(message = Validaciones.REQUERIDO)
                 @Pattern(regexp = Validaciones.TELEFONO, message = Validaciones.TELEFONO_INVALIDO)
                 String telefono,

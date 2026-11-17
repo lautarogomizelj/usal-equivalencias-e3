@@ -36,7 +36,7 @@ public record DocumentoResponse(
                 d.getEstadoRevision().name(),
                 d.getEtapaRevision().name(),
                 d.getComentarioRevision(),
-                d.getRevisadoPor() == null ? null : d.getRevisadoPor().getNombre(),
+                d.getRevisadoPor() == null ? null : d.getRevisadoPor().nombreCompleto(),
                 d.getFechaRevision(),
                 d.isEsRequeridoFaltante(),
                 d.getRutaArchivo() == null

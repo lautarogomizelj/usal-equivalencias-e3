@@ -19,6 +19,7 @@ public class Aspirante implements Cuenta {
     private String email;
     private String passwordHash;
     private String nombre;
+    private String apellido;
     private String telefono;
     private String dni;
     private boolean emailValidado;
@@ -32,10 +33,12 @@ public class Aspirante implements Cuenta {
 
     protected Aspirante() {}
 
-    public Aspirante(String email, String passwordHash, String nombre, String telefono, String dni) {
+    public Aspirante(
+            String email, String passwordHash, String nombre, String apellido, String telefono, String dni) {
         this.email = email;
         this.passwordHash = passwordHash;
         this.nombre = nombre;
+        this.apellido = apellido;
         this.telefono = telefono;
         this.dni = dni;
     }
@@ -88,6 +91,16 @@ public class Aspirante implements Cuenta {
     @Override
     public void setNombre(String nombre) {
         this.nombre = nombre;
+    }
+
+    @Override
+    public String getApellido() {
+        return apellido;
+    }
+
+    @Override
+    public void setApellido(String apellido) {
+        this.apellido = apellido;
     }
 
     @Override

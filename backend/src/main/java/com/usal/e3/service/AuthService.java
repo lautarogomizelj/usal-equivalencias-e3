@@ -53,15 +53,21 @@ public class AuthService {
 
     @Transactional
     public Aspirante registrar(
-            String email, String password, String nombre, String telefono, String dni, ClienteHttp cliente) {
+            String email,
+            String password,
+            String nombre,
+            String apellido,
+            String telefono,
+            String dni,
+            ClienteHttp cliente) {
         if (aspirantes.existsByEmail(email)) {
             throw ApiException.enCampo(ErrorCode.DUPLICADO, "email", "Ya existe una cuenta con este email.");
         }
         if (aspirantes.existsByDni(dni)) {
             throw ApiException.enCampo(ErrorCode.DUPLICADO, "dni", "Ya existe una cuenta con este DNI.");
         }
-        Aspirante aspirante =
-                aspirantes.save(new Aspirante(email, passwordEncoder.encode(password), nombre, telefono, dni));
+        Aspirante aspirante = aspirantes.save(
+                new Aspirante(email, passwordEncoder.encode(password), nombre, apellido, telefono, dni));
         auditoria.registrar(aspirante, "crear_cuenta", null, cliente.ip());
         mail.enviarCodigoValidacion(email, codigos.generar(aspirante, PropositoCodigo.VALIDACION_EMAIL));
         return aspirante;

@@ -49,17 +49,18 @@ public class SeedDemo implements ApplicationRunner {
     @Override
     @Transactional
     public void run(ApplicationArguments args) {
-        crearUsuario("admin@usal.edu.ar", "Admin Demo", Rol.ADMIN, false);
-        crearUsuario("academico@usal.edu.ar", "Académico Demo", Rol.ACADEMICO, true);
-        crearUsuario("secretaria@usal.edu.ar", "Secretaría Demo", Rol.SECRETARIA, true);
-        crearUsuario("revisor@usal.edu.ar", "Revisor Demo", Rol.REVISOR, false);
+        crearUsuario("admin@usal.edu.ar", "Admin", Rol.ADMIN, false);
+        crearUsuario("academico@usal.edu.ar", "Académico", Rol.ACADEMICO, true);
+        crearUsuario("secretaria@usal.edu.ar", "Secretaría", Rol.SECRETARIA, true);
+        crearUsuario("revisor@usal.edu.ar", "Revisor", Rol.REVISOR, false);
         // Observador no es un rol: es un Académico sin permiso de proceso (RF-AUTH-005).
-        crearUsuario("observador@usal.edu.ar", "Observador Demo", Rol.ACADEMICO, false);
+        crearUsuario("observador@usal.edu.ar", "Observador", Rol.ACADEMICO, false);
         if (!aspirantes.existsByEmail("aspirante@example.com")) {
             Aspirante aspirante = new Aspirante(
                     "aspirante@example.com",
                     passwordEncoder.encode(PASSWORD_DEMO),
-                    "Aspirante Demo",
+                    "Aspirante",
+                    "Demo",
                     "+54 11 5555-0000",
                     "40123456");
             aspirante.setEmailValidado(true);
@@ -71,7 +72,7 @@ public class SeedDemo implements ApplicationRunner {
         if (usuarios.existsByEmail(email)) {
             return;
         }
-        Usuario usuario = new Usuario(email, nombre, roles.findByCodigo(rolCodigo).orElseThrow());
+        Usuario usuario = new Usuario(email, nombre, "Demo", roles.findByCodigo(rolCodigo).orElseThrow());
         if (Rol.ADMIN.equals(rolCodigo)) {
             usuario.setPasswordHash(passwordEncoder.encode(PASSWORD_DEMO));
         }

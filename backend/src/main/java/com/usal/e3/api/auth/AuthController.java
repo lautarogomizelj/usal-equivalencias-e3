@@ -48,6 +48,7 @@ public class AuthController {
                 Validaciones.normalizarEmail(body.email()),
                 body.password(),
                 body.nombre().trim(),
+                body.apellido().trim(),
                 body.telefono().trim(),
                 body.dni().trim(),
                 cliente(request));

@@ -14,7 +14,7 @@ public record EventoHistorialResponse(
 
     /** Un único timeline, el más reciente primero (RF-AUDIT-002). */
     static List<EventoHistorialResponse> de(HistorialSolicitud historial) {
-        String aspirante = historial.solicitud().getAspirante().getNombre();
+        String aspirante = historial.solicitud().getAspirante().nombreCompleto();
         Stream<EventoHistorialResponse> cambios = historial.cambios().stream().map(c -> cambio(c, aspirante));
         Stream<EventoHistorialResponse> documentos =
                 historial.documentosCargados().stream().map(d -> documento(d, aspirante));
@@ -26,7 +26,7 @@ public record EventoHistorialResponse(
     private static EventoHistorialResponse cambio(HistorialEstado cambio, String aspirante) {
         String usuario = cambio.getUsuarioUltimoCambio() == null
                 ? aspirante
-                : cambio.getUsuarioUltimoCambio().getNombre();
+                : cambio.getUsuarioUltimoCambio().nombreCompleto();
         return new EventoHistorialResponse(
                 cambio.getFechaAsignacion(),
                 "CAMBIO_ESTADO",

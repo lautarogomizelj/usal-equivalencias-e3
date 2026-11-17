@@ -72,12 +72,14 @@ class RegistroIntegrationTest extends IntegracionBase {
         Map<String, Object> datos = new HashMap<>(datosRegistro("no-es-email", "123"));
         datos.put("password", "sinmayuscula1!");
         datos.put("telefono", "abc");
+        datos.remove("apellido");
 
         postear("/auth/registro", datos)
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.code").value("VALIDACION"))
                 .andExpect(jsonPath("$.errors.email").exists())
                 .andExpect(jsonPath("$.errors.password").exists())
+                .andExpect(jsonPath("$.errors.apellido").exists())
                 .andExpect(jsonPath("$.errors.dni").exists())
                 .andExpect(jsonPath("$.errors.telefono").exists());
     }

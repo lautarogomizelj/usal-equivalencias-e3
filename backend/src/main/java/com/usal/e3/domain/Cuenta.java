@@ -17,6 +17,15 @@ public interface Cuenta {
 
     void setNombre(String nombre);
 
+    String getApellido();
+
+    void setApellido(String apellido);
+
+    /** Para mostrar a la persona en una solicitud: responsables, historial y listados. */
+    default String nombreCompleto() {
+        return (getNombre() + " " + getApellido()).strip();
+    }
+
     String getTelefono();
 
     void setTelefono(String telefono);

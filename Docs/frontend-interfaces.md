@@ -23,6 +23,8 @@ Los diseños visuales están en la carpeta compartida de Google Drive **Interfac
 | 3.4 | 2026-11-15 | jumaluc | Panel de inicio, Nueva solicitud y detalle de la solicitud del aspirante según el diseño de Drive (§4.2, §4.3, §4.5, §4.6.1, §4.6.2 y Anexo B, puntos 17 a 19); "Condición académica" como texto libre (Anexo A, punto 2) |
 | 3.5 | 2026-11-15 | jumaluc | Cancelación de la solicitud por el aspirante: botón y modal en `ASP-SOL-INI`, interfaz `ASP-SOL-CANC` y estado terminal `SOL-CANC` en las matrices (requisitos v13.0, RF-ASP-010, CC-010) |
 | 3.6 | 2026-11-17 | jumaluc | Login del personal y login de Admin: rutas, acceso, avisos de error, destino en `/dashboard` y bloque de cuentas demo solo en desarrollo (§3.6, §3.7 y Anexo B, punto 13; CC-011) |
+| 3.7 | 2026-11-17 | jumaluc | Mi perfil para todos los roles (§2.12); nombre y apellido siempre separados (§4.3 y Anexo B, punto 1; CC-012); "Recuérdame" de 30 días en el Login Aspirante (§3.4) |
+| 3.8 | 2026-11-17 | jumaluc | Stepper de etapas construido en el detalle de la solicitud, en todos los estados (§4.5 y Anexo B, punto 18) |
 
 ---
 
@@ -867,6 +869,25 @@ Límites vigentes:
 
 ---
 
+## 2.12 Mi perfil
+
+**Requisito:** RF-AUTH-007. **Acceso:** menú lateral → "Mi perfil", para todos los roles. Ruta `/perfil`. No tiene diseño propio en Drive: sigue la composición de `Interfaces/Academicos/Inicio/Mi Perfil.png`, sin la disponibilidad horaria ni las notificaciones (Anexo B, punto 10).
+
+Contenido:
+
+- **Información personal:** iniciales, nombre completo y rol; Nombre, Apellido, Email, Teléfono y DNI (solo el aspirante). El botón "Editar" habilita únicamente los campos que el backend devuelve en `camposEditables`: quien entra con Google no edita nombre ni apellido, y el Revisor no edita nada.
+- **Seguridad** (no aparece con Google): "Cambiar contraseña" y, para el Admin, "Cambiar email" (dominio @usal.edu.ar). Los dos abren un modal que pide la contraseña actual; el modal es la segunda confirmación.
+- **Sesiones activas:** dispositivo, IP y último uso; la sesión en uso lleva la marca "Esta sesión" y las demás se cierran con confirmación.
+- **Historial de accesos:** los últimos 10 ingresos con fecha, IP y duración.
+
+Al guardar el nombre se actualiza también la tarjeta del usuario de la barra superior.
+
+### Galería de avatares (a implementar)
+
+RF-AUTH-007 pide elegir un avatar de una galería por género. Faltan las ilustraciones ([`BLOQUEOS.md`](BLOQUEOS.md), punto 3); mientras tanto el avatar son las iniciales.
+
+---
+
 # 3. INTERFACES PÚBLICAS
 
 ---
@@ -931,7 +952,7 @@ Campos:
 
 - Email
 - Contraseña
-- Recuérdame
+- Recuérdame: la sesión dura 30 días en lugar de 1
 
 Acciones:
 
@@ -1121,7 +1142,8 @@ Formulario en dos secciones. Aún no existe la solicitud ni el estado. **Diseño
 
 ### Sección A – Datos personales (precargados, solo lectura)
 
-- Nombre completo
+- Nombre
+- Apellido
 - DNI
 - Email
 - Teléfono
@@ -1206,7 +1228,7 @@ Columnas:
 
 Es el marco que se repite en **todos** los estados. Lo único que cambia entre estados es el contenido de la pestaña "Mi trámite" (Panel de Acción, 4.6).
 
-La pantalla construida sigue el diseño: título con el código y el badge, banner del estado y las pestañas Documentación, Detalles, Chat e Historial, sin stepper; `SOL-INI` se muestra como una pantalla propia de carga, sin pestañas (Anexo B, punto 18). El Chat muestra un aviso de "Próximamente" hasta el Sprint 6. Lo que sigue es lo que piden los requisitos.
+La pantalla construida sigue el diseño: título con el código y el badge, banner del estado y las pestañas Documentación, Detalles, Chat e Historial; `SOL-INI` se muestra como una pantalla propia de carga, sin pestañas (Anexo B, punto 18). El stepper de etapas (2.9), que el diseño no trae, va entre el título y el banner en todos los estados, también en `SOL-INI`. El Chat muestra un aviso de "Próximamente" hasta el Sprint 6. Lo que sigue es lo que piden los requisitos.
 
 ### 4.5.1 Estructura
 
@@ -2402,7 +2424,7 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 
 | # | Tema | Diseño de Drive | Requisitos o contrato | Criterio vigente |
 |---|---|---|---|---|
-| 1 | Registro | Nombre y Apellido separados | Nombre completo | Diseño para la pantalla; al enviar, `nombre` del contrato une ambos campos |
+| 1 | Registro | Nombre y Apellido separados | Nombre completo | Resuelto (CC-012): nombre y apellido son siempre dos campos, también en el contrato y en la base |
 | 2 | Contraseña | Mayúscula, minúscula y número | Mayúscula, número y carácter especial | Requisitos |
 | 3 | Expiración del código | Contador desde 04:59 | 10 minutos | Requisitos |
 | 4 | Formatos de archivo | PDF, JPG y PNG | PDF y JPG | Requisitos |
@@ -2419,7 +2441,7 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 | 15 | Mis solicitudes | Columnas con fecha de creación y un responsable por columna; botón "Ver solicitud"; sin filtros | Columnas con carrera destino, universidad de origen e indicador "Requiere tu acción"; filtros por actividad y por estado (4.4) | Diseño para la tabla. El orden por defecto lo resuelve el backend y el color del badge marca los estados que esperan al aspirante. Los filtros quedan pendientes |
 | 16 | Menú del aspirante | "Ayuda" y "Cerrar sesión" en el menú lateral; nombre y rol arriba a la derecha, sin campana | Barra superior con notificaciones, perfil y cerrar sesión (2.1 y 4.1) | Diseño. "Ayuda" no tiene contenido definido y la campana llega con las notificaciones del Sprint 8 |
 | 17 | Panel de inicio del aspirante | Saludo, contadores de solicitudes activas y finalizadas, y la tabla de Mis solicitudes con "Ver solicitud" | Tres bloques de tarjetas (requieren tu acción, en curso y finalizadas) con un botón distinto según el estado (4.2) | Diseño. "Finalizadas" cuenta los estados terminales del catálogo; el color del badge marca los estados que esperan al aspirante |
-| 18 | Detalle de la solicitud | Pestañas Documentación, Detalles, Chat e Historial; responsables dentro de Detalles; sin stepper; `SOL-INI` como pantalla propia "Carga de documentación", sin pestañas; el banner de `DOC-REV` trae una tabla con el documento recargado | Encabezado, stepper, bloque de responsables, banner y pestañas Mi trámite, Documentación, Chat, Historial e Informe (4.5) | Diseño. La pestaña Documentación cumple el papel de "Mi trámite". El stepper, la pestaña Informe y la tabla del banner quedan pendientes. En `SOL-INI` los responsables se ven en Mis solicitudes |
+| 18 | Detalle de la solicitud | Pestañas Documentación, Detalles, Chat e Historial; responsables dentro de Detalles; sin stepper; `SOL-INI` como pantalla propia "Carga de documentación", sin pestañas; el banner de `DOC-REV` trae una tabla con el documento recargado | Encabezado, stepper, bloque de responsables, banner y pestañas Mi trámite, Documentación, Chat, Historial e Informe (4.5) | Diseño. La pestaña Documentación cumple el papel de "Mi trámite". El stepper se suma arriba del banner, como piden los requisitos. La pestaña Informe y la tabla del banner quedan pendientes. En `SOL-INI` los responsables se ven en Mis solicitudes |
 | 19 | Tabla de documentos | Columnas Documento, Estado, Fecha de carga, Archivo, Observaciones y un menú de acciones; marca "Aprobado"; bloque Documentación académica con sus dos filas vacías | Columnas con versión y tamaño; marcas "Pendiente de revisión", "Correcto" y "Debe recargar" (2.8) | Diseño para las columnas, con la versión al lado del archivo cuando no es la primera y un botón de descarga en lugar del menú. Requisitos para los nombres de las marcas. La Documentación académica muestra un aviso hasta el Sprint 5 |
 
 ---

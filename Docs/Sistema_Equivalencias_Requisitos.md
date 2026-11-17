@@ -18,6 +18,7 @@
 | 11.0 | 2026-10-13 | lautarogomizelj | Divide el estado `REU-FEC-ASP` en `REU-FEC-ASP-1` y `REU-FEC-ASP-2` para codificar el límite de 2 rondas en el grafo (catálogo de 19 estados, 23 transiciones); actualiza RF-ASP-005, RF-ACAD-002/003, RF-ESTADO-002 y la tabla de estados (E3) |
 | 12.0 | 2026-10-13 | lautarogomizelj | Agrega el estado `LEG-PEND` (documentos sin legalizar) para resolver el caso de `INSC-ACEP` sin transición y la transición `REU-PEND` → `REU-FEC-ACAD` para cuando el aspirante no se presenta a la reunión (catálogo de 20 estados, 26 transiciones); actualiza RF-ASP-009, RF-ACAD-004, RF-ESTADO-002 y la tabla de estados (E3) |
 | 13.0 | 2026-11-15 | jumaluc | Agrega el estado terminal `SOL-CANC` (solicitud cancelada) y la transición 27 `SOL-INI` → `SOL-CANC`: el aspirante puede cancelar su solicitud antes de enviar la documentación (RF-ASP-010, CC-010). Catálogo de 21 estados y 27 transiciones |
+| 13.1 | 2026-11-17 | jumaluc | Nombre y apellido en campos separados para aspirantes y usuarios: registro (RF-AUTH-001), perfil (RF-AUTH-007) y tablas `usuarios` y `aspirantes` (CC-012) |
 
 ---
 
@@ -134,7 +135,8 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 - Aspirante crea cuenta con:
   - Email personal
   - Contraseña (mínimo 8 caracteres, mayúscula, número, carácter especial)
-  - Nombre completo
+  - Nombre
+  - Apellido
   - Teléfono
   - Número de documento (DNI)
 - **Validación por código (NO link):**
@@ -234,7 +236,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
     - Galerías por género
     - Cambiar selección
   - **Información:**
-    - Nombre (si no es OAuth, editable)
+    - Nombre y apellido, siempre en campos separados (si no es OAuth, editables)
     - Email (no editable para OAuth; para Admin, editable con doble verificación y validando dominio @usal.edu.ar)
     - Teléfono (editable)
   - **Seguridad:**
@@ -1064,6 +1066,7 @@ CREATE TABLE usuarios (
   id INT PRIMARY KEY AUTO_INCREMENT,
   email VARCHAR(255) UNIQUE NOT NULL,
   nombre VARCHAR(255) NOT NULL,
+  apellido VARCHAR(255) NOT NULL,
   rol_id INT NOT NULL,
   activo BOOLEAN DEFAULT TRUE,
   intentos_login_fallidos INT DEFAULT 0,
@@ -1166,6 +1169,7 @@ CREATE TABLE aspirantes (
   email VARCHAR(255) UNIQUE NOT NULL,
   password_hash VARCHAR(255) NOT NULL,
   nombre VARCHAR(255) NOT NULL,
+  apellido VARCHAR(255) NOT NULL,
   telefono VARCHAR(20),
   dni VARCHAR(20) UNIQUE NOT NULL,
   email_validado BOOLEAN DEFAULT FALSE,

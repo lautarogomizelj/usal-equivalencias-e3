@@ -9,6 +9,7 @@
 | 1.2 | 2026-11-02 | jumaluc | Sprint 2: sesión con JWT en cookie, códigos `NO_AUTENTICADO` y `ACCESO_DENEGADO`, login simulado de desarrollo, flujo real de `/auth/google` y errores de perfil (CC-007, CC-008) |
 | 1.3 | 2026-11-15 | jumaluc | Sprint 3: lectura de catálogos, creación y lectura de solicitudes, documentos en borrador, `ENVIAR_DOCUMENTACION` desde `SOL-INI`, reglas del motor de transiciones y `fechaCreacion` en `SolicitudResumen` (CC-009) |
 | 1.4 | 2026-11-15 | jumaluc | Cancelación del aspirante: estado terminal `SOL-CANC` y acción `CANCELAR_SOLICITUD` (`POST /solicitudes/{id}/cancelar`) desde `SOL-INI`, que elimina los borradores (requisitos v13.0, CC-010) |
+| 1.5 | 2026-11-17 | jumaluc | `apellido` separado de `nombre` en `usuarios`, `aspirantes`, registro, `Sesion`, `Perfil` y `PATCH /perfil`; las referencias a personas dentro de una solicitud siguen con el nombre completo (CC-012) |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos (§6, sin análisis, reunión, informe ni pago) y la acción `ENVIAR_DOCUMENTACION` desde `SOL-INI` (§7). El resto del documento es el contrato a acordar.
 
@@ -127,6 +128,7 @@ Personal @usal (Académico, Secretaría, Revisor) y Admin General.
 | id | int | PK |
 | email | string | Único. Dominio `usal.edu.ar` |
 | nombre | string |  |
+| apellido | string | Nombre y apellido van siempre en campos separados (CC-012) |
 | rolId | int | FK a `roles` |
 | activo | boolean | Default `true` |
 | intentosLoginFallidos | int | Solo aplica al Admin (login con contraseña) |
@@ -147,6 +149,7 @@ Personal @usal (Académico, Secretaría, Revisor) y Admin General.
 | email | string | Único |
 | passwordHash | string | Nunca se expone |
 | nombre | string |  |
+| apellido | string | Nombre y apellido van siempre en campos separados (CC-012) |
 | telefono | string |  |
 | dni | string | Único |
 | emailValidado | boolean | Sin validar no puede crear solicitudes |
@@ -493,7 +496,8 @@ Hay tres formas de entrar: aspirante con email y contraseña, personal @usal con
 {
   "email": "juan.perez@gmail.com",
   "password": "Clave#2026",
-  "nombre": "Juan Pérez",
+  "nombre": "Juan",
+  "apellido": "Pérez",
   "telefono": "+54 11 5555-0000",
   "dni": "40123456"
 }
@@ -521,7 +525,8 @@ Errores: 401 `CREDENCIALES_INVALIDAS` `{ "intentosRestantes": 2 }`, 423 `CUENTA_
 {
   "tipo": "USUARIO",
   "id": 7,
-  "nombre": "María Gómez",
+  "nombre": "María",
+  "apellido": "Gómez",
   "email": "m.gomez@usal.edu.ar",
   "rol": "ACAD",
   "avatar": "hombre-02",
@@ -534,14 +539,14 @@ Errores: 401 `CREDENCIALES_INVALIDAS` `{ "intentosRestantes": 2 }`, 423 `CUENTA_
 }
 ```
 
-`tipo` es `ASPIRANTE` o `USUARIO`. `carrerasConPermiso` solo viene para Académico y Secretaría (permisos activos, `revokedAt` nulo); el front la usa para ordenar la bandeja y no para habilitar botones.
+`tipo` es `ASPIRANTE` o `USUARIO`. `nombre` y `apellido` van siempre separados en los datos de la cuenta (registro, `Sesion` y `Perfil`); las referencias a una persona dentro de una solicitud (`aspirante`, responsables, historial) traen el nombre completo en `nombre`. `carrerasConPermiso` solo viene para Académico y Secretaría (permisos activos, `revokedAt` nulo); el front la usa para ordenar la bandeja y no para habilitar botones.
 
 ### 4.2 Endpoints de perfil (RF-AUTH-007)
 
 | Método | Ruta | Quién | Qué hace | Respuesta |
 | --- | --- | --- | --- | --- |
 | GET | `/perfil` | Todos | Datos del perfil | 200 `Perfil` |
-| PATCH | `/perfil` | Todos menos Revisor | Edita `nombre` (no OAuth), `telefono`, `avatar` | 200 `Perfil` |
+| PATCH | `/perfil` | Todos menos Revisor | Edita `nombre` y `apellido` (no OAuth), `telefono`, `avatar` | 200 `Perfil` |
 | PUT | `/perfil/password` | Aspirante, Admin | `{ passwordActual, passwordNueva }` | 204 |
 | PUT | `/perfil/email` | Admin | `{ emailNuevo, passwordActual }`; valida dominio `usal.edu.ar` | 204 |
 | GET | `/perfil/accesos` | Todos | Últimos 10 logins: `[{ fecha, ip, duracionMinutos }]` | 200 |
@@ -552,20 +557,21 @@ Errores: 401 `CREDENCIALES_INVALIDAS` `{ "intentosRestantes": 2 }`, 423 `CUENTA_
 
 ```json
 {
-  "nombre": "Juan Pérez",
+  "nombre": "Juan",
+  "apellido": "Pérez",
   "email": "juan.perez@gmail.com",
   "telefono": "+54 11 5555-0000",
   "dni": "40123456",
   "avatar": "hombre-02",
   "rol": "ASPIRANTE",
   "esOAuth": false,
-  "camposEditables": ["nombre", "telefono", "avatar"]
+  "camposEditables": ["nombre", "apellido", "telefono", "avatar"]
 }
 ```
 
 El catálogo de avatares vive en `frontend/src/assets/`; el backend solo guarda y valida la clave (`hombre-02`). Todos los cambios de perfil quedan en auditoría.
 
-Contraseña actual incorrecta en `PUT /perfil/password` o `PUT /perfil/email`: 400 `VALIDACION` con `errors.passwordActual`. Un usuario con Google que envía `nombre` en `PATCH /perfil`: 400 con `errors.nombre`. Al cambiar la contraseña se cierran las demás sesiones.
+Contraseña actual incorrecta en `PUT /perfil/password` o `PUT /perfil/email`: 400 `VALIDACION` con `errors.passwordActual`. Un usuario con Google que envía `nombre` o `apellido` en `PATCH /perfil`: 400 con el error en ese campo. Para el personal @usal, `telefono` puede venir nulo y `dni` siempre es nulo. Al cambiar la contraseña se cierran las demás sesiones.
 
 ## 5. Catálogos: carreras, estados y roles
 
@@ -1034,7 +1040,7 @@ Todo lo de esta sección es solo para Admin General y vive bajo `/admin`.
 | POST | `/admin/cuentas/{tipo}/{id}/desbloquear` | `tipo` = `aspirante` o `usuario`; resetea intentos a 0 | 204 | RF-AUTH-002 |
 | POST | `/admin/solicitudes/{id}/reabrir` | **A implementar**: depende de estados posteriores a `E3-INI` | — | RF-ADMIN-006 |
 
-**`POST /admin/usuarios`** — request `{ "email": "l.diaz@usal.edu.ar", "nombre": "Laura Díaz", "rolCodigo": "SECRE" }`. Dominio distinto → 400 `VALIDACION`; email existente → 409 `DUPLICADO`. No se envía mail: la persona entra directo con Google.
+**`POST /admin/usuarios`** — request `{ "email": "l.diaz@usal.edu.ar", "nombre": "Laura", "apellido": "Díaz", "rolCodigo": "SECRE" }`. Dominio distinto → 400 `VALIDACION`; email existente → 409 `DUPLICADO`. No se envía mail: la persona entra directo con Google.
 
 **`UsuarioAdmin`**
 
@@ -1042,7 +1048,8 @@ Todo lo de esta sección es solo para Admin General y vive bajo `/admin`.
 {
   "id": 12,
   "email": "l.diaz@usal.edu.ar",
-  "nombre": "Laura Díaz",
+  "nombre": "Laura",
+  "apellido": "Díaz",
   "rol": "SECRE",
   "activo": true,
   "bloqueadoHasta": null,

@@ -1,5 +1,5 @@
 import { ArrowLeft, ArrowRight, Lock, Mail } from 'lucide-react'
-import { Link } from 'react-router'
+import { Link, Navigate, useSearchParams } from 'react-router'
 import logoUsal from '@/assets/logo-usal-blanco.webp'
 import panelLogin from '@/assets/panel-login.webp'
 import { Button, Checkbox, Input } from '@/components/ui'
@@ -12,6 +12,10 @@ const CLASES_ENLACE = 'text-primary underline'
 export function LoginPage() {
   const { correo, setCorreo, contrasenia, setContrasenia, errorCorreo, errorContrasenia, ingresar } =
     useFormularioLogin()
+  const [parametros] = useSearchParams()
+
+  /* El backend vuelve acá cuando falla el login con Google (contrato de la API §4.1): el aviso va en el login del personal. */
+  if (parametros.has('error')) return <Navigate to={`${ROUTES.LOGIN_PERSONAL}?${parametros}`} replace />
 
   return (
     <div className="escala-auth flex min-h-screen flex-col lg:flex-row">

@@ -25,6 +25,9 @@
       font-size: var(--escala-auth);
     }
 
+    html:has(.escala-privada) {
+      font-size: var(--escala-privada);
+    }
   }
 
   @media (min-width: 64rem) and (min-aspect-ratio: 3/2) {
@@ -41,6 +44,11 @@
     --size-icon-xl: 1.5rem;
     --text-control-lg: 1.125rem;
     --text-subtitulo: 1.125rem;
+  }
+
+  /* Formularios que tienen que entrar en una pantalla: el área de texto es más baja. */
+  .formulario-compacto {
+    --size-input-multilinea: 4rem;
   }
 
   /* Los controles del registro son más grandes que los del resto del sistema. */

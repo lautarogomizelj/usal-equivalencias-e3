@@ -7,3 +7,12 @@ export const ROLES = {
   REVISOR: 'revisor',
   OBSERVADOR: 'observador',
 } as const
+
+/** Nombre a mostrar de cada rol, por el código que envía el backend (contrato de la API §2.1). */
+export const NOMBRE_ROL: Record<string, string> = {
+  ASPIRANTE: 'Aspirante',
+  ACAD: 'Académico',
+  SECRE: 'Secretaría',
+  ADMIN: 'Admin',
+  REVISOR: 'Revisor',
+}

@@ -9,6 +9,7 @@
   --size-form: 32rem;
   --size-modal-sm: 28rem;
   --size-modal-md: 40rem;
+  --size-modal-lg: 52rem;
 
   --size-input: 2.5rem;
   --size-button-sm: 2rem;
@@ -85,4 +86,30 @@
   --size-recuperar-bloque: 44rem;
   --size-recuperar-tarjeta: 50rem;
   --size-pasos-linea: 1.75rem;
+
+  /*
+   * Área privada: medidas del diseño de 1536 × 1024, mostradas al 80 % para que se vea como una
+   * página común. El título va arriba para dejarle el alto a la tabla.
+   */
+  --escala-privada: clamp(0.6875rem, min(0.8333vw, 2.2vh), 1.25rem);
+  --size-privado-menu: 19.5rem;
+  --size-privado-ola-alto: max(64rem, 100vh);
+  --size-privado-logo: 15.375rem;
+  --size-privado-logo-y: 2.625rem;
+  --size-privado-item: 3.875rem;
+  --size-privado-barra: 5.375rem;
+  --size-privado-tarjeta: 14.625rem;
+  --size-privado-avatar: 3.5rem;
+  --size-privado-margen: 1.75rem;
+  --size-privado-foto-alto: 18rem;
+  --size-privado-foto-baja: 15.5rem;
+  --size-privado-titulo: 84rem;
+  --size-privado-circulo: 3.75rem;
+  --size-privado-indicador: 4.5rem;
+  --size-privado-pestania: 3.5rem;
+  --size-cargador: 4rem;
+  --size-tabla-encabezado: 4.75rem;
+  --size-tabla-fila: 5.3125rem;
+  --size-tabla-encabezado-interna: 3rem;
+  --size-tabla-fila-interna: 3.75rem;
 }

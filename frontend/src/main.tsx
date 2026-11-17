@@ -5,10 +5,13 @@ import '@fontsource-variable/inter'
 import '@fontsource/dm-serif-display'
 import '@fontsource/dm-serif-display/400-italic.css'
 import { router } from '@/router'
+import { AuthProvider } from '@/store/AuthProvider'
 import '@/styles/global.css'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <RouterProvider router={router} />
+    <AuthProvider>
+      <RouterProvider router={router} />
+    </AuthProvider>
   </StrictMode>,
 )

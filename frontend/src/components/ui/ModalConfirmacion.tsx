@@ -8,6 +8,7 @@ interface ModalConfirmacionProps {
   accion: string
   consecuencia: string
   textoConfirmar: string
+  textoCancelar?: string
   peligrosa?: boolean
   cargando?: boolean
   error?: string | null
@@ -25,6 +26,7 @@ export function ModalConfirmacion({
   accion,
   consecuencia,
   textoConfirmar,
+  textoCancelar = 'Cancelar',
   peligrosa = false,
   cargando = false,
   error,
@@ -41,7 +43,7 @@ export function ModalConfirmacion({
       acciones={
         <>
           <Button variante="outline" disabled={cargando} onClick={onCancelar}>
-            Cancelar
+            {textoCancelar}
           </Button>
           <Button variante={peligrosa ? 'danger' : 'primary'} disabled={cargando} onClick={onConfirmar}>
             {cargando ? 'Procesando…' : textoConfirmar}

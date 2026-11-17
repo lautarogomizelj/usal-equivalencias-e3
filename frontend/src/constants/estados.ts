@@ -25,4 +25,11 @@ export const VARIANTE_POR_ESTADO: Record<string, VarianteEstado> = {
   'PAG-CTRL': 'espera',
   'PAG-REENV': 'atencion',
   'E3-INI': 'exito',
+  'SOL-CANC': 'neutro',
+}
+
+/** Texto del banner del aspirante en cada estado (frontend-interfaces.md §4.6). Cada sprint suma los suyos. */
+export const BANNER_ASPIRANTE: Record<string, string> = {
+  'DOC-REV': 'Tu documentación está en revisión. Te avisamos por mail si necesitamos algo más.',
+  'SOL-CANC': 'Cancelaste esta solicitud antes de enviar la documentación. Si querés retomar el trámite, creá una nueva.',
 }

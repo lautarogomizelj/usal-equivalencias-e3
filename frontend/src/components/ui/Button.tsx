@@ -1,6 +1,6 @@
 import type { ButtonHTMLAttributes } from 'react'
 
-type Variante = 'primary' | 'secondary' | 'outline' | 'danger' | 'ghost'
+type Variante = 'primary' | 'secondary' | 'outline' | 'danger' | 'dangerOutline' | 'ghost'
 type Tamanio = 'sm' | 'md' | 'lg' | 'xl'
 
 interface ButtonProps extends ButtonHTMLAttributes<HTMLButtonElement> {
@@ -13,6 +13,7 @@ const VARIANTES: Record<Variante, string> = {
   secondary: 'bg-secondary text-secondary-contrast hover:bg-secondary-hover',
   outline: 'border border-primary bg-surface text-primary hover:bg-secondary disabled:border-border',
   danger: 'bg-danger text-white hover:bg-danger-hover',
+  dangerOutline: 'border border-danger bg-surface text-danger hover:bg-danger-soft disabled:border-border',
   ghost: 'bg-transparent text-primary hover:bg-secondary',
 }
 

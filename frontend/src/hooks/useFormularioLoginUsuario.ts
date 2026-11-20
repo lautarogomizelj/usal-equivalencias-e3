@@ -2,14 +2,15 @@ import { useState, type FormEvent } from 'react'
 import { useNavigate } from 'react-router'
 import { ROUTES } from '@/constants/routes'
 import { ApiError } from '@/services/api/ApiError'
-import { useAuth } from '@/store/authContext'
 import { requerido, type ResultadoValidacion } from '@/validations'
 import { MENSAJES } from '@/validations/messages'
 
-/** Estado y validación del login de Admin (RF-AUTH-004). */
-export function useFormularioLoginAdmin() {
+/**
+ * Estado y validación de los logins con usuario y contraseña: el del Admin (RF-AUTH-004) y, hasta que esté
+ * el ingreso con Google, el del personal (RF-AUTH-003).
+ */
+export function useFormularioLoginUsuario(ingresarCon: (usuario: string, password: string) => Promise<void>) {
   const navigate = useNavigate()
-  const { ingresarAdmin } = useAuth()
   const [usuario, setUsuario] = useState('')
   const [contrasenia, setContrasenia] = useState('')
   const [errorUsuario, setErrorUsuario] = useState<ResultadoValidacion>(null)
@@ -24,12 +25,12 @@ export function useFormularioLoginAdmin() {
     if (validacionUsuario || validacionContrasenia) return
 
     try {
-      await ingresarAdmin(usuario.trim(), contrasenia)
+      await ingresarCon(usuario.trim(), contrasenia)
       navigate(ROUTES.DASHBOARD)
     } catch (error) {
       const credencialesInvalidas = error instanceof ApiError && error.body?.code === 'CREDENCIALES_INVALIDAS'
       setErrorContrasenia(
-        credencialesInvalidas ? MENSAJES.CREDENCIALES_ADMIN_INVALIDAS : error instanceof Error ? error.message : null,
+        credencialesInvalidas ? MENSAJES.CREDENCIALES_USUARIO_INVALIDAS : error instanceof Error ? error.message : null,
       )
     }
   }

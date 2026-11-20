@@ -1,5 +1,4 @@
 /** Autenticación del aspirante, del personal y del Admin (contrato de la API §4). */
-import { ENV } from '@/constants/env'
 import { api } from '@/services/api/client'
 import type { Sesion } from '@/types/sesion'
 
@@ -16,10 +15,9 @@ export const auth = {
   login: (email: string, password: string, recordarme: boolean) =>
     api.post<Sesion>('/auth/login', { email, password, recordarme }),
   loginAdmin: (usuario: string, password: string) => api.post<Sesion>('/auth/admin/login', { usuario, password }),
-  /** Reemplaza al login con Google en desarrollo: solo existe con el perfil `dev` del backend. */
-  loginDev: (email: string) => api.post<Sesion>('/auth/dev/login', { email }),
-  /** El login con Google no es una llamada: el navegador va al backend, que redirige a Google y vuelve con la sesión. */
-  urlGoogle: `${ENV.API_URL}/auth/google`,
+  /** Provisorio, hasta que esté el ingreso con Google (contrato de la API §4.1). */
+  loginPersonal: (usuario: string, password: string) =>
+    api.post<Sesion>('/auth/personal/login', { usuario, password }),
   logout: () => api.post<void>('/auth/logout'),
   me: (signal?: AbortSignal) => api.get<Sesion>('/auth/me', { signal }),
   registrar: (datos: DatosRegistro) => api.post<{ aspiranteId: number; email: string }>('/auth/registro', datos),

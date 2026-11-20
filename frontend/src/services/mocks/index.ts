@@ -46,17 +46,14 @@ function iniciarSesion(body: unknown) {
   return abrirSesion(SESION_ASPIRANTE)
 }
 
-function iniciarSesionAdmin(body: unknown) {
-  const { usuario, password } = body as { usuario: string; password: string }
-  const sesion = SESIONES_USAL.find(({ email, rol }) => rol === 'ADMIN' && email === usuario)
-  if (!sesion || password !== PASSWORD_VALIDA) throw credencialesInvalidas()
-  return abrirSesion(sesion)
-}
-
-function iniciarSesionDev(body: unknown) {
-  const sesion = SESIONES_USAL.find(({ email, rol }) => rol !== 'ADMIN' && email === (body as { email: string }).email)
-  if (!sesion) throw ApiError.fromStatus(403, { status: 403, code: 'USUARIO_NO_REGISTRADO' })
-  return abrirSesion(sesion)
+/** Login con usuario y contraseña: el del Admin y el del personal son dos entradas separadas. */
+function iniciarSesionUsuario(deAdmin: boolean) {
+  return (body: unknown) => {
+    const { usuario, password } = body as { usuario: string; password: string }
+    const sesion = SESIONES_USAL.find(({ email, rol }) => (rol === 'ADMIN') === deAdmin && email === usuario)
+    if (!sesion || password !== PASSWORD_VALIDA) throw credencialesInvalidas()
+    return abrirSesion(sesion)
+  }
 }
 
 function sesionActual() {
@@ -79,8 +76,8 @@ const RUTAS: Record<string, (body: unknown, ids: number[]) => unknown> = {
   'POST /auth/password/recuperar': reiniciarIntentos,
   'POST /auth/password/restablecer': comprobarCodigo,
   'POST /auth/login': iniciarSesion,
-  'POST /auth/admin/login': iniciarSesionAdmin,
-  'POST /auth/dev/login': iniciarSesionDev,
+  'POST /auth/admin/login': iniciarSesionUsuario(true),
+  'POST /auth/personal/login': iniciarSesionUsuario(false),
   'POST /auth/logout': () => sessionStorage.removeItem(CLAVE_SESION),
   'GET /auth/me': () => ({ ...sesionActual() }),
   ...rutasPerfil(sesionActual, abrirSesion),

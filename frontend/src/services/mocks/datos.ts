@@ -45,7 +45,7 @@ export const ESTADOS: Estado[] = CATALOGO.map(([codigo, nombre, esTerminal = fal
 }))
 
 /** Contraseña de todas las cuentas de los mocks. */
-export const PASSWORD_VALIDA = 'Demo1234!'
+export const PASSWORD_VALIDA = '1234'
 
 export const SESION_ASPIRANTE: Sesion = {
   tipo: 'ASPIRANTE',

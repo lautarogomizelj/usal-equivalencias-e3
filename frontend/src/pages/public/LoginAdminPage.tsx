@@ -1,12 +1,14 @@
 import { ArrowRight, Lock, User } from 'lucide-react'
 import { MarcoLogin } from '@/components/auth/MarcoLogin'
 import { Button, Input } from '@/components/ui'
-import { useFormularioLoginAdmin } from '@/hooks/useFormularioLoginAdmin'
+import { useFormularioLoginUsuario } from '@/hooks/useFormularioLoginUsuario'
+import { useAuth } from '@/store/authContext'
 
 /** Login del Admin General (frontend-interfaces.md §3.7). */
 export function LoginAdminPage() {
+  const { ingresarAdmin } = useAuth()
   const { usuario, setUsuario, contrasenia, setContrasenia, errorUsuario, errorContrasenia, ingresar } =
-    useFormularioLoginAdmin()
+    useFormularioLoginUsuario(ingresarAdmin)
 
   return (
     <MarcoLogin titulo="Administración" subtitulo="Ingresá con tu usuario y contraseña de administrador.">

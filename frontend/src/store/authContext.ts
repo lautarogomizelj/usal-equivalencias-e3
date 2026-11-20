@@ -8,8 +8,8 @@ export interface AuthContextValor {
   /** Con `recordarme` la sesión dura 30 días en lugar de 1 (contrato de la API §4.1). */
   ingresar: (email: string, password: string, recordarme?: boolean) => Promise<void>
   ingresarAdmin: (usuario: string, password: string) => Promise<void>
-  /** Entra como una cuenta del personal sin pasar por Google. Solo en desarrollo. */
-  ingresarDev: (email: string) => Promise<void>
+  /** Académico, Secretaría y Revisor, hasta que esté el ingreso con Google. */
+  ingresarPersonal: (usuario: string, password: string) => Promise<void>
   cerrarSesion: () => Promise<void>
   /** Vuelve a pedir la sesión, por ejemplo después de editar el nombre en Mi perfil. */
   refrescarSesion: () => Promise<void>

@@ -20,6 +20,11 @@ async function request<T>(metodo: Metodo, ruta: string, { body, signal }: Opcion
   }
 
   const esFormData = body instanceof FormData
+  const headers: Record<string, string> = {}
+  if (!esFormData && body !== undefined) headers['Content-Type'] = 'application/json'
+  /* CSRF (contrato de la API §1): el backend deja el token en una cookie y lo espera de vuelta en el header. */
+  const tokenCsrf = metodo === 'GET' ? undefined : /(?:^|; )XSRF-TOKEN=([^;]+)/.exec(document.cookie)?.[1]
+  if (tokenCsrf) headers['X-XSRF-TOKEN'] = decodeURIComponent(tokenCsrf)
   let respuesta: Response
 
   try {
@@ -27,7 +32,7 @@ async function request<T>(metodo: Metodo, ruta: string, { body, signal }: Opcion
       method: metodo,
       credentials: 'include',
       signal,
-      headers: esFormData || body === undefined ? undefined : { 'Content-Type': 'application/json' },
+      headers,
       body: esFormData ? body : body === undefined ? undefined : JSON.stringify(body),
     })
   } catch (error) {

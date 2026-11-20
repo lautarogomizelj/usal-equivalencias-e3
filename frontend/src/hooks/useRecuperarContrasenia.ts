@@ -54,7 +54,7 @@ export function useRecuperarContrasenia() {
     try {
       await auth.restablecerPassword(correo, codigoIngresado, nueva)
       setActualizada(true)
-      setTimeout(() => navigate(ROUTES.LOGIN), ESPERA_REDIRECCION_MS)
+      setTimeout(() => navigate(ROUTES.HOME), ESPERA_REDIRECCION_MS)
     } catch (fallo) {
       verificacion.aplicarError(fallo)
       setPaso(2)

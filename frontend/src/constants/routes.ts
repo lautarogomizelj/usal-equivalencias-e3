@@ -1,7 +1,6 @@
 /** Rutas de la aplicación. Toda navegación debe usar estas constantes. */
 export const ROUTES = {
   HOME: '/',
-  LOGIN: '/login',
   LOGIN_PERSONAL: '/login-personal',
   LOGIN_ADMIN: '/login-admin',
   REGISTRO: '/registro',

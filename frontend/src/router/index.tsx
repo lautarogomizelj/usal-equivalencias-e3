@@ -11,7 +11,6 @@ import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 import { PerfilPage } from '@/pages/privado/PerfilPage'
 import { HomePage } from '@/pages/public/HomePage'
 import { LoginAdminPage } from '@/pages/public/LoginAdminPage'
-import { LoginPage } from '@/pages/public/LoginPage'
 import { LoginPersonalPage } from '@/pages/public/LoginPersonalPage'
 import { RecuperarContraseniaPage } from '@/pages/public/RecuperarContraseniaPage'
 import { RegistroPage } from '@/pages/public/RegistroPage'
@@ -24,7 +23,6 @@ const RUTAS_PENDIENTES = [ROUTES.AYUDA]
 
 export const router = createBrowserRouter([
   { path: ROUTES.HOME, element: <HomePage /> },
-  { path: ROUTES.LOGIN, element: <LoginPage /> },
   { path: ROUTES.REGISTRO, element: <RegistroPage /> },
   { path: ROUTES.VALIDAR_CODIGO, element: <VerificarCorreoPage /> },
   { path: ROUTES.RECUPERAR_PASSWORD, element: <RecuperarContraseniaPage /> },

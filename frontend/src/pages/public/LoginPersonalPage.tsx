@@ -1,8 +1,6 @@
-import { Link } from 'react-router'
 import { MarcoLogin } from '@/components/auth/MarcoLogin'
 import { Aviso, Button } from '@/components/ui'
 import { CUENTAS_DEMO } from '@/constants/auth'
-import { ROUTES } from '@/constants/routes'
 import { useLoginPersonal } from '@/hooks/useLoginPersonal'
 
 /** Login del personal @usal.edu.ar: Académico, Secretaría y Revisor (frontend-interfaces.md §3.6). */
@@ -33,13 +31,6 @@ export function LoginPersonalPage() {
             </div>
           </div>
         )}
-
-        <p className="text-center text-base text-text lg:text-xl">
-          ¿Sos administrador?{' '}
-          <Link to={ROUTES.LOGIN_ADMIN} className="text-primary underline">
-            Ingresá acá
-          </Link>
-        </p>
       </div>
     </MarcoLogin>
   )

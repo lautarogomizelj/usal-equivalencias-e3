@@ -17,7 +17,7 @@ export function VerificarCorreoPage() {
   const verificacion = useVerificacionCodigo({
     validar: async (codigo) => {
       await auth.validarCodigo(email, codigo)
-      setTimeout(() => navigate(ROUTES.LOGIN), ESPERA_REDIRECCION_MS)
+      setTimeout(() => navigate(ROUTES.HOME), ESPERA_REDIRECCION_MS)
     },
     reenviar: () => auth.reenviarCodigo(email),
   })

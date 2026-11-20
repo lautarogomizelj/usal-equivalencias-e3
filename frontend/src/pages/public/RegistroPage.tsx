@@ -142,7 +142,7 @@ export function RegistroPage() {
 
           <p className="mt-6 border-t border-border pt-6 text-center text-lg text-text">
             ¿Ya tenés una cuenta?{' '}
-            <Link to={ROUTES.LOGIN} className="ml-2 font-medium text-primary underline">
+            <Link to={ROUTES.HOME} className="ml-2 font-medium text-primary underline">
               Iniciar sesión
             </Link>
           </p>

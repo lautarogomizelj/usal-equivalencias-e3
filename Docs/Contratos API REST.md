@@ -10,6 +10,7 @@
 | 1.3 | 2026-11-15 | jumaluc | Sprint 3: lectura de catálogos, creación y lectura de solicitudes, documentos en borrador, `ENVIAR_DOCUMENTACION` desde `SOL-INI`, reglas del motor de transiciones y `fechaCreacion` en `SolicitudResumen` (CC-009) |
 | 1.4 | 2026-11-15 | jumaluc | Cancelación del aspirante: estado terminal `SOL-CANC` y acción `CANCELAR_SOLICITUD` (`POST /solicitudes/{id}/cancelar`) desde `SOL-INI`, que elimina los borradores (requisitos v13.0, CC-010) |
 | 1.5 | 2026-11-17 | jumaluc | `apellido` separado de `nombre` en `usuarios`, `aspirantes`, registro, `Sesion`, `Perfil` y `PATCH /perfil`; las referencias a personas dentro de una solicitud siguen con el nombre completo (CC-012) |
+| 1.6 | 2026-11-20 | jumaluc | Correcciones de la auditoría del 2026-11-19 y login del personal: CSRF activado y CORS sin el puerto 5273 (§1), el error de Google vuelve a `/login-personal` y `POST /auth/personal/login` reemplaza al login simulado `POST /auth/dev/login` (§4.1 y §10.1) (CC-014, CC-015, CC-016) |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos (§6, sin análisis, reunión, informe ni pago) y la acción `ENVIAR_DOCUMENTACION` desde `SOL-INI` (§7). El resto del documento es el contrato a acordar.
 
@@ -26,8 +27,8 @@ Este documento fija el contrato entre el frontend (React, `services/api/client.t
 | Identificadores | `id` numérico en las rutas. `codigoExp` (`EXP-2026-001`) solo para mostrar y buscar. |
 | Estados | Siempre por `codigo` (`DOC-REV`), nunca por nombre (RF-ESTADO-004). |
 | Sesión | Cookie `E3_SESION`, `HttpOnly`, `SameSite=Lax` y `Secure` en producción, emitida por el backend; el cliente ya envía `credentials: 'include'`. Lleva un JWT firmado con el id de la fila de `sesiones`, que se valida en cada pedido (CC-007). |
-| CORS | Orígenes `http://localhost:5173` y `http://localhost:5273` con `Access-Control-Allow-Credentials: true`; en producción, `CORS_ALLOWED_ORIGINS`. |
-| CSRF | **Propuesta, sin implementar:** cookie `XSRF-TOKEN` + header `X-XSRF-TOKEN` en POST, PUT, PATCH y DELETE. Requiere agregar el header en `client.ts`; hasta entonces protegen `SameSite=Lax`, el CORS con origen fijo y que la API solo acepte JSON. |
+| CORS | Origen `http://localhost:5173` con `Access-Control-Allow-Credentials: true`; en producción, `CORS_ALLOWED_ORIGINS`. |
+| CSRF | Cookie `XSRF-TOKEN` (legible desde el frontend, con `Path=/`) + header `X-XSRF-TOKEN` con el mismo valor en POST, PUT, PATCH y DELETE; `client.ts` lo agrega solo. El backend deja la cookie en cualquier respuesta, también en un 401. Sin el header, o con un valor distinto al de la cookie, responde 403 `ACCESO_DENEGADO`. El frontend tiene que poder leer la cookie: en desarrollo los dos corren en `localhost`, y en producción tienen que compartir dominio. |
 | Paginación | `?page=0&size=20&sort=campo,desc`. Respuesta con la forma `Page<T>` (abajo). |
 | Doble verificación | Es solo de UI (RF-AUTH-006): el backend recibe una única llamada, al confirmar. |
 | Acciones disponibles | El detalle de una solicitud trae `accionesDisponibles`, calculadas por el backend según rol, permiso (participante u observador) y estado. El frontend solo muestra los botones de esa lista (frontend-interfaces §0.10 y §0.16). |
@@ -69,7 +70,7 @@ Compatible con `ApiErrorBody` (`message`, `errors`) de `types/api.ts`; suma `sta
 | 204 | Acción sin cuerpo de respuesta | — |
 | 400 | Validación de campos (`errors` por campo) | `bad_request` |
 | 401 | Sin sesión o sesión vencida | `unauthorized` |
-| 403 | Rol sin permiso, u observador intentando actuar | `forbidden` |
+| 403 | Rol sin permiso, observador intentando actuar o pedido sin el token CSRF | `forbidden` |
 | 404 | Recurso inexistente o no visible para el usuario | `not_found` |
 | 409 | Transición inválida, proceso ya tomado, email o DNI duplicado | `conflict` |
 | 413 | Archivo de más de 10 MB o total de más de 50 MB | `bad_request` |
@@ -482,8 +483,8 @@ Hay tres formas de entrar: aspirante con email y contraseña, personal @usal con
 | POST | `/auth/registro/reenviar-codigo` | Público | Genera un código nuevo (invalida el anterior) | 204 | RF-AUTH-001 |
 | POST | `/auth/login` | Aspirante | Login con email y contraseña | 200 `Sesion` + cookie | RF-AUTH-002 |
 | GET | `/auth/google` | Personal @usal | Redirige a Google, pasando por `/oauth2/authorization/google` | 302 | RF-AUTH-003 |
-| GET | `/auth/google/callback` | Google | Valida dominio y alta; crea sesión | 302 a `/dashboard`, a `/login?error=USUARIO_NO_REGISTRADO` o, si falla Google, a `/login?error=GOOGLE_ERROR` | RF-AUTH-003 |
-| POST | `/auth/dev/login` | Solo perfil `dev` | Login simulado del personal: `{ "email" }`. No existe en producción | 200 `Sesion` + cookie | Sprint Planning, riesgos |
+| GET | `/auth/google/callback` | Google | Valida dominio y alta; crea sesión | 302 a `/dashboard`, a `/login-personal?error=USUARIO_NO_REGISTRADO` o, si falla Google, a `/login-personal?error=GOOGLE_ERROR` | RF-AUTH-003 |
+| POST | `/auth/personal/login` | Académico, Secretaría y Revisor | Login con usuario (el email) y contraseña: `{ "usuario", "password" }`. **Provisorio**, hasta publicar el sistema con Google (CC-016). Sesión de 1 día y los mismos errores que `/auth/admin/login`. El Admin no entra por acá, ni el personal por `/auth/admin/login`: los dos reciben `CREDENCIALES_INVALIDAS` | 200 `Sesion` + cookie | RF-AUTH-003 |
 | POST | `/auth/admin/login` | Admin | Login con usuario y contraseña | 200 `Sesion` + cookie | RF-AUTH-004 |
 | POST | `/auth/password/recuperar` | Aspirante | Envía código de recupero | 204 siempre (no revela si el email existe) | RF-AUTH-002 |
 | POST | `/auth/password/restablecer` | Aspirante | Cambia la contraseña con el código | 204 | RF-AUTH-002 |
@@ -1099,7 +1100,7 @@ La "Actividad reciente" del dashboard sale de `GET /auditoria?size=10`.
 
 | Grupo de endpoints | Aspirante | Académico | Secretaría | Admin | Revisor |
 | --- | --- | --- | --- | --- | --- |
-| Autenticación (§4.1) | Email y contraseña | Google | Google | Usuario y contraseña | Google |
+| Autenticación (§4.1) | Email y contraseña | Usuario y contraseña (provisorio); Google al publicar | Usuario y contraseña (provisorio); Google al publicar | Usuario y contraseña | Usuario y contraseña (provisorio); Google al publicar |
 | Perfil (§4.2) | Edita | Edita (sin nombre ni email) | Edita (sin nombre ni email) | Edita, incluido email | Solo lee |
 | Carreras y estados (§5) | Lee | Lee | Lee | Lee y escribe | Lee |
 | Solicitudes, lectura (§6) | Solo las suyas | Todas | Todas | Todas | Todas |
@@ -1136,10 +1137,10 @@ Los DTOs de este documento van en `frontend/src/types/` con los mismos nombres (
 ### 10.3 Puntos abiertos para cerrar con backend
 
 - [x] Sesión por cookie `HttpOnly` o por header `Authorization: Bearer`: cookie `HttpOnly` con JWT (CC-007).
-- [ ] Protección CSRF: requiere agregar el header en `client.ts` (§1).
+- [x] Protección CSRF: cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`, que `client.ts` ya envía (§1, CC-015).
 - [x] Dónde se guardan los datos de origen de la solicitud: en `solicitudes` (CC-009).
 - [ ] Qué valores tiene "Condición académica" (Anexo A #2 de interfaces); hoy es texto libre.
 - [ ] Quién carga el informe de materias estructurado y en qué estado (`CARGAR_INFORME`, Anexo A #8).
 - [ ] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables.
 - [ ] Descarga del expediente por el aspirante y reapertura: dependen de los estados posteriores a `E3-INI` (RF-ASP-008, RF-ADMIN-006).
-- [ ] Cambios CC-001 a CC-005 (permisos por facultad): si se aprueban, cambian `/admin/usuarios/{id}/permisos/…` y `Sesion.carrerasConPermiso`.
+- [ ] Cambios CC-001 a CC-005 (permisos por facultad), aprobados el 2026-11-19: al implementarlos cambian `/admin/usuarios/{id}/permisos/…` y `Sesion.carrerasConPermiso`.

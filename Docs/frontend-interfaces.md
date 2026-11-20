@@ -25,6 +25,7 @@ Los diseños visuales están en la carpeta compartida de Google Drive **Interfac
 | 3.6 | 2026-11-17 | jumaluc | Login del personal y login de Admin: rutas, acceso, avisos de error, destino en `/dashboard` y bloque de cuentas demo solo en desarrollo (§3.6, §3.7 y Anexo B, punto 13; CC-011) |
 | 3.7 | 2026-11-17 | jumaluc | Mi perfil para todos los roles (§2.12); nombre y apellido siempre separados (§4.3 y Anexo B, punto 1; CC-012); "Recuérdame" de 30 días en el Login Aspirante (§3.4) |
 | 3.8 | 2026-11-17 | jumaluc | Stepper de etapas construido en el detalle de la solicitud, en todos los estados (§4.5 y Anexo B, punto 18) |
+| 3.9 | 2026-11-20 | jumaluc | Correcciones de la auditoría del 2026-11-19 y login del personal: el login del aspirante no tiene ruta propia, está en el inicio (§3.4); el personal entra con usuario y contraseña mientras no esté Google, sin botón de Google, sin bloque de cuentas demo y sin enlace al login de Admin (§3.6); al login de Admin se llega escribiendo la dirección (§3.7) (CC-014, CC-015, CC-016) |
 
 ---
 
@@ -948,6 +949,8 @@ Estados:
 
 ## 3.4 Login Aspirante
 
+No tiene ruta propia: el formulario está integrado en la pantalla de inicio (`/`), como en el diseño (Anexo B, punto 14). Después de verificar el correo, de restablecer la contraseña o desde "¿Ya tenés una cuenta?" del registro, la aplicación lleva al inicio.
+
 Campos:
 
 - Email
@@ -983,26 +986,38 @@ Paso 3:
 
 Ruta `/login-personal`. Se llega desde el enlace "¿Sos académico?" de la pantalla de inicio. No tiene diseño en Drive: reutiliza el del Login Aspirante (Anexo B, punto 13).
 
-Botón único: "Ingresar con Google".
+Mientras no esté el ingreso con Google, el personal entra con usuario y contraseña (CC-016). El subtítulo lo avisa: "Ingresá con tu usuario y contraseña. El ingreso con Google todavía no está disponible."
+
+Campos:
+
+- Usuario (el email `@usal.edu.ar`)
+- Contraseña
+
+Acciones:
+
+- Ingresar
 
 Estados:
+
+- Usuario o contraseña incorrectos, cuenta inexistente, inactiva o de Admin: "El usuario o la contraseña no son correctos."
+- Cuenta bloqueada: el mismo bloqueo de 6 horas por 3 intentos que el Login Aspirante (3.4)
+
+Al ingresar, el usuario llega a `/dashboard`. Mientras su rol no tenga pantallas propias ve un aviso de "Próximamente".
+
+### Ingreso con Google (a implementar)
+
+Cuando el sistema se publique con las credenciales de Google de la USAL, esta pantalla vuelve a tener un botón único, "Ingresar con Google", y se saca el formulario. Estados previstos:
 
 - Error de dominio o usuario inexistente/inactivo: "Usuario no registrado en el sistema. Contacta al admin." (no se crea sesión)
 - Falla de Google: "No se pudo ingresar con Google. Intentá nuevamente."
 
-El backend vuelve a `/login?error=…` cuando el ingreso falla (contrato de la API §4.1); el frontend lleva ese aviso a esta pantalla.
-
-Al ingresar, el usuario llega a `/dashboard`. Mientras su rol no tenga pantallas propias ve un aviso de "Próximamente".
-
-Solo en desarrollo, debajo del botón hay un bloque para entrar con una cuenta demo (`POST /auth/dev/login`), porque todavía no hay credenciales de Google de la USAL. No existe en el build de producción.
-
-Enlace "¿Sos administrador? Ingresá acá" al Login Admin (3.7).
+Cuando el ingreso falla, el backend vuelve a esta pantalla con `?error=…` (contrato de la API §4.1). El backend ya tiene este recorrido; el frontend lo tuvo hasta el 2026-11-20 (commit `500ec73`).
 
 ---
 
 ## 3.7 Login Admin
 
-Ruta `/login-admin`. Se llega desde el enlace del Login Personal (3.6); ese acceso es provisorio y está pendiente de definir ([`TEMAS_PROFESOR.md`](TEMAS_PROFESOR.md), tema 1). Reutiliza el diseño del Login Aspirante (Anexo B, punto 13).
+Ruta `/login-admin`. Ninguna pantalla enlaza a esta: el Admin escribe la dirección ([`TEMAS_PROFESOR.md`](TEMAS_PROFESOR.md), tema 1, resuelto). Reutiliza el diseño del Login Aspirante (Anexo B, punto 13).
 
 Campos:
 

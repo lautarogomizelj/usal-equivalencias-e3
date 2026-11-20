@@ -19,6 +19,7 @@
 | 12.0 | 2026-10-13 | lautarogomizelj | Agrega el estado `LEG-PEND` (documentos sin legalizar) para resolver el caso de `INSC-ACEP` sin transición y la transición `REU-PEND` → `REU-FEC-ACAD` para cuando el aspirante no se presenta a la reunión (catálogo de 20 estados, 26 transiciones); actualiza RF-ASP-009, RF-ACAD-004, RF-ESTADO-002 y la tabla de estados (E3) |
 | 13.0 | 2026-11-15 | jumaluc | Agrega el estado terminal `SOL-CANC` (solicitud cancelada) y la transición 27 `SOL-INI` → `SOL-CANC`: el aspirante puede cancelar su solicitud antes de enviar la documentación (RF-ASP-010, CC-010). Catálogo de 21 estados y 27 transiciones |
 | 13.1 | 2026-11-17 | jumaluc | Nombre y apellido en campos separados para aspirantes y usuarios: registro (RF-AUTH-001), perfil (RF-AUTH-007) y tablas `usuarios` y `aspirantes` (CC-012) |
+| 13.2 | 2026-11-20 | jumaluc | RF-AUTH-003: mientras el sistema no esté publicado con Google, Académico, Secretaría y Revisor entran con usuario y contraseña (provisorio, CC-016) |
 
 ---
 
@@ -180,6 +181,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
      - Mensaje: "Usuario no registrado en el sistema. Contacta al admin."
      - NO se crea sesión
 - Sesión normal
+- **Provisorio (CC-016):** mientras el sistema no esté publicado con las credenciales de Google, los tres roles entran con usuario (su email) y contraseña, con el mismo bloqueo por intentos de RF-AUTH-002. La contraseña se guarda en `usuarios.password_hash`, que hasta ahora usaba solo el Admin. Al publicar con Google se vuelve al flujo de arriba
 
 #### RF-AUTH-004: Login de Admin General
 - **Usuario + Contraseña (hasheada, a la vieja escuela)**

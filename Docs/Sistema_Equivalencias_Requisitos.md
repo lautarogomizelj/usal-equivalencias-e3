@@ -20,6 +20,7 @@
 | 13.0 | 2026-11-15 | jumaluc | Agrega el estado terminal `SOL-CANC` (solicitud cancelada) y la transición 27 `SOL-INI` → `SOL-CANC`: el aspirante puede cancelar su solicitud antes de enviar la documentación (RF-ASP-010, CC-010). Catálogo de 21 estados y 27 transiciones |
 | 13.1 | 2026-11-17 | jumaluc | Nombre y apellido en campos separados para aspirantes y usuarios: registro (RF-AUTH-001), perfil (RF-AUTH-007) y tablas `usuarios` y `aspirantes` (CC-012) |
 | 13.2 | 2026-11-20 | jumaluc | RF-AUTH-003: mientras el sistema no esté publicado con Google, Académico, Secretaría y Revisor entran con usuario y contraseña (provisorio, CC-016) |
+| 13.3 | 2026-11-20 | jumaluc | RF-PROC-002: para actuar, el personal tiene que ser participante y además el responsable del rol de la etapa; el Admin General no necesita ninguna de las dos cosas (auditoría del 2026-11-19, CC-017) |
 
 ---
 
@@ -614,7 +615,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   7. **Auditoría:**
      - (Solo para académicos con permiso especial o admin)
      - Tabla con todos los cambios registrados
-- Los botones de acción se habilitan solo si el usuario es PARTICIPANTE (RF-AUTH-005) y el estado actual lo permite; en caso contrario quedan deshabilitados (modo observador)
+- Los botones de acción se habilitan solo si el usuario es PARTICIPANTE (RF-AUTH-005), es el responsable del rol de la etapa (RF-PROC-003) y el estado actual lo permite; en caso contrario quedan deshabilitados (modo observador). Sin responsable de su rol, la única acción del participante es "Tomar proceso". El Admin General ejecuta las acciones del Académico y de Secretaría sin ser participante ni responsable (sección 3.4)
 
 ##### RF-PROC-003: "Tomar Proceso" - Asignación Dinámica de Responsables
 - **No hay asignación automática:** al crear la solicitud queda sin responsable y se notifica a todos los usuarios con acceso a esa carrera (RF-ASP-001)

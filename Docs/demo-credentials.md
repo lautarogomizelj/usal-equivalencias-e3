@@ -9,6 +9,7 @@ Todas las cuentas usan la contraseña **`1234`**. Es provisoria y fácil a prop�
 | Aspirante | `aspirante@example.com` | `1234` | `/` (inicio) | `POST /auth/login` | |
 | Admin General | `admin@usal.edu.ar` | `1234` | `/login-admin` | `POST /auth/admin/login` | |
 | Académico | `academico@usal.edu.ar` | `1234` | `/login-personal` | `POST /auth/personal/login` | Con permiso sobre `ING-INF-001` |
+| Académico 2 | `academico2@usal.edu.ar` | `1234` | `/login-personal` | `POST /auth/personal/login` | Con permiso sobre `ING-INF-001`. Está para probar "Darse de baja", que exige otro Académico con acceso a la carrera |
 | Secretaría | `secretaria@usal.edu.ar` | `1234` | `/login-personal` | `POST /auth/personal/login` | Con permiso sobre `ING-INF-001` |
 | Revisor Logs | `revisor@usal.edu.ar` | `1234` | `/login-personal` | `POST /auth/personal/login` | |
 | Observador | `observador@usal.edu.ar` | `1234` | `/login-personal` | `POST /auth/personal/login` | Es un Académico sin permisos de carrera |

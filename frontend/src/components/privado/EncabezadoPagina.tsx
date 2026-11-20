@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
-import edificio from '@/assets/mis-solicitudes-edificio.webp'
 import { Migas } from '@/components/ui'
+import { FotoEdificio } from './FotoEdificio'
 
 interface EncabezadoPaginaProps {
   titulo: string
@@ -17,9 +17,7 @@ interface EncabezadoPaginaProps {
 export function EncabezadoPagina({ titulo, descripcion, migas, fotoBaja = false, children }: EncabezadoPaginaProps) {
   return (
     <>
-      <img
-        src={edificio}
-        alt="Edificio de la Universidad del Salvador"
+      <FotoEdificio
         className={`pointer-events-none absolute top-0 right-0 hidden max-w-none ${fotoBaja ? 'h-(--size-privado-foto-baja) xl:block' : 'h-(--size-privado-foto-alto) lg:block'}`}
       />
 
@@ -28,7 +26,7 @@ export function EncabezadoPagina({ titulo, descripcion, migas, fotoBaja = false,
       )}
 
       <div className="relative flex flex-wrap items-center gap-x-6 gap-y-2 lg:max-w-(--size-privado-titulo)">
-        <h1 className="text-5xl lg:text-7xl">{titulo}</h1>
+        <h1 className="text-4xl lg:text-6xl">{titulo}</h1>
         {children}
       </div>
       <p className="relative mt-2 text-lg text-text-muted lg:mt-0 lg:text-xl">{descripcion}</p>

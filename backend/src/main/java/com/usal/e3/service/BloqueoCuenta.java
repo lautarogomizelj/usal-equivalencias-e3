@@ -16,15 +16,22 @@ final class BloqueoCuenta {
 
     private BloqueoCuenta() {}
 
-    /** Si sigue bloqueada corta el login; si el bloqueo o los fallos ya vencieron, los limpia. */
+    /**
+     * Si sigue bloqueada corta el login; si el bloqueo o los fallos ya vencieron, los limpia. `bloqueado_hasta`
+     * también guarda el bloqueo de 15 minutos por códigos (`CodigoService`): ese no es de 6 horas ni borra los
+     * fallos de login.
+     */
     static void verificar(Cuenta cuenta, OffsetDateTime ahora) {
         OffsetDateTime hasta = cuenta.getBloqueadoHasta();
+        boolean porLogin = cuenta.getIntentosLoginFallidos() >= MAX_INTENTOS;
         if (hasta != null && hasta.isAfter(ahora)) {
-            throw ApiException.bloqueada(MENSAJE_LOGIN, hasta);
+            throw ApiException.bloqueada(porLogin ? MENSAJE_LOGIN : ErrorCode.CUENTA_BLOQUEADA.mensaje(), hasta);
         }
         OffsetDateTime ultimoFallo = cuenta.getFechaUltimoIntentoFallido();
-        if (hasta != null || (ultimoFallo != null && ultimoFallo.plus(DURACION_LOGIN).isBefore(ahora))) {
+        if (porLogin || (ultimoFallo != null && ultimoFallo.plus(DURACION_LOGIN).isBefore(ahora))) {
             limpiar(cuenta);
+        } else {
+            cuenta.setBloqueadoHasta(null);
         }
     }
 

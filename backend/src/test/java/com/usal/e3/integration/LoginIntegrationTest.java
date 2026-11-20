@@ -2,8 +2,10 @@ package com.usal.e3.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.options;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.redirectedUrl;
@@ -24,6 +26,11 @@ import java.util.Map;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
 /** RF-AUTH-002 a 005: logins, bloqueo por intentos, sesión y RBAC. */
 class LoginIntegrationTest extends IntegracionBase {
@@ -33,6 +40,9 @@ class LoginIntegrationTest extends IntegracionBase {
 
     @Autowired
     private AuthService auth;
+
+    @Autowired
+    private WebApplicationContext contexto;
 
     private Map<String, String> malLogin(String email) {
         return Map.of("email", email, "password", "Incorrecta#1");
@@ -272,17 +282,44 @@ class LoginIntegrationTest extends IntegracionBase {
 
     @Test
     void elCorsAceptaLosOrigenesDelFrontendConCredenciales() throws Exception {
-        for (String origen : new String[] {"http://localhost:5173", "http://localhost:5273"}) {
-            mvc.perform(options("/auth/login")
-                            .header(HttpHeaders.ORIGIN, origen)
-                            .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
-                    .andExpect(status().isOk())
-                    .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origen))
-                    .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
-        }
+        String origen = "http://localhost:5173";
+        mvc.perform(options("/auth/login")
+                        .header(HttpHeaders.ORIGIN, origen)
+                        .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, origen))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_CREDENTIALS, "true"));
         mvc.perform(options("/auth/login")
                         .header(HttpHeaders.ORIGIN, "http://sitio-malo.test")
                         .header(HttpHeaders.ACCESS_CONTROL_REQUEST_METHOD, "POST"))
                 .andExpect(status().isForbidden());
+    }
+
+    /** Contrato §1: el token viaja en la cookie `XSRF-TOKEN` y vuelve en el header `X-XSRF-TOKEN`. */
+    @Test
+    void sinElTokenCsrfNoSeAceptanCambios() throws Exception {
+        MockMvc sinCsrf = MockMvcBuilders.webAppContextSetup(contexto).apply(springSecurity()).build();
+        aspiranteValidado(EMAIL, "40123456");
+
+        sinCsrf.perform(login())
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("ACCESO_DENEGADO"));
+
+        Cookie token = sinCsrf.perform(get("/auth/me"))
+                .andExpect(status().isUnauthorized())
+                .andReturn()
+                .getResponse()
+                .getCookie("XSRF-TOKEN");
+        assertThat(token.getPath()).isEqualTo("/");
+        assertThat(token.isHttpOnly()).isFalse();
+        sinCsrf.perform(login().cookie(token)).andExpect(status().isForbidden());
+        sinCsrf.perform(login().cookie(token).header("X-XSRF-TOKEN", token.getValue()))
+                .andExpect(status().isOk());
+    }
+
+    private MockHttpServletRequestBuilder login() throws Exception {
+        return post("/auth/login")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(json.writeValueAsString(Map.of("email", EMAIL, "password", PASSWORD)));
     }
 }

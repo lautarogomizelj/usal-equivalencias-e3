@@ -85,6 +85,7 @@ public class DocumentoService {
         String carpeta = solicitud.getFechaCreacion().getYear() + "/" + solicitud.getAspirante().getDni() + "/"
                 + solicitud.getCodigoExp();
         String ruta = archivos.guardar(carpeta, contenido, extension);
+        archivos.borrarSiSeDeshace(ruta);
         OffsetDateTime ahora = OffsetDateTime.now();
         solicitud.modificada(ahora);
         return documentos.save(new DocumentoSolicitud(
@@ -107,7 +108,7 @@ public class DocumentoService {
             throw new ApiException(ErrorCode.TRANSICION_INVALIDA);
         }
         documentos.delete(documento);
-        archivos.borrar(documento.getRutaArchivo());
+        archivos.borrarAlConfirmar(documento.getRutaArchivo());
         solicitud.modificada(OffsetDateTime.now());
     }
 
@@ -155,7 +156,7 @@ public class DocumentoService {
     void descartarBorradores(Solicitud solicitud) {
         borradores(solicitud).forEach(borrador -> {
             documentos.delete(borrador);
-            archivos.borrar(borrador.getRutaArchivo());
+            archivos.borrarAlConfirmar(borrador.getRutaArchivo());
         });
     }
 

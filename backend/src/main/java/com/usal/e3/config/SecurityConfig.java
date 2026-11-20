@@ -16,10 +16,12 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.security.web.csrf.CookieCsrfTokenRepository;
+import org.springframework.security.web.csrf.CsrfTokenRequestAttributeHandler;
 
 /**
- * RBAC por rol. CSRF queda apagado hasta que `client.ts` mande el header del contrato (§1): mientras
- * tanto protegen SameSite=Lax, el CORS con origen fijo y que la API solo acepte JSON.
+ * RBAC por rol y CSRF del contrato (§1): cookie `XSRF-TOKEN` que el frontend devuelve en el header
+ * `X-XSRF-TOKEN` de cada POST, PUT, PATCH y DELETE.
  */
 @Configuration
 public class SecurityConfig {
@@ -28,7 +30,13 @@ public class SecurityConfig {
     SecurityFilterChain seguridad(
             HttpSecurity http, SesionService sesiones, GoogleLoginHandler google, ErroresSeguridad errores)
             throws Exception {
-        http.csrf(AbstractHttpConfigurer::disable)
+        // La cookie se lee desde el frontend, que corre en otra ruta que `/api`. Sin atributo de pedido el
+        // token se carga en cada pedido, así que la cookie ya está antes del primer POST.
+        CookieCsrfTokenRepository tokens = CookieCsrfTokenRepository.withHttpOnlyFalse();
+        tokens.setCookiePath("/");
+        CsrfTokenRequestAttributeHandler lector = new CsrfTokenRequestAttributeHandler();
+        lector.setCsrfRequestAttributeName(null);
+        http.csrf(csrf -> csrf.csrfTokenRepository(tokens).csrfTokenRequestHandler(lector))
                 .cors(Customizer.withDefaults())
                 .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .formLogin(AbstractHttpConfigurer::disable)

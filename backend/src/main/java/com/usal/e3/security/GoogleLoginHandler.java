@@ -50,7 +50,7 @@ public class GoogleLoginHandler implements AuthenticationSuccessHandler, Authent
             response.addHeader(HttpHeaders.SET_COOKIE, cookie.crear(sesion.token(), sesion.duracion()));
             response.sendRedirect(frontendUrl + "/dashboard");
         } catch (ApiException ex) {
-            response.sendRedirect(frontendUrl + "/login?error=" + ex.code().name());
+            response.sendRedirect(frontendUrl + "/login-personal?error=" + ex.code().name());
         }
     }
 
@@ -58,6 +58,6 @@ public class GoogleLoginHandler implements AuthenticationSuccessHandler, Authent
     public void onAuthenticationFailure(
             HttpServletRequest request, HttpServletResponse response, AuthenticationException exception)
             throws IOException {
-        response.sendRedirect(frontendUrl + "/login?error=GOOGLE_ERROR");
+        response.sendRedirect(frontendUrl + "/login-personal?error=GOOGLE_ERROR");
     }
 }

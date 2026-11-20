@@ -3,6 +3,7 @@ package com.usal.e3.integration;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.verify;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.multipart;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -24,8 +25,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcBuilderCustomizer;
+import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.mock.web.MockMultipartFile;
@@ -40,7 +45,22 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("dev")
+@Import(IntegracionBase.CsrfEnLosPedidos.class)
 abstract class IntegracionBase {
+
+    /**
+     * Todos los pedidos de los tests llevan el token CSRF como lo manda el frontend: cookie y header iguales.
+     * No se usa `csrf()` de spring-security-test porque reemplaza el repositorio de tokens del contexto.
+     */
+    @TestConfiguration
+    static class CsrfEnLosPedidos {
+
+        @Bean
+        MockMvcBuilderCustomizer conCsrf() {
+            return builder -> builder.defaultRequest(
+                    get("/").cookie(new Cookie("XSRF-TOKEN", "token-de-test")).header("X-XSRF-TOKEN", "token-de-test"));
+        }
+    }
 
     protected static final String PASSWORD = "Clave#2026";
 

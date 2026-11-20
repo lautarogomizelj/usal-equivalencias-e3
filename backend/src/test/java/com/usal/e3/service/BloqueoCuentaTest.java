@@ -55,6 +55,30 @@ class BloqueoCuentaTest {
     }
 
     @Test
+    void elBloqueoPorCodigosNoSeInformaComoDeSeisHoras() {
+        cuenta.setBloqueadoHasta(ahora.plusMinutes(15));
+
+        assertThatThrownBy(() -> BloqueoCuenta.verificar(cuenta, ahora))
+                .isInstanceOf(ApiException.class)
+                .hasMessage(ErrorCode.CUENTA_BLOQUEADA.mensaje());
+
+        cuenta.setIntentosLoginFallidos(3);
+        assertThatThrownBy(() -> BloqueoCuenta.verificar(cuenta, ahora)).hasMessageContaining("6 horas");
+    }
+
+    @Test
+    void alVencerElBloqueoPorCodigosLosFallosDeLoginSeConservan() {
+        cuenta.setIntentosLoginFallidos(2);
+        cuenta.setFechaUltimoIntentoFallido(ahora.minusHours(1));
+        cuenta.setBloqueadoHasta(ahora.minusMinutes(1));
+
+        BloqueoCuenta.verificar(cuenta, ahora);
+
+        assertThat(cuenta.getIntentosLoginFallidos()).isEqualTo(2);
+        assertThat(cuenta.getBloqueadoHasta()).isNull();
+    }
+
+    @Test
     void elContadorSeReiniciaALasSeisHorasDelUltimoFallo() {
         cuenta.setIntentosLoginFallidos(2);
         cuenta.setFechaUltimoIntentoFallido(ahora.minusHours(6).minusMinutes(1));

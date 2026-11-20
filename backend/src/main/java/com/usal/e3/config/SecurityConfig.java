@@ -54,10 +54,10 @@ public class SecurityConfig {
                                 "/auth/registro/**",
                                 "/auth/login",
                                 "/auth/admin/login",
+                                "/auth/personal/login",
                                 "/auth/google",
                                 "/auth/google/callback",
-                                "/auth/password/**",
-                                "/auth/dev/**")
+                                "/auth/password/**")
                         .permitAll()
                         .requestMatchers("/actuator/health", "/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**")
                         .permitAll()

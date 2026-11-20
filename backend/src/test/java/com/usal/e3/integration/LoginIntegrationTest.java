@@ -163,7 +163,7 @@ class LoginIntegrationTest extends IntegracionBase {
     @Test
     void desactivarUnUsuarioLeCortaElAccesoAunqueTengaSesionAbierta() throws Exception {
         usuario("m.gomez@usal.edu.ar", "ACAD");
-        Cookie sesion = loginDesarrollo("m.gomez@usal.edu.ar");
+        Cookie sesion = loginPersonal("m.gomez@usal.edu.ar");
         mvc.perform(get("/auth/me").cookie(sesion)).andExpect(status().isOk());
 
         jdbc.update("UPDATE usuarios SET activo = FALSE");
@@ -191,6 +191,36 @@ class LoginIntegrationTest extends IntegracionBase {
     }
 
     @Test
+    void elPersonalEntraConUsuarioYContrasenaHastaTenerGoogle() throws Exception {
+        usuario("m.gomez@usal.edu.ar", "ACAD");
+        admin("admin@usal.edu.ar");
+
+        postear("/auth/personal/login", Map.of("usuario", "M.Gomez@usal.edu.ar", "password", PASSWORD))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rol").value("ACAD"));
+        assertThat(filasAuditoria("m.gomez@usal.edu.ar", "login")).isEqualTo(1);
+        postear("/auth/personal/login", Map.of("usuario", "admin@usal.edu.ar", "password", PASSWORD))
+                .andExpect(status().isUnauthorized());
+        postear("/auth/personal/login", malLogin("m.gomez@usal.edu.ar"))
+                .andExpect(status().isBadRequest());
+        postear("/auth/personal/login", Map.of("usuario", "m.gomez@usal.edu.ar", "password", "Incorrecta#1"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("CREDENCIALES_INVALIDAS"))
+                .andExpect(jsonPath("$.intentosRestantes").value(2));
+    }
+
+    @Test
+    void elPersonalSinContrasenaCargadaNoEntra() throws Exception {
+        Usuario secretaria = usuario("c.ruiz@usal.edu.ar", "SECRE");
+        secretaria.setPasswordHash(null);
+        usuarios.save(secretaria);
+
+        postear("/auth/personal/login", Map.of("usuario", "c.ruiz@usal.edu.ar", "password", PASSWORD))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.code").value("CREDENCIALES_INVALIDAS"));
+    }
+
+    @Test
     void lasRutasDeAdminSonSoloParaElAdmin() throws Exception {
         Aspirante aspirante = aspiranteValidado(EMAIL, "40123456");
         usuario("m.gomez@usal.edu.ar", "ACAD");
@@ -200,7 +230,7 @@ class LoginIntegrationTest extends IntegracionBase {
         postear(ruta, Map.of(), loginAspirante(EMAIL))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ACCESO_DENEGADO"));
-        postear(ruta, Map.of(), loginDesarrollo("m.gomez@usal.edu.ar")).andExpect(status().isForbidden());
+        postear(ruta, Map.of(), loginPersonal("m.gomez@usal.edu.ar")).andExpect(status().isForbidden());
     }
 
     @Test
@@ -208,7 +238,7 @@ class LoginIntegrationTest extends IntegracionBase {
         Usuario academico = usuario("m.gomez@usal.edu.ar", "ACAD");
         permisoCarrera(academico, "ING-INF-001");
         PermisoCarrera revocado = permisoCarrera(academico, "ING-CIV-001");
-        Cookie sesion = loginDesarrollo("m.gomez@usal.edu.ar");
+        Cookie sesion = loginPersonal("m.gomez@usal.edu.ar");
         mvc.perform(get("/auth/me").cookie(sesion)).andExpect(jsonPath("$.carrerasConPermiso.length()").value(2));
 
         revocado.setRevokedAt(OffsetDateTime.now());
@@ -225,7 +255,7 @@ class LoginIntegrationTest extends IntegracionBase {
             String email = rol.toLowerCase() + "@usal.edu.ar";
             usuario(email, rol);
 
-            mvc.perform(get("/auth/me").cookie(loginDesarrollo(email)))
+            mvc.perform(get("/auth/me").cookie(loginPersonal(email)))
                     .andExpect(jsonPath("$.tipo").value("USUARIO"))
                     .andExpect(jsonPath("$.rol").value(rol))
                     .andExpect(jsonPath("$.esOAuth").value(true));

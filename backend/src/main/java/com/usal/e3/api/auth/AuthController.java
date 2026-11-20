@@ -79,6 +79,13 @@ public class AuthController {
                 auth.loginAdmin(Validaciones.normalizarEmail(body.usuario()), body.password(), cliente(request)));
     }
 
+    @PostMapping("/personal/login")
+    ResponseEntity<SesionResponse> loginPersonal(
+            @Valid @RequestBody AdminLoginRequest body, HttpServletRequest request) {
+        return conCookie(
+                auth.loginPersonal(Validaciones.normalizarEmail(body.usuario()), body.password(), cliente(request)));
+    }
+
     @GetMapping("/google")
     void google(HttpServletRequest request, HttpServletResponse response) throws IOException {
         response.sendRedirect(request.getContextPath() + "/oauth2/authorization/google");

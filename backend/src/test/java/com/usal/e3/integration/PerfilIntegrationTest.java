@@ -78,7 +78,7 @@ class PerfilIntegrationTest extends IntegracionBase {
     @Test
     void elPersonalConGoogleNoEditaSuNombre() throws Exception {
         usuario("m.gomez@usal.edu.ar", "ACAD");
-        Cookie sesion = loginDesarrollo("m.gomez@usal.edu.ar");
+        Cookie sesion = loginPersonal("m.gomez@usal.edu.ar");
 
         enviar(patch("/perfil"), Map.of("nombre", "Otro"), sesion)
                 .andExpect(status().isBadRequest())
@@ -92,7 +92,7 @@ class PerfilIntegrationTest extends IntegracionBase {
     @Test
     void elRevisorSoloLee() throws Exception {
         usuario("revisor@usal.edu.ar", "REVISOR");
-        Cookie sesion = loginDesarrollo("revisor@usal.edu.ar");
+        Cookie sesion = loginPersonal("revisor@usal.edu.ar");
 
         mvc.perform(get("/perfil").cookie(sesion))
                 .andExpect(status().isOk())
@@ -124,7 +124,7 @@ class PerfilIntegrationTest extends IntegracionBase {
         enviar(
                         put("/perfil/password"),
                         Map.of("passwordActual", PASSWORD, "passwordNueva", "Nueva#2026"),
-                        loginDesarrollo("m.gomez@usal.edu.ar"))
+                        loginPersonal("m.gomez@usal.edu.ar"))
                 .andExpect(status().isForbidden());
     }
 

@@ -187,7 +187,7 @@ class DocumentosIntegrationTest extends IntegracionBase {
 
         postear(cancelar(), Map.of("estadoEsperado", "SOL-INI"), loginAspirante("otra@gmail.com"))
                 .andExpect(status().isNotFound());
-        postear(cancelar(), Map.of("estadoEsperado", "SOL-INI"), loginDesarrollo("m.gomez@usal.edu.ar"))
+        postear(cancelar(), Map.of("estadoEsperado", "SOL-INI"), loginPersonal("m.gomez@usal.edu.ar"))
                 .andExpect(status().isForbidden());
 
         enviarDocumentacion(sesion, solicitud);
@@ -211,7 +211,7 @@ class DocumentosIntegrationTest extends IntegracionBase {
     @Test
     void elPersonalVeLoEnviadoPeroNoLosBorradores() throws Exception {
         usuario("m.gomez@usal.edu.ar", "ACAD");
-        Cookie personal = loginDesarrollo("m.gomez@usal.edu.ar");
+        Cookie personal = loginPersonal("m.gomez@usal.edu.ar");
         subir(sesion, solicitud, "ANALITICO", pdf("analitico.pdf", 1024)).andExpect(status().isCreated());
         String url = "/solicitudes/" + solicitud + "/documentos/1/archivo";
 
@@ -231,7 +231,7 @@ class DocumentosIntegrationTest extends IntegracionBase {
     @Test
     void elPersonalNoSubeNiEnviaDocumentos() throws Exception {
         usuario("m.gomez@usal.edu.ar", "ACAD");
-        Cookie personal = loginDesarrollo("m.gomez@usal.edu.ar");
+        Cookie personal = loginPersonal("m.gomez@usal.edu.ar");
 
         subir(personal, solicitud, "ANALITICO", pdf("analitico.pdf", 1024)).andExpect(status().isForbidden());
         postear(enviar(), Map.of("estadoEsperado", "SOL-INI"), personal).andExpect(status().isForbidden());

@@ -84,7 +84,7 @@ class SolicitudIntegrationTest extends IntegracionBase {
     void elPersonalNoCreaSolicitudes() throws Exception {
         usuario("m.gomez@usal.edu.ar", "ACAD");
 
-        postear("/solicitudes", datosSolicitud("ING-INF-001"), loginDesarrollo("m.gomez@usal.edu.ar"))
+        postear("/solicitudes", datosSolicitud("ING-INF-001"), loginPersonal("m.gomez@usal.edu.ar"))
                 .andExpect(status().isForbidden())
                 .andExpect(jsonPath("$.code").value("ACCESO_DENEGADO"));
     }
@@ -132,7 +132,7 @@ class SolicitudIntegrationTest extends IntegracionBase {
     void laBandejaDelPersonalTodaviaNoEstaHabilitada() throws Exception {
         usuario("m.gomez@usal.edu.ar", "ACAD");
 
-        mvc.perform(get("/solicitudes").cookie(loginDesarrollo("m.gomez@usal.edu.ar")))
+        mvc.perform(get("/solicitudes").cookie(loginPersonal("m.gomez@usal.edu.ar")))
                 .andExpect(status().isForbidden());
     }
 
@@ -143,27 +143,27 @@ class SolicitudIntegrationTest extends IntegracionBase {
         Usuario admin = admin("admin@usal.edu.ar");
 
         usuario("observador@usal.edu.ar", "ACAD");
-        assertRelacion(id, loginDesarrollo("observador@usal.edu.ar"), "OBSERVADOR");
+        assertRelacion(id, loginPersonal("observador@usal.edu.ar"), "OBSERVADOR");
 
         permisoCarrera(usuario("carrera@usal.edu.ar", "SECRE"), "ING-INF-001");
-        assertRelacion(id, loginDesarrollo("carrera@usal.edu.ar"), "PARTICIPANTE");
+        assertRelacion(id, loginPersonal("carrera@usal.edu.ar"), "PARTICIPANTE");
 
         PermisoCarrera revocado = permisoCarrera(usuario("revocado@usal.edu.ar", "ACAD"), "ING-INF-001");
         revocado.setRevokedAt(OffsetDateTime.now());
         guardar(revocado);
-        assertRelacion(id, loginDesarrollo("revocado@usal.edu.ar"), "OBSERVADOR");
+        assertRelacion(id, loginPersonal("revocado@usal.edu.ar"), "OBSERVADOR");
 
         Usuario temporal = usuario("temporal@usal.edu.ar", "ACAD");
         permisosSolicitud.save(new PermisoSolicitud(temporal.getId(), id, admin.getId(), null));
-        assertRelacion(id, loginDesarrollo("temporal@usal.edu.ar"), "PARTICIPANTE");
+        assertRelacion(id, loginPersonal("temporal@usal.edu.ar"), "PARTICIPANTE");
 
         Usuario vencido = usuario("vencido@usal.edu.ar", "ACAD");
         permisosSolicitud.save(
                 new PermisoSolicitud(vencido.getId(), id, admin.getId(), OffsetDateTime.now().minusHours(1)));
-        assertRelacion(id, loginDesarrollo("vencido@usal.edu.ar"), "OBSERVADOR");
+        assertRelacion(id, loginPersonal("vencido@usal.edu.ar"), "OBSERVADOR");
 
         usuario("revisor@usal.edu.ar", "REVISOR");
-        assertRelacion(id, loginDesarrollo("revisor@usal.edu.ar"), "REVISOR");
+        assertRelacion(id, loginPersonal("revisor@usal.edu.ar"), "REVISOR");
         assertRelacion(id, loginAdmin("admin@usal.edu.ar"), "ADMIN");
     }
 

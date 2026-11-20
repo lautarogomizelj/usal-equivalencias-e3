@@ -21,7 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 @ConditionalOnProperty(name = "e3.seed-demo", havingValue = "true")
 public class SeedDemo implements ApplicationRunner {
 
-    private static final String PASSWORD_DEMO = "Demo1234!";
+    private static final String PASSWORD_DEMO = "1234";
     private static final String CARRERA_DEMO = "ING-INF-001";
 
     private final UsuarioRepository usuarios;
@@ -73,9 +73,7 @@ public class SeedDemo implements ApplicationRunner {
             return;
         }
         Usuario usuario = new Usuario(email, nombre, "Demo", roles.findByCodigo(rolCodigo).orElseThrow());
-        if (Rol.ADMIN.equals(rolCodigo)) {
-            usuario.setPasswordHash(passwordEncoder.encode(PASSWORD_DEMO));
-        }
+        usuario.setPasswordHash(passwordEncoder.encode(PASSWORD_DEMO));
         usuarios.save(usuario);
         if (conCarrera) {
             permisos.save(new PermisoCarrera(usuario.getId(), carreras.findByCodigo(CARRERA_DEMO).orElseThrow()));

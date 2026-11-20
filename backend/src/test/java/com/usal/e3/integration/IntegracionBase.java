@@ -195,7 +195,9 @@ abstract class IntegracionBase {
     }
 
     protected Usuario usuario(String email, String rol) {
-        return usuarios.save(new Usuario(email, "María", "Gómez", roles.findByCodigo(rol).orElseThrow()));
+        Usuario usuario = new Usuario(email, "María", "Gómez", roles.findByCodigo(rol).orElseThrow());
+        usuario.setPasswordHash(passwordEncoder.encode(PASSWORD));
+        return usuarios.save(usuario);
     }
 
     protected Usuario admin(String email) {
@@ -209,8 +211,9 @@ abstract class IntegracionBase {
                 .andExpect(status().isOk()));
     }
 
-    protected Cookie loginDesarrollo(String email) throws Exception {
-        return cookie(postear("/auth/dev/login", Map.of("email", email)).andExpect(status().isOk()));
+    protected Cookie loginPersonal(String email) throws Exception {
+        return cookie(postear("/auth/personal/login", Map.of("usuario", email, "password", PASSWORD))
+                .andExpect(status().isOk()));
     }
 
     protected PermisoCarrera permisoCarrera(Usuario usuario, String codigoCarrera) {

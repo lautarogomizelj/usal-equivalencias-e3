@@ -132,13 +132,17 @@ public class AuthService {
         return iniciarSesion(usuario, SesionService.NORMAL, cliente);
     }
 
-    /** Login simulado del Sprint Planning hasta tener credenciales de Google. Solo existe en perfil dev. */
-    @Transactional
-    public SesionIniciada loginDesarrollo(String email, ClienteHttp cliente) {
-        Usuario usuario = usuarios.findByEmail(email)
+    /**
+     * Provisorio, hasta publicar el sistema con Google (CC-016): Académico, Secretaría y Revisor entran con
+     * usuario y contraseña, con el mismo bloqueo por intentos. El Admin no entra por acá.
+     */
+    @Transactional(noRollbackFor = ApiException.class)
+    public SesionIniciada loginPersonal(String usuario, String password, ClienteHttp cliente) {
+        Usuario personal = usuarios.buscarParaLogin(usuario)
                 .filter(u -> u.isActivo() && u.esOAuth())
-                .orElseThrow(() -> new ApiException(ErrorCode.USUARIO_NO_REGISTRADO));
-        return iniciarSesion(usuario, SesionService.NORMAL, cliente);
+                .orElseThrow(() -> new ApiException(ErrorCode.CREDENCIALES_INVALIDAS));
+        comprobarPassword(personal, password, cliente);
+        return iniciarSesion(personal, SesionService.NORMAL, cliente);
     }
 
     /** Responde igual exista o no el email (contrato §4.1). */

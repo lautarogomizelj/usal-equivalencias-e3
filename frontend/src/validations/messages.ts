@@ -17,4 +17,9 @@ export const MENSAJES = {
   ARCHIVOS_TAMANIO_TOTAL: 'Los archivos superan el máximo total de 50 MB.',
   MATERIA_REQUERIDA: 'Indicá la materia antes de adjuntar el programa.',
   ESTADO_CAMBIO: 'Esta acción ya no está disponible porque el estado de la solicitud cambió.',
+  SIN_PERMISO_DE_PROCESO: 'No tenés permiso de proceso sobre esta solicitud.',
+  UNICO_RESPONSABLE: 'No podés darte de baja. Sos el único responsable. Contactá al admin.',
+  PROCESO_YA_TOMADO: 'Otro usuario tomó el proceso antes.',
+  MOTIVO_REQUERIDO: 'Indicá el motivo del rechazo.',
+  RECHAZO_INCOMPLETO: 'Para rechazar marcá al menos un documento como "Debe recargar" y no dejes ninguno pendiente.',
 } as const

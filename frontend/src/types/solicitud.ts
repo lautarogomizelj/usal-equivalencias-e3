@@ -74,14 +74,17 @@ export interface EventoHistorial {
 export type TipoDocumento = 'ANALITICO' | 'PLAN' | 'PROGRAMA' | 'OTRO'
 export type EstadoRevision = 'PENDIENTE' | 'OK' | 'RECARGAR'
 
-/** Documento de una solicitud (contrato de la API §6.5). */
+/**
+ * Documento de una solicitud (contrato de la API §6.5). Un requerido faltante (`esRequeridoFaltante`)
+ * todavía no tiene archivo: llega sin nombre, tamaño, fecha ni dirección de descarga.
+ */
 export interface Documento {
   id: number
   tipo: TipoDocumento
   descripcion: string | null
-  nombreArchivo: string
-  tamanoBytes: number
-  fechaCarga: string
+  nombreArchivo: string | null
+  tamanoBytes: number | null
+  fechaCarga: string | null
   version: number
   reemplazaAId: number | null
   borrador: boolean
@@ -92,4 +95,23 @@ export interface Documento {
   fechaRevision: string | null
   esRequeridoFaltante: boolean
   urlDescarga: string | null
+}
+
+/** Marca de revisión que el Académico pone sobre un documento (contrato de la API §7.3). */
+export interface Marca {
+  documentoId: number
+  estadoRevision: EstadoRevision
+  comentario: string | null
+}
+
+/** Filtros de la bandeja del personal (contrato de la API §6.2). Los vacíos no se envían. */
+export interface FiltrosBandeja {
+  q?: string
+  estado?: string[]
+  desde?: string
+  hasta?: string
+  asignadas?: boolean
+  sinResponsable?: boolean
+  finalizadas?: boolean
+  size?: number
 }

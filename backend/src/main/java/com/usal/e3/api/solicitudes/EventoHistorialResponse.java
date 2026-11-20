@@ -1,14 +1,16 @@
 package com.usal.e3.api.solicitudes;
 
 import com.usal.e3.domain.DocumentoSolicitud;
+import com.usal.e3.domain.EventoAuditoria;
 import com.usal.e3.domain.HistorialEstado;
+import com.usal.e3.domain.Rol;
 import com.usal.e3.service.HistorialSolicitud;
 import java.time.OffsetDateTime;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Stream;
 
-/** `EventoHistorial` del contrato (§6.4). Los cambios de responsable llegan con Tomar proceso (Sprint 4). */
+/** `EventoHistorial` del contrato (§6.4): cambios de estado, cambios de responsable y documentos cargados. */
 public record EventoHistorialResponse(
         OffsetDateTime fecha, String tipo, String estadoAnterior, String estadoNuevo, String usuario, String comentario) {
 
@@ -16,9 +18,12 @@ public record EventoHistorialResponse(
     static List<EventoHistorialResponse> de(HistorialSolicitud historial) {
         String aspirante = historial.solicitud().getAspirante().nombreCompleto();
         Stream<EventoHistorialResponse> cambios = historial.cambios().stream().map(c -> cambio(c, aspirante));
+        Stream<EventoHistorialResponse> responsables =
+                historial.cambiosDeResponsable().stream().map(EventoHistorialResponse::responsable);
         Stream<EventoHistorialResponse> documentos =
                 historial.documentosCargados().stream().map(d -> documento(d, aspirante));
-        return Stream.concat(cambios, documentos)
+        return Stream.of(cambios, responsables, documentos)
+                .flatMap(eventos -> eventos)
                 .sorted(Comparator.comparing(EventoHistorialResponse::fecha).reversed())
                 .toList();
     }
@@ -34,6 +39,18 @@ public record EventoHistorialResponse(
                 cambio.getEstadoCodigo(),
                 usuario,
                 cambio.getComentarios());
+    }
+
+    /** Sale de la auditoría de "tomar proceso" y "darse de baja", que guarda el nombre y el rol. */
+    private static EventoHistorialResponse responsable(EventoAuditoria evento) {
+        String papel = Rol.ACADEMICO.equals(evento.getDetalles().get("rol"))
+                ? "responsable académico"
+                : "responsable administrativo";
+        String comentario = "tomar_proceso".equals(evento.getAccion())
+                ? "Tomó el proceso como " + papel + "."
+                : "Se dio de baja como " + papel + ".";
+        return new EventoHistorialResponse(
+                evento.getFecha(), "CAMBIO_RESPONSABLE", null, null, (String) evento.getDetalles().get("usuario"), comentario);
     }
 
     private static EventoHistorialResponse documento(DocumentoSolicitud documento, String aspirante) {

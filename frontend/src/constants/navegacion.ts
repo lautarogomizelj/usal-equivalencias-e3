@@ -20,8 +20,20 @@ export const MENU_POR_ROL: Record<string, ItemMenu[]> = {
   ],
 }
 
-/** Los demás roles todavía no tienen pantallas propias: por ahora ven el inicio y su perfil. */
-for (const rol of ['ACAD', 'SECRE', 'REVISOR', 'ADMIN']) {
+/**
+ * Académico y Secretaría comparten la bandeja y el detalle (frontend-interfaces.md §5 y §6). El ítem dice
+ * "Solicitudes" porque "Solicitudes de equivalencia", como en el diseño, no entra en el ancho del menú.
+ */
+for (const rol of ['ACAD', 'SECRE']) {
+  MENU_POR_ROL[rol] = [
+    { texto: 'Inicio', ruta: ROUTES.DASHBOARD, Icono: House },
+    { texto: 'Solicitudes', ruta: ROUTES.MIS_SOLICITUDES, Icono: FileText, conSubrutas: true },
+    { texto: 'Mi perfil', ruta: ROUTES.PERFIL, Icono: User },
+  ]
+}
+
+/** Revisor y Admin todavía no tienen pantallas propias: por ahora ven el inicio y su perfil. */
+for (const rol of ['REVISOR', 'ADMIN']) {
   MENU_POR_ROL[rol] = [
     { texto: 'Inicio', ruta: ROUTES.DASHBOARD, Icono: House },
     { texto: 'Mi perfil', ruta: ROUTES.PERFIL, Icono: User },

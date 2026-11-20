@@ -1,31 +1,9 @@
-import { CircleCheck, FileText, type LucideIcon } from 'lucide-react'
+import { CircleCheck, FileText } from 'lucide-react'
 import { EncabezadoPagina } from '@/components/privado/EncabezadoPagina'
+import { Indicador } from '@/components/privado/Indicador'
 import { TablaSolicitudes } from '@/components/solicitudes/TablaSolicitudes'
 import { useSolicitudes } from '@/hooks/useSolicitudes'
 import { useAuth } from '@/store/authContext'
-
-interface IndicadorProps {
-  Icono: LucideIcon
-  cantidad: number | null
-  titulo: string
-  descripcion: string
-  clases: string
-}
-
-function Indicador({ Icono, cantidad, titulo, descripcion, clases }: IndicadorProps) {
-  return (
-    <div className={`flex items-center gap-6 rounded-lg p-4 lg:w-1/3 lg:px-6 lg:py-2 ${clases}`}>
-      <span className="flex size-(--size-privado-indicador) shrink-0 items-center justify-center rounded-full bg-surface/60 text-primary">
-        <Icono aria-hidden className="size-(--size-icon-xl)" />
-      </span>
-      <p>
-        <span className="block text-5xl leading-none font-medium text-heading">{cantidad ?? '–'}</span>
-        <span className="block text-xl font-semibold text-heading">{titulo}</span>
-        <span className="block text-base text-text-muted">{descripcion}</span>
-      </p>
-    </div>
-  )
-}
 
 /** Panel de inicio del aspirante (frontend-interfaces.md §4.2 y Anexo B, punto 17). */
 export function DashboardPage() {
@@ -47,14 +25,14 @@ export function DashboardPage() {
           cantidad={activas}
           titulo="Solicitudes activas"
           descripcion="En proceso de evaluación."
-          clases="bg-secondary"
+          clases="bg-secondary lg:w-1/3"
         />
         <Indicador
           Icono={CircleCheck}
           cantidad={finalizadas}
           titulo="Solicitudes finalizadas"
           descripcion="Proceso completado."
-          clases="bg-surface-muted"
+          clases="bg-surface-muted lg:w-1/3"
         />
       </div>
 

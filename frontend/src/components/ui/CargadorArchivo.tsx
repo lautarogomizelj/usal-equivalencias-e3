@@ -8,6 +8,8 @@ interface CargadorArchivoProps {
   subiendo?: boolean
   /** Botón chico para reemplazar un archivo ya cargado, en lugar de la zona de arrastre. */
   compacto?: boolean
+  /** Texto del botón chico. */
+  texto?: string
   onArchivo: (archivo: File) => void
 }
 
@@ -17,7 +19,13 @@ const CLASES_FOCO = 'has-focus-visible:outline-2 has-focus-visible:outline-offse
  * Cargador de archivos (frontend-interfaces.md §2.11): selector clásico o arrastrar y soltar.
  * La validación y la subida las hace quien lo usa, al recibir el archivo.
  */
-export function CargadorArchivo({ etiqueta, subiendo = false, compacto = false, onArchivo }: CargadorArchivoProps) {
+export function CargadorArchivo({
+  etiqueta,
+  subiendo = false,
+  compacto = false,
+  texto = 'Reemplazar',
+  onArchivo,
+}: CargadorArchivoProps) {
   const [encima, setEncima] = useState(false)
 
   function soltar(evento: DragEvent) {
@@ -48,7 +56,7 @@ export function CargadorArchivo({ etiqueta, subiendo = false, compacto = false, 
         className={`inline-flex h-(--size-button-md) cursor-pointer items-center gap-2 rounded-md border border-primary bg-surface px-4 text-sm font-medium text-primary transition-colors hover:bg-secondary ${CLASES_FOCO}`}
       >
         <RefreshCw aria-hidden className="size-(--size-icon-sm)" />
-        Reemplazar
+        {texto}
         {selector}
       </label>
     )

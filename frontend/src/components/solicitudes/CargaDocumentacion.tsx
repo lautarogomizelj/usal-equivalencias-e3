@@ -67,7 +67,7 @@ function FilaDocumento({ titulo, descripcion, documento, subiendo, error, onArch
               ) : (
                 <span className="block truncate text-base font-medium text-text">{documento.nombreArchivo}</span>
               )}
-              <span className="block text-sm text-text-muted">{formatearTamanio(documento.tamanoBytes)}</span>
+              <span className="block text-sm text-text-muted">{formatearTamanio(documento.tamanoBytes ?? 0)}</span>
             </p>
             <CargadorArchivo compacto etiqueta={`Reemplazar ${titulo}`} onArchivo={onArchivo} />
             <Button variante="ghost" aria-label={`Quitar ${titulo}`} onClick={onQuitar}>
@@ -92,7 +92,7 @@ function FilaDocumento({ titulo, descripcion, documento, subiendo, error, onArch
 /** Carga documental inicial del aspirante, `ASP-SOL-INI` (frontend-interfaces.md §4.6.1 y Anexo B, puntos 4 y 5). */
 export function CargaDocumentacion({ detalle, onActualizada, onEstadoCambio }: VistaSolicitudProps) {
   const navigate = useNavigate()
-  const carga = useCargaDocumentos(detalle.id)
+  const carga = useCargaDocumentos(detalle.id, onEstadoCambio)
   const [materia, setMateria] = useState('')
   const [agregando, setAgregando] = useState(false)
   const [modal, setModal] = useState<'enviar' | 'cancelar' | null>(null)

@@ -38,6 +38,6 @@ public record SolicitudResumenResponse(
                 s.getFechaCreacion(),
                 s.getFechaUltimaMod(),
                 resumen.requiereMiAccion(),
-                false);
+                resumen.esDeMisCarreras());
     }
 }

@@ -2,7 +2,7 @@ import type { Carrera } from '@/types/carrera'
 import type { Estado } from '@/types/estado'
 import type { Perfil } from '@/types/perfil'
 import type { Sesion } from '@/types/sesion'
-import type { SolicitudResumen } from '@/types/solicitud'
+import type { Responsable, SolicitudResumen } from '@/types/solicitud'
 import { nombreCompleto } from '@/utils/personas'
 
 export const CARRERAS: Carrera[] = [
@@ -67,6 +67,7 @@ const CUENTAS_USAL: [nombre: string, apellido: string, email: string, rol: strin
   ['Pedro', 'Sosa', 'revisor@usal.edu.ar', 'REVISOR'],
   ['Laura', 'Díaz', 'observador@usal.edu.ar', 'ACAD'],
   ['Admin', 'General', 'admin@usal.edu.ar', 'ADMIN'],
+  ['Martín', 'López', 'academico2@usal.edu.ar', 'ACAD', true],
 ]
 
 /** `carrerasConPermiso` solo viene para Académico y Secretaría (contrato de la API §4.1). */
@@ -98,31 +99,51 @@ export const PERFIL: Perfil = {
   camposEditables: ['nombre', 'apellido', 'telefono', 'avatar'],
 }
 
-/** Código de expediente, estado, responsables y fechas de creación y de última actualización. */
-const LISTADO: [string, string, string | null, string | null, string, string][] = [
-  ['EXP-2026-001', 'DOC-REV', 'Dr. Martín López', 'Lic. Carolina Ruiz', '2026-03-12', '2026-03-20'],
-  ['EXP-2026-002', 'DOC-RECH', 'Dra. Ana Fernández', 'Sr. Diego Morales', '2026-04-05', '2026-04-18'],
-  ['EXP-2026-003', 'INSC-ACEP', 'Dr. Pablo Gómez', 'Lic. María Torres', '2026-02-10', '2026-02-28'],
+/** El responsable sale de las cuentas demo, para que al entrar con ellas la bandeja tenga trabajo. */
+export function responsable(email: string | null, fecha: string): Responsable | null {
+  const cuenta = SESIONES_USAL.find((sesion) => sesion.email === email)
+  return cuenta
+    ? { id: cuenta.id, nombre: nombreCompleto(cuenta), email: cuenta.email, fechaAsignacion: fecha }
+    : null
+}
+
+const OTROS_ASPIRANTES = [
+  { id: 21, nombre: 'Lucía Fernández' },
+  { id: 22, nombre: 'Tomás Díaz' },
+]
+
+/**
+ * Código de expediente, estado, mail de cada responsable, fechas de creación y de última actualización,
+ * carrera destino y aspirante (el demo, salvo que se indique otro). `requiereMiAccion` y `esDeMisCarreras`
+ * dependen de quién pregunta: los completa el mock del listado.
+ */
+const LISTADO: [string, string, string | null, string | null, string, string, number?, number?][] = [
+  ['EXP-2026-001', 'DOC-REV', 'academico@usal.edu.ar', 'secretaria@usal.edu.ar', '2026-03-12', '2026-03-20'],
+  ['EXP-2026-002', 'DOC-RECH', 'academico@usal.edu.ar', null, '2026-04-05', '2026-04-18'],
+  ['EXP-2026-003', 'INSC-ACEP', 'academico2@usal.edu.ar', 'secretaria@usal.edu.ar', '2026-02-10', '2026-02-28'],
   ['EXP-2026-004', 'SOL-INI', null, null, '2026-11-10', '2026-11-10'],
+  ['EXP-2026-005', 'DOC-REV', null, null, '2026-11-02', '2026-11-05', 0, 0],
+  ['EXP-2026-006', 'DOC-REV', null, null, '2026-10-20', '2026-10-27', 2, 0],
+  ['EXP-2026-007', 'SOL-INI', null, null, '2026-11-12', '2026-11-12', 1, 1],
 ]
 
 export const SOLICITUDES: SolicitudResumen[] = LISTADO.map(
-  ([codigoExp, estado, academico, administrativo, creacion, ultimaMod], indice) => ({
+  ([codigoExp, estado, academico, administrativo, creacion, ultimaMod, carrera, otroAspirante], indice) => ({
     id: indice + 1,
     codigoExp,
-    aspirante: { id: SESION_ASPIRANTE.id, nombre: nombreCompleto(SESION_ASPIRANTE) },
-    universidadOrigen: 'Universidad Nacional de La Plata',
-    carreraDestino: CARRERAS[0],
+    aspirante:
+      otroAspirante === undefined
+        ? { id: SESION_ASPIRANTE.id, nombre: nombreCompleto(SESION_ASPIRANTE) }
+        : OTROS_ASPIRANTES[otroAspirante],
+    universidadOrigen:
+      otroAspirante === undefined ? 'Universidad Nacional de La Plata' : 'Universidad Tecnológica Nacional',
+    carreraDestino: CARRERAS[carrera ?? 0],
     estado: ESTADOS.find(({ codigo }) => codigo === estado)!,
-    responsableAcademico: academico
-      ? { id: 7, nombre: academico, email: 'academico@usal.edu.ar', fechaAsignacion: `${creacion}T09:00:00-03:00` }
-      : null,
-    responsableAdministrativo: administrativo
-      ? { id: 8, nombre: administrativo, email: 'secretaria@usal.edu.ar', fechaAsignacion: `${creacion}T09:00:00-03:00` }
-      : null,
+    responsableAcademico: responsable(academico, `${creacion}T09:00:00-03:00`),
+    responsableAdministrativo: responsable(administrativo, `${creacion}T09:00:00-03:00`),
     fechaCreacion: `${creacion}T09:00:00-03:00`,
     fechaUltimaMod: `${ultimaMod}T15:30:00-03:00`,
-    requiereMiAccion: estado !== 'DOC-REV',
+    requiereMiAccion: false,
     esDeMisCarreras: false,
   }),
 )

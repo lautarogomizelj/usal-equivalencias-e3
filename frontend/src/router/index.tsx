@@ -1,11 +1,10 @@
 import { createBrowserRouter } from 'react-router'
+import { ROLES_CON_BANDEJA } from '@/constants/bandeja'
 import { ROUTES } from '@/constants/routes'
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { ComponentesPage } from '@/pages/dev/ComponentesPage'
 import { PrivateLayout } from '@/layouts/PrivateLayout'
-import { MisSolicitudesPage } from '@/pages/aspirante/MisSolicitudesPage'
 import { NuevaSolicitudPage } from '@/pages/aspirante/NuevaSolicitudPage'
-import { SolicitudPage } from '@/pages/aspirante/SolicitudPage'
 import { EnConstruccionPage } from '@/pages/errors/EnConstruccionPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
 import { PerfilPage } from '@/pages/privado/PerfilPage'
@@ -15,7 +14,7 @@ import { LoginPersonalPage } from '@/pages/public/LoginPersonalPage'
 import { RecuperarContraseniaPage } from '@/pages/public/RecuperarContraseniaPage'
 import { RegistroPage } from '@/pages/public/RegistroPage'
 import { VerificarCorreoPage } from '@/pages/public/VerificarCorreoPage'
-import { InicioPorRol } from './InicioPorRol'
+import { InicioPorRol, SolicitudesPorRol, SolicitudPorRol } from './PorRol'
 import { RutaProtegida } from './RutaProtegida'
 
 /** Pantallas del aspirante que todavía no están construidas. */
@@ -37,11 +36,16 @@ export const router = createBrowserRouter([
           { path: ROUTES.DASHBOARD, element: <InicioPorRol /> },
           { path: ROUTES.PERFIL, element: <PerfilPage /> },
           {
+            element: <RutaProtegida roles={['ASPIRANTE', ...ROLES_CON_BANDEJA]} />,
+            children: [
+              { path: ROUTES.MIS_SOLICITUDES, element: <SolicitudesPorRol /> },
+              { path: ROUTES.SOLICITUD, element: <SolicitudPorRol /> },
+            ],
+          },
+          {
             element: <RutaProtegida roles={['ASPIRANTE']} />,
             children: [
-              { path: ROUTES.MIS_SOLICITUDES, element: <MisSolicitudesPage /> },
               { path: ROUTES.NUEVA_SOLICITUD, element: <NuevaSolicitudPage /> },
-              { path: ROUTES.SOLICITUD, element: <SolicitudPage /> },
               ...RUTAS_PENDIENTES.map((path) => ({ path, element: <EnConstruccionPage /> })),
             ],
           },

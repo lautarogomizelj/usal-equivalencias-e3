@@ -31,8 +31,29 @@ export const VARIANTE_POR_ESTADO: Record<string, VarianteEstado> = {
 /** Texto del banner del aspirante en cada estado (frontend-interfaces.md §4.6). Cada sprint suma los suyos. */
 export const BANNER_ASPIRANTE: Record<string, string> = {
   'DOC-REV': 'Tu documentación está en revisión. Te avisamos por mail si necesitamos algo más.',
+  'DOC-RECH': 'Necesitamos que recargues algunos documentos para continuar con el trámite.',
+  'ANAL-PEND': 'Tu documentación fue aceptada. Estamos analizando tu solicitud.',
   'SOL-CANC': 'Cancelaste esta solicitud antes de enviar la documentación. Si querés retomar el trámite, creá una nueva.',
 }
+
+/** Texto del banner del personal en cada estado (frontend-interfaces.md §5.6 y §6.4). Cada sprint suma los suyos. */
+export const BANNER_PERSONAL: Record<string, string> = {
+  'SOL-INI': 'El aspirante todavía no envió su documentación.',
+  'DOC-REV': 'Documentación lista para revisar.',
+  'DOC-RECH': 'Esperando que el aspirante recargue los documentos marcados.',
+  'ANAL-PEND':
+    'La documentación fue aceptada. Sigue el análisis preliminar: la carga de la matriz de equivalencias, el horario de cursada y las fechas de reunión todavía no está disponible.',
+  'SOL-CANC': 'El aspirante canceló la solicitud antes de enviar la documentación.',
+}
+
+/** Estados en los que le toca actuar a cada rol del personal (frontend-interfaces.md §5.1 y §6.1). */
+export const ESTADOS_DE_ACCION: Record<string, string[]> = {
+  ACAD: ['DOC-REV', 'ANAL-PEND', 'REU-FEC-ACAD', 'REU-CHAT', 'REU-PEND', 'ANAL-POST', 'LEG-REV'],
+  SECRE: ['CUPON-SOL', 'PAG-CTRL'],
+}
+
+/** Estados en los que el aspirante tiene que corregir algo que le observaron. */
+export const ESTADOS_CON_OBSERVACIONES = ['DOC-RECH', 'LEG-RECH', 'PAG-REENV']
 
 /** Macro-etapas del trámite y los estados que activan cada una (frontend-interfaces.md §2.9 y §4.5.2). */
 export const ETAPAS: { nombre: string; estados: string[] }[] = [

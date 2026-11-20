@@ -71,9 +71,17 @@ public class SecurityConfig {
                         .hasAnyRole(Rol.ASPIRANTE, Rol.ADMIN)
                         .requestMatchers(HttpMethod.PUT, "/perfil/email")
                         .hasRole(Rol.ADMIN)
-                        // En el Sprint 3 el listado es solo el del aspirante; la bandeja del personal llega en el 4.
-                        .requestMatchers(HttpMethod.GET, "/solicitudes")
-                        .hasRole(Rol.ASPIRANTE)
+                        .requestMatchers(
+                                HttpMethod.POST, "/solicitudes/*/responsables/tomar", "/solicitudes/*/responsables/baja")
+                        .hasAnyRole(Rol.ACADEMICO, Rol.SECRETARIA)
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/solicitudes/*/documentos/faltantes",
+                                "/solicitudes/*/documentacion/aceptar",
+                                "/solicitudes/*/documentacion/rechazar")
+                        .hasAnyRole(Rol.ACADEMICO, Rol.ADMIN)
+                        .requestMatchers(HttpMethod.PUT, "/solicitudes/*/documentos/marcas")
+                        .hasAnyRole(Rol.ACADEMICO, Rol.ADMIN)
                         .requestMatchers(
                                 HttpMethod.POST,
                                 "/solicitudes",

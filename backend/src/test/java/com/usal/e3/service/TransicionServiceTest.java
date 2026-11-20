@@ -17,6 +17,7 @@ import com.usal.e3.domain.Estado;
 import com.usal.e3.domain.Rol;
 import com.usal.e3.domain.Solicitud;
 import com.usal.e3.domain.TitularTipo;
+import com.usal.e3.domain.Usuario;
 import com.usal.e3.exception.ApiException;
 import com.usal.e3.exception.ErrorCode;
 import com.usal.e3.repository.HistorialEstadoRepository;
@@ -31,7 +32,8 @@ class TransicionServiceTest {
     private final HistorialEstadoRepository historial = mock(HistorialEstadoRepository.class);
     private final PermisosService permisos = mock(PermisosService.class);
     private final AuditoriaService auditoria = mock(AuditoriaService.class);
-    private final TransicionService motor = new TransicionService(historial, permisos, auditoria);
+    private final NotificacionService notificaciones = mock(NotificacionService.class);
+    private final TransicionService motor = new TransicionService(historial, permisos, auditoria, notificaciones);
 
     private final Cuenta duenio = aspirante(15);
     private final Solicitud solicitud = solicitudDe(15);
@@ -47,6 +49,84 @@ class TransicionServiceTest {
                 && Estado.DOC_REV.equals(cambio.getEstadoCodigo())
                 && cambio.getUsuarioUltimoCambio() == null));
         verify(auditoria).registrarCambioEstado(duenio, null, Estado.SOL_INI, Estado.DOC_REV, null, IP);
+        verify(notificaciones).cambioDeEstado(solicitud, Estado.SOL_INI, null);
+    }
+
+    @Test
+    void elPersonalSoloActuaSiEsParticipanteYResponsable() {
+        Usuario academico = mock(Usuario.class);
+        when(academico.tipo()).thenReturn(TitularTipo.USUARIO);
+        when(academico.rolCodigo()).thenReturn(Rol.ACADEMICO);
+        when(academico.getId()).thenReturn(7);
+        when(permisos.esParticipante(academico, solicitud)).thenReturn(true);
+        solicitud.cambiarEstado(Estado.DOC_REV, OffsetDateTime.now());
+
+        assertThat(motor.accionesDisponibles(solicitud, academico)).isEmpty();
+        assertCodigo(
+                () -> motor.validar(solicitud, TransicionService.ACEPTAR_DOCUMENTACION, Estado.DOC_REV, academico),
+                ErrorCode.NO_RESPONSABLE);
+
+        Usuario otro = mock(Usuario.class);
+        when(otro.getId()).thenReturn(8);
+        solicitud.asignarResponsable(Rol.ACADEMICO, otro, OffsetDateTime.now());
+        assertThat(motor.accionesDisponibles(solicitud, academico)).isEmpty();
+        assertCodigo(
+                () -> motor.validar(solicitud, TransicionService.ACEPTAR_DOCUMENTACION, Estado.DOC_REV, academico),
+                ErrorCode.NO_RESPONSABLE);
+
+        solicitud.asignarResponsable(Rol.ACADEMICO, academico, OffsetDateTime.now());
+        assertThat(motor.accionesDisponibles(solicitud, academico))
+                .containsExactly(TransicionService.RECHAZAR_DOCUMENTACION, TransicionService.ACEPTAR_DOCUMENTACION);
+
+        Transicion rechazo =
+                motor.validar(solicitud, TransicionService.RECHAZAR_DOCUMENTACION, Estado.DOC_REV, academico);
+        motor.aplicar(solicitud, rechazo, academico, "Falta la firma", IP);
+
+        assertThat(solicitud.getEstadoCodigo()).isEqualTo(Estado.DOC_RECH);
+        verify(historial).save(argThat(cambio -> "Falta la firma".equals(cambio.getComentarios())
+                && cambio.getUsuarioUltimoCambio() == academico));
+        verify(notificaciones).cambioDeEstado(solicitud, Estado.DOC_REV, "Falta la firma");
+    }
+
+    @Test
+    void elResponsableSinPermisoYaNoParticipa() {
+        Usuario academico = mock(Usuario.class);
+        when(academico.tipo()).thenReturn(TitularTipo.USUARIO);
+        when(academico.rolCodigo()).thenReturn(Rol.ACADEMICO);
+        when(academico.getId()).thenReturn(7);
+        solicitud.asignarResponsable(Rol.ACADEMICO, academico, OffsetDateTime.now());
+        solicitud.cambiarEstado(Estado.DOC_REV, OffsetDateTime.now());
+
+        assertCodigo(
+                () -> motor.validar(solicitud, TransicionService.ACEPTAR_DOCUMENTACION, Estado.DOC_REV, academico),
+                ErrorCode.NO_PARTICIPANTE);
+    }
+
+    @Test
+    void elAdminEjecutaLasDelPersonalSinPermisoNiResponsabilidadPeroNoLasDelAspirante() {
+        Usuario admin = mock(Usuario.class);
+        when(admin.tipo()).thenReturn(TitularTipo.USUARIO);
+        when(admin.rolCodigo()).thenReturn(Rol.ADMIN);
+
+        assertThat(motor.accionesDisponibles(solicitud, admin)).isEmpty();
+        assertCodigo(
+                () -> motor.validar(solicitud, TransicionService.ENVIAR_DOCUMENTACION, Estado.SOL_INI, admin),
+                ErrorCode.ACCESO_DENEGADO);
+
+        solicitud.cambiarEstado(Estado.DOC_REV, OffsetDateTime.now());
+        assertThat(motor.accionesDisponibles(solicitud, admin))
+                .containsExactly(TransicionService.RECHAZAR_DOCUMENTACION, TransicionService.ACEPTAR_DOCUMENTACION);
+        assertCodigo(
+                () -> motor.validar(solicitud, TransicionService.ACEPTAR_DOCUMENTACION, Estado.SOL_INI, admin),
+                ErrorCode.TRANSICION_INVALIDA);
+
+        Transicion aceptar = motor.validar(solicitud, TransicionService.ACEPTAR_DOCUMENTACION, Estado.DOC_REV, admin);
+        motor.aplicar(solicitud, aceptar, admin, IP);
+
+        assertThat(solicitud.getEstadoCodigo()).isEqualTo(Estado.ANAL_PEND);
+        assertThat(solicitud.getResponsableAcademico()).isNull();
+        verify(historial).save(argThat(cambio -> cambio.getUsuarioUltimoCambio() == admin));
+        verifyNoInteractions(permisos);
     }
 
     @Test

@@ -23,6 +23,7 @@ import jakarta.servlet.http.Cookie;
 import java.util.Map;
 import org.junit.jupiter.api.BeforeEach;
 import org.mockito.ArgumentCaptor;
+import org.mockito.ArgumentMatchers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.MockMvcBuilderCustomizer;
@@ -114,7 +115,11 @@ abstract class IntegracionBase {
 
     /** Crea una solicitud en `SOL-INI` y devuelve su id. */
     protected int crearSolicitud(Cookie sesion) throws Exception {
-        MvcResult resultado = postear("/solicitudes", datosSolicitud("ING-INF-001"), sesion)
+        return crearSolicitud(sesion, "ING-INF-001");
+    }
+
+    protected int crearSolicitud(Cookie sesion, String carreraDestinoCodigo) throws Exception {
+        MvcResult resultado = postear("/solicitudes", datosSolicitud(carreraDestinoCodigo), sesion)
                 .andExpect(status().isCreated())
                 .andReturn();
         return json.readTree(resultado.getResponse().getContentAsString()).get("id").asInt();
@@ -131,6 +136,15 @@ abstract class IntegracionBase {
         return mvc.perform(multipart("/solicitudes/{id}/documentos", solicitudId)
                 .file(archivo)
                 .param("tipo", tipo)
+                .cookie(sesion));
+    }
+
+    /** En `DOC-RECH`: archivo nuevo para un documento marcado para recargar (RF-ASP-004). */
+    protected ResultActions recargar(Cookie sesion, int solicitudId, int reemplazaAId, MockMultipartFile archivo)
+            throws Exception {
+        return mvc.perform(multipart("/solicitudes/{id}/documentos", solicitudId)
+                .file(archivo)
+                .param("reemplazaAId", String.valueOf(reemplazaAId))
                 .cookie(sesion));
     }
 
@@ -227,6 +241,11 @@ abstract class IntegracionBase {
 
     protected Cookie cookie(ResultActions resultado) {
         return resultado.andReturn().getResponse().getCookie(CookieSesion.NOMBRE);
+    }
+
+    /** Para verificar un mail por una parte de su asunto o de su texto. */
+    protected static String conTexto(String parte) {
+        return ArgumentMatchers.contains(parte);
     }
 
     protected int filasAuditoria(String email, String accion) {

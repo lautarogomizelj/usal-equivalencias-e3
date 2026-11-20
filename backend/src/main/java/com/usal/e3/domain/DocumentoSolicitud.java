@@ -91,8 +91,50 @@ public class DocumentoSolicitud {
         this.fechaCarga = fechaCarga;
     }
 
+    /** Documento requerido que el aspirante no cargó: sin archivo y marcado para recargar (RF-ACAD-009). */
+    public static DocumentoSolicitud faltante(
+            Integer solicitudId, Tipo tipo, String descripcion, Usuario revisor, OffsetDateTime fecha) {
+        DocumentoSolicitud faltante = new DocumentoSolicitud();
+        faltante.solicitudId = solicitudId;
+        faltante.tipo = tipo;
+        faltante.descripcion = descripcion;
+        faltante.esRequeridoFaltante = true;
+        faltante.borrador = false;
+        faltante.marcar(EstadoRevision.RECARGAR, null, revisor, fecha);
+        return faltante;
+    }
+
     public void enviar() {
         this.borrador = false;
+    }
+
+    /** Nueva versión del documento marcado para recargar; la anterior queda archivada (RF-ASP-004). */
+    public void reemplazar(DocumentoSolicitud anterior) {
+        this.reemplazaAId = anterior.id;
+        this.version = anterior.tieneArchivo() ? anterior.version + 1 : anterior.version;
+        this.etapaRevision = anterior.etapaRevision;
+    }
+
+    public void marcar(EstadoRevision estado, String comentario, Usuario revisor, OffsetDateTime fecha) {
+        this.estadoRevision = estado;
+        this.comentarioRevision = comentario;
+        this.revisadoPor = revisor;
+        this.fechaRevision = fecha;
+    }
+
+    public boolean tieneArchivo() {
+        return rutaArchivo != null;
+    }
+
+    /** Cómo se nombra el documento en los mails y en los errores. */
+    public String titulo() {
+        String nombre = switch (tipo) {
+            case ANALITICO -> "Certificado analítico";
+            case PLAN -> "Plan de estudios";
+            case PROGRAMA -> "Programa de la asignatura";
+            case OTRO -> "Otro documento";
+        };
+        return descripcion == null ? nombre : nombre + ": " + descripcion;
     }
 
     public Integer getId() {

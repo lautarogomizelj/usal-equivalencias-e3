@@ -9,14 +9,17 @@ import com.usal.e3.domain.Estado;
 import com.usal.e3.domain.HistorialEstado;
 import com.usal.e3.domain.Rol;
 import com.usal.e3.domain.Solicitud;
+import com.usal.e3.domain.TitularTipo;
 import com.usal.e3.exception.ApiException;
 import com.usal.e3.exception.ErrorCode;
 import com.usal.e3.repository.AspiranteRepository;
+import com.usal.e3.repository.AuditoriaRepository;
 import com.usal.e3.repository.CarreraRepository;
 import com.usal.e3.repository.HistorialEstadoRepository;
 import com.usal.e3.repository.SolicitudRepository;
 import com.usal.e3.security.SesionActual;
 import java.time.Year;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -26,14 +29,17 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-/** El trámite visto desde la solicitud: creación (RF-ASP-001), estado y responsables (RF-ASP-003). */
+/** El trámite visto desde la solicitud: creación (RF-ASP-001), estado y responsables (RF-ASP-003, RF-PROC-002). */
 @Service
 public class SolicitudService {
+
+    private static final List<String> CAMBIOS_DE_RESPONSABLE = List.of("tomar_proceso", "baja_responsable");
 
     private final SolicitudRepository solicitudes;
     private final AspiranteRepository aspirantes;
     private final CarreraRepository carreras;
     private final HistorialEstadoRepository historial;
+    private final AuditoriaRepository auditoria;
     private final CuentaService cuentas;
     private final PermisosService permisos;
     private final TransicionService transiciones;
@@ -45,6 +51,7 @@ public class SolicitudService {
             AspiranteRepository aspirantes,
             CarreraRepository carreras,
             HistorialEstadoRepository historial,
+            AuditoriaRepository auditoria,
             CuentaService cuentas,
             PermisosService permisos,
             TransicionService transiciones,
@@ -54,6 +61,7 @@ public class SolicitudService {
         this.aspirantes = aspirantes;
         this.carreras = carreras;
         this.historial = historial;
+        this.auditoria = auditoria;
         this.cuentas = cuentas;
         this.permisos = permisos;
         this.transiciones = transiciones;
@@ -61,7 +69,7 @@ public class SolicitudService {
         this.catalogo = catalogo;
     }
 
-    /** Nace en `SOL-INI`, sin responsable. El aviso por mail a la carrera llega con las notificaciones (Sprint 4). */
+    /** Nace en `SOL-INI`, sin responsable. El motor avisa por mail a quienes tienen acceso a la carrera. */
     @Transactional
     public DetalleSolicitud crear(SesionActual actual, String carreraDestinoCodigo, DatosOrigen origen, String ip) {
         Aspirante aspirante = aspirantes.findById(actual.id())
@@ -89,7 +97,8 @@ public class SolicitudService {
                 .map(s -> new ResumenSolicitud(
                         s,
                         catalogoEstados.get(s.getEstadoCodigo()),
-                        Estado.ESPERAN_AL_ASPIRANTE.contains(s.getEstadoCodigo())))
+                        Estado.ESPERAN_AL_ASPIRANTE.contains(s.getEstadoCodigo()),
+                        false))
                 .filter(r -> finalizadas == null || r.estado().isEsTerminal() == finalizadas)
                 .sorted(Comparator.comparing((ResumenSolicitud r) -> !r.requiereMiAccion())
                         .thenComparing(r -> r.solicitud().getFechaUltimaMod(), Comparator.reverseOrder()))
@@ -114,14 +123,18 @@ public class SolicitudService {
         Solicitud solicitud = solicitudes.findById(id)
                 .filter(s -> s.visiblePara(cuenta))
                 .orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
+        // Los faltantes que agrega el Académico no son una carga: no tienen archivo ni fecha.
         List<DocumentoSolicitud> enviados = documentos.visibles(cuenta, solicitud, true).stream()
-                .filter(d -> !d.isBorrador())
+                .filter(d -> !d.isBorrador() && d.tieneArchivo())
                 .toList();
         return new HistorialSolicitud(
-                solicitud, historial.findBySolicitudIdOrderByFechaAsignacionDescIdDesc(id), enviados);
+                solicitud,
+                historial.findBySolicitudIdOrderByFechaAsignacionDescIdDesc(id),
+                auditoria.findByEntidadAndEntidadIdAndAccionIn("solicitud", id, CAMBIOS_DE_RESPONSABLE),
+                enviados);
     }
 
-    /** Transición 2 (RF-ASP-002): `SOL-INI` → `DOC-REV`. */
+    /** Transiciones 2 y 4: `SOL-INI` → `DOC-REV` (RF-ASP-002) y `DOC-RECH` → `DOC-REV` (RF-ASP-004). */
     @Transactional
     public DetalleSolicitud enviarDocumentacion(SesionActual actual, Integer id, String estadoEsperado, String ip) {
         Cuenta cuenta = cuentas.de(actual);
@@ -130,7 +143,11 @@ public class SolicitudService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
         Transicion transicion =
                 transiciones.validar(solicitud, TransicionService.ENVIAR_DOCUMENTACION, estadoEsperado, cuenta);
-        documentos.enviarBorradores(solicitud);
+        if (Estado.DOC_RECH.equals(transicion.origen())) {
+            documentos.enviarRecarga(solicitud);
+        } else {
+            documentos.enviarBorradores(solicitud);
+        }
         transiciones.aplicar(solicitud, transicion, cuenta, ip);
         return detalle(cuenta, solicitud);
     }
@@ -149,20 +166,48 @@ public class SolicitudService {
         return detalle(cuenta, solicitud);
     }
 
-    private DetalleSolicitud detalle(Cuenta cuenta, Solicitud solicitud) {
+    /** Lo usan también las acciones del personal, que devuelven el detalle ya actualizado. */
+    DetalleSolicitud detalle(Cuenta cuenta, Solicitud solicitud) {
         HistorialEstado ultimaObservacion = historial
                 .findBySolicitudIdOrderByFechaAsignacionDescIdDesc(solicitud.getId())
                 .stream()
                 .filter(cambio -> cambio.getComentarios() != null && cambio.getUsuarioUltimoCambio() != null)
                 .findFirst()
                 .orElse(null);
+        Estado estado = catalogo.estadosPorCodigo().get(solicitud.getEstadoCodigo());
+        List<String> acciones = new ArrayList<>(transiciones.accionesDisponibles(solicitud, cuenta));
+        acciones.addAll(accionesSinCambioDeEstado(cuenta, solicitud, estado));
         return new DetalleSolicitud(
                 solicitud,
-                catalogo.estadosPorCodigo().get(solicitud.getEstadoCodigo()),
+                estado,
                 relacion(cuenta, solicitud),
-                transiciones.accionesDisponibles(solicitud, cuenta),
+                acciones,
                 ultimaObservacion,
                 documentos.visibles(cuenta, solicitud, false));
+    }
+
+    /** Contrato §7.2. Sin responsable de su rol, al participante solo le queda tomar el proceso. */
+    private List<String> accionesSinCambioDeEstado(Cuenta cuenta, Solicitud solicitud, Estado estado) {
+        List<String> acciones = new ArrayList<>();
+        if (cuenta.tipo() != TitularTipo.USUARIO) {
+            return acciones;
+        }
+        if ((Rol.ACADEMICO.equals(cuenta.rolCodigo()) || Rol.ADMIN.equals(cuenta.rolCodigo()))
+                && Estado.DOC_REV.equals(estado.getCodigo())
+                && transiciones.puedeActuar(cuenta, solicitud)) {
+            acciones.add(RevisionService.GUARDAR_MARCAS);
+            acciones.add(RevisionService.AGREGAR_FALTANTE);
+        }
+        if (solicitud.tieneComoResponsable(cuenta)) {
+            if (!permisos.otrosConAcceso(cuenta, solicitud).isEmpty()) {
+                acciones.add(ProcesoService.DARSE_DE_BAJA);
+            }
+        } else if (solicitud.responsableDe(cuenta.rolCodigo()) == null
+                && !estado.isEsTerminal()
+                && permisos.esParticipante(cuenta, solicitud)) {
+            acciones.add(ProcesoService.TOMAR_PROCESO);
+        }
+        return acciones;
     }
 
     /** Resuelve el modo de las interfaces: acción o solo lectura (contrato §6.4). */

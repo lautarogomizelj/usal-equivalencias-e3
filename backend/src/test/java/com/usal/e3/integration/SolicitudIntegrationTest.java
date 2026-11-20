@@ -1,6 +1,7 @@
 package com.usal.e3.integration;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -129,14 +130,6 @@ class SolicitudIntegrationTest extends IntegracionBase {
     }
 
     @Test
-    void laBandejaDelPersonalTodaviaNoEstaHabilitada() throws Exception {
-        usuario("m.gomez@usal.edu.ar", "ACAD");
-
-        mvc.perform(get("/solicitudes").cookie(loginPersonal("m.gomez@usal.edu.ar")))
-                .andExpect(status().isForbidden());
-    }
-
-    @Test
     void elPersonalVeTodasYSoloParticipaConPermisoActivo() throws Exception {
         aspiranteValidado(EMAIL, "40123456");
         int id = crearSolicitud(loginAspirante(EMAIL));
@@ -146,7 +139,7 @@ class SolicitudIntegrationTest extends IntegracionBase {
         assertRelacion(id, loginPersonal("observador@usal.edu.ar"), "OBSERVADOR");
 
         permisoCarrera(usuario("carrera@usal.edu.ar", "SECRE"), "ING-INF-001");
-        assertRelacion(id, loginPersonal("carrera@usal.edu.ar"), "PARTICIPANTE");
+        assertRelacion(id, loginPersonal("carrera@usal.edu.ar"), "PARTICIPANTE", "TOMAR_PROCESO");
 
         PermisoCarrera revocado = permisoCarrera(usuario("revocado@usal.edu.ar", "ACAD"), "ING-INF-001");
         revocado.setRevokedAt(OffsetDateTime.now());
@@ -155,7 +148,7 @@ class SolicitudIntegrationTest extends IntegracionBase {
 
         Usuario temporal = usuario("temporal@usal.edu.ar", "ACAD");
         permisosSolicitud.save(new PermisoSolicitud(temporal.getId(), id, admin.getId(), null));
-        assertRelacion(id, loginPersonal("temporal@usal.edu.ar"), "PARTICIPANTE");
+        assertRelacion(id, loginPersonal("temporal@usal.edu.ar"), "PARTICIPANTE", "TOMAR_PROCESO");
 
         Usuario vencido = usuario("vencido@usal.edu.ar", "ACAD");
         permisosSolicitud.save(
@@ -204,10 +197,14 @@ class SolicitudIntegrationTest extends IntegracionBase {
         }
     }
 
-    private void assertRelacion(int id, Cookie sesion, String relacion) throws Exception {
+    /** Sin responsable, al participante solo le queda tomar el proceso; el resto no tiene acciones. */
+    private void assertRelacion(int id, Cookie sesion, String relacion, String... acciones) throws Exception {
         mvc.perform(get("/solicitudes/" + id).cookie(sesion))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.miRelacion").value(relacion))
-                .andExpect(jsonPath("$.accionesDisponibles", empty()));
+                .andExpect(
+                        acciones.length == 0
+                                ? jsonPath("$.accionesDisponibles", empty())
+                                : jsonPath("$.accionesDisponibles", contains(acciones)));
     }
 }

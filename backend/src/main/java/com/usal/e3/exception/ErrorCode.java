@@ -14,6 +14,7 @@ public enum ErrorCode {
     USUARIO_NO_REGISTRADO(HttpStatus.FORBIDDEN, "Usuario no registrado en el sistema. Contacta al admin."),
     TRANSICION_INVALIDA(HttpStatus.CONFLICT, "Esta acción ya no está disponible porque el estado de la solicitud cambió."),
     NO_PARTICIPANTE(HttpStatus.FORBIDDEN, "No tenés permiso de proceso sobre esta solicitud."),
+    NO_RESPONSABLE(HttpStatus.FORBIDDEN, "Tenés que ser el responsable de este proceso para actuar."),
     PROCESO_YA_TOMADO(HttpStatus.CONFLICT, "Otro usuario tomó el proceso antes."),
     UNICO_RESPONSABLE(HttpStatus.CONFLICT, "No podés darte de baja. Sos el único responsable."),
     PROCESO_ACTIVO(HttpStatus.CONFLICT, "Proceso activo. Para revocar, asigne responsable a otro usuario primero."),

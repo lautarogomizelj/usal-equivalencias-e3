@@ -1,6 +1,7 @@
 import type { ComponentType } from 'react'
 import type { SolicitudDetalle } from '@/types/solicitud'
 import { CargaDocumentacion } from './CargaDocumentacion'
+import { RecargaDocumentos } from './RecargaDocumentos'
 
 export interface VistaSolicitudProps {
   detalle: SolicitudDetalle
@@ -26,4 +27,12 @@ export const VISTAS_ASPIRANTE: Record<string, VistaEstado> = {
     descripcion: 'Adjuntá la documentación requerida para tu solicitud de equivalencia.',
     Vista: CargaDocumentacion,
   },
+}
+
+/**
+ * Estados en los que el aspirante actúa sin salir del detalle: su panel de acción va dentro del banner,
+ * arriba de las pestañas (Anexo B, punto 18).
+ */
+export const ACCIONES_EN_BANNER: Record<string, ComponentType<VistaSolicitudProps>> = {
+  'DOC-RECH': RecargaDocumentos,
 }

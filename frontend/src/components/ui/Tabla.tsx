@@ -6,6 +6,8 @@ export interface ColumnaTabla<T> {
   titulo: string
   /** Clase de ancho de la columna en escritorio, por ejemplo `lg:w-1/4`. */
   ancho?: string
+  /** En pantallas chicas el contenido va debajo del título y no al lado: para celdas con controles. */
+  apilada?: boolean
   render: (fila: T) => ReactNode
 }
 
@@ -77,8 +79,11 @@ export function Tabla<T>({
             !error &&
             filas.map((fila) => (
               <tr key={obtenerClave(fila)} className={CLASES_FILA}>
-                {columnas.map(({ clave, titulo, render }) => (
-                  <td key={clave} className={`${clasesCelda} text-text-muted`}>
+                {columnas.map(({ clave, titulo, apilada, render }) => (
+                  <td
+                    key={clave}
+                    className={`${clasesCelda} text-text-muted ${apilada ? 'max-lg:flex-col max-lg:items-stretch max-lg:gap-1 max-lg:text-left' : ''}`}
+                  >
                     <span className="shrink-0 font-medium text-text lg:hidden">{titulo}</span>
                     {render(fila)}
                   </td>

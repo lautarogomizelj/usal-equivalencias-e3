@@ -8,7 +8,7 @@ import { catalogos } from '@/services/catalogos'
 import { solicitudes } from '@/services/solicitudes'
 import type { Documento, EventoHistorial, Responsable, SolicitudDetalle } from '@/types/solicitud'
 import { formatearFecha, formatearFechaHora } from '@/utils/fechas'
-import type { VistaSolicitudProps } from './vistas'
+import { ACCIONES_EN_BANNER, type VistaSolicitudProps } from './vistas'
 
 const PESTANIAS: Pestania[] = [
   { clave: 'documentacion', texto: 'Documentación', Icono: FileText },
@@ -38,18 +38,26 @@ const COLUMNAS_DOCUMENTOS: ColumnaTabla<Documento>[] = [
       return <Badge variante={variante}>{texto}</Badge>
     },
   },
-  { clave: 'carga', titulo: 'Fecha de carga', ancho: 'lg:w-1/8', render: ({ fechaCarga }) => formatearFecha(fechaCarga) },
+  {
+    clave: 'carga',
+    titulo: 'Fecha de carga',
+    ancho: 'lg:w-1/8',
+    render: ({ fechaCarga }) => (fechaCarga ? formatearFecha(fechaCarga) : '–'),
+  },
   {
     clave: 'archivo',
     titulo: 'Archivo',
     ancho: 'lg:w-1/5',
-    render: ({ nombreArchivo, version }) => (
-      <span className="inline-flex items-center gap-2">
-        <Paperclip aria-hidden className="size-(--size-icon-sm) shrink-0 text-primary" />
-        {nombreArchivo}
-        {version > 1 && ` (v${version})`}
-      </span>
-    ),
+    render: ({ nombreArchivo, version }) =>
+      nombreArchivo ? (
+        <span className="inline-flex items-center gap-2">
+          <Paperclip aria-hidden className="size-(--size-icon-sm) shrink-0 text-primary" />
+          {nombreArchivo}
+          {version > 1 && ` (v${version})`}
+        </span>
+      ) : (
+        'Falta cargarlo'
+      ),
   },
   { clave: 'observaciones', titulo: 'Observaciones', render: ({ comentarioRevision }) => comentarioRevision ?? '–' },
   {
@@ -86,7 +94,8 @@ function PanelDocumentacion({ solicitudId }: { solicitudId: number }) {
           interna
           descripcion="Documentos de la solicitud"
           columnas={COLUMNAS_DOCUMENTOS}
-          filas={datos ?? []}
+          // Los archivos de una recarga todavía sin enviar se ven en el panel de acción, no acá.
+          filas={(datos ?? []).filter(({ borrador }) => !borrador)}
           obtenerClave={({ id }) => id}
           cargando={cargando}
           error={error}
@@ -136,8 +145,9 @@ function TarjetaResponsable({ rol, responsable }: { rol: string; responsable: Re
   )
 }
 
-function PanelDetalles({ detalle }: { detalle: SolicitudDetalle }) {
-  const { datosOrigen, responsableAcademico, responsableAdministrativo } = detalle
+/** `completo` suma lo que consulta el personal: datos de contacto del aspirante y del formulario inicial (§5.5). */
+export function PanelDetalles({ detalle, completo = false }: { detalle: SolicitudDetalle; completo?: boolean }) {
+  const { aspirante, datosOrigen, responsableAcademico, responsableAdministrativo } = detalle
 
   return (
     <div className="grid items-start gap-4 lg:grid-cols-2">
@@ -154,8 +164,27 @@ function PanelDetalles({ detalle }: { detalle: SolicitudDetalle }) {
             </span>
           </Fila>
           <Fila etiqueta="Carrera destino">{detalle.carreraDestino.nombre}</Fila>
+          {completo && (
+            <>
+              <Fila etiqueta="Condición académica">{datosOrigen.condicionAcademica}</Fila>
+              <Fila etiqueta="Observaciones">{datosOrigen.observaciones || '–'}</Fila>
+              <Fila etiqueta="Aspirante">
+                {aspirante.nombre}
+                <span className="block text-text-muted">DNI {aspirante.dni}</span>
+              </Fila>
+              <Fila etiqueta="Contacto">
+                <a href={`mailto:${aspirante.email}`} className="text-primary underline">
+                  {aspirante.email}
+                </a>
+                <span className="block text-text-muted">{aspirante.telefono}</span>
+              </Fila>
+            </>
+          )}
           <Fila etiqueta="Fecha de creación">{formatearFecha(detalle.fechaCreacion)}</Fila>
           <Fila etiqueta="Última actualización">{formatearFecha(detalle.fechaUltimaMod)}</Fila>
+          {completo && (
+            <Fila etiqueta="Último cambio de estado">{formatearFecha(detalle.fechaUltimoCambioEstado)}</Fila>
+          )}
         </dl>
       </Seccion>
       <Seccion Icono={Users} titulo="Responsables" className="lg:rounded-t-none">
@@ -174,7 +203,7 @@ function PanelDetalles({ detalle }: { detalle: SolicitudDetalle }) {
   )
 }
 
-function PanelHistorial({ solicitudId }: { solicitudId: number }) {
+export function PanelHistorial({ solicitudId }: { solicitudId: number }) {
   const { datos, cargando, error, reintentar } = useCarga((signal) =>
     Promise.all([solicitudes.historial(solicitudId, signal), catalogos.estados(signal)]),
   )
@@ -216,7 +245,7 @@ function PanelHistorial({ solicitudId }: { solicitudId: number }) {
     <Seccion
       Icono={History}
       titulo="Historial de la solicitud"
-      descripcion="Seguimiento de todos los cambios de estado y documentos de tu trámite."
+      descripcion="Seguimiento de todos los cambios de estado, de responsable y de documentos del trámite."
       className="rounded-t-none"
     >
       <Tabla
@@ -243,9 +272,11 @@ function turno({ estado, accionesDisponibles }: SolicitudDetalle) {
  * Detalle de solo lectura de una solicitud: banner del estado y pestañas
  * (frontend-interfaces.md §4.5 a §4.7 y Anexo B, punto 18).
  */
-export function DetalleSolicitud({ detalle }: VistaSolicitudProps) {
+export function DetalleSolicitud(props: VistaSolicitudProps) {
+  const { detalle } = props
   const [activa, setActiva] = useState(PESTANIAS[0].clave)
   const texto = BANNER_ASPIRANTE[detalle.estado.codigo]
+  const Accion = ACCIONES_EN_BANNER[detalle.estado.codigo]
 
   return (
     <>
@@ -255,6 +286,7 @@ export function DetalleSolicitud({ detalle }: VistaSolicitudProps) {
         etiqueta={turno(detalle)}
       >
         {texto && <p>{texto}</p>}
+        {Accion && <Accion {...props} />}
       </Banner>
 
       <div>

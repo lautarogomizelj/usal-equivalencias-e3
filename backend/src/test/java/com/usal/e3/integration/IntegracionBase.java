@@ -99,7 +99,8 @@ abstract class IntegracionBase {
     void limpiarBase() {
         jdbc.execute("""
                 TRUNCATE sesiones, codigos_verificacion, user_career_permissions, auditoria_sistema,
-                         user_solicitud_permissions, documentos_solicitud, estados_solicitud, solicitudes,
+                         user_solicitud_permissions, documentos_solicitud, estados_solicitud, analisis_academico,
+                         reuniones, horarios_propuestos, rondas_reunion, solicitudes,
                          aspirantes, usuarios RESTART IDENTITY CASCADE
                 """);
     }

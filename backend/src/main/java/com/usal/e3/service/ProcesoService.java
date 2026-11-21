@@ -32,8 +32,8 @@ public class ProcesoService {
     public static final String TOMAR_PROCESO = "TOMAR_PROCESO";
     public static final String DARSE_DE_BAJA = "DARSE_DE_BAJA";
 
-    /** Los filtros por día de la bandeja son días de Argentina, corra donde corra el servidor. */
-    private static final ZoneId ZONA = ZoneId.of("America/Argentina/Buenos_Aires");
+    /** Los días de la bandeja y de las reuniones son días de Argentina, corra donde corra el servidor. */
+    static final ZoneId ZONA = ZoneId.of("America/Argentina/Buenos_Aires");
 
     private final SolicitudRepository solicitudes;
     private final CuentaService cuentas;

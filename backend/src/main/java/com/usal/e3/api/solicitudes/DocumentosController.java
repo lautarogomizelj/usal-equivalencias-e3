@@ -101,7 +101,11 @@ public class DocumentosController {
     @GetMapping("/{documentoId}/archivo")
     ResponseEntity<Resource> archivo(
             @AuthenticationPrincipal SesionActual actual, @PathVariable Integer id, @PathVariable Integer documentoId) {
-        ArchivoDescarga descarga = documentos.archivo(actual, id, documentoId);
+        return descarga(documentos.archivo(actual, id, documentoId));
+    }
+
+    /** Descarga binaria con el nombre original del archivo (contrato §1). */
+    static ResponseEntity<Resource> descarga(ArchivoDescarga descarga) {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(descarga.contentType()))
                 .header(

@@ -26,6 +26,11 @@ public class TransicionService {
     public static final String CANCELAR_SOLICITUD = "CANCELAR_SOLICITUD";
     public static final String ACEPTAR_DOCUMENTACION = "ACEPTAR_DOCUMENTACION";
     public static final String RECHAZAR_DOCUMENTACION = "RECHAZAR_DOCUMENTACION";
+    public static final String PROPONER_FECHAS = "PROPONER_FECHAS";
+    public static final String SOLICITAR_OTRAS_FECHAS = "SOLICITAR_OTRAS_FECHAS";
+    public static final String PROPONER_SEGUNDA_RONDA = "PROPONER_SEGUNDA_RONDA";
+    public static final String ELEGIR_HORARIO = "ELEGIR_HORARIO";
+    public static final String RECHAZAR_SEGUNDA_RONDA = "RECHAZAR_SEGUNDA_RONDA";
 
     /** Las transiciones ya implementadas: cada sprint suma las suyas. De acá salen las `accionesDisponibles`. */
     static final List<Transicion> TABLA = List.of(
@@ -33,7 +38,13 @@ public class TransicionService {
             new Transicion(CANCELAR_SOLICITUD, Rol.ASPIRANTE, Estado.SOL_INI, Estado.SOL_CANC),
             new Transicion(RECHAZAR_DOCUMENTACION, Rol.ACADEMICO, Estado.DOC_REV, Estado.DOC_RECH),
             new Transicion(ENVIAR_DOCUMENTACION, Rol.ASPIRANTE, Estado.DOC_RECH, Estado.DOC_REV),
-            new Transicion(ACEPTAR_DOCUMENTACION, Rol.ACADEMICO, Estado.DOC_REV, Estado.ANAL_PEND));
+            new Transicion(ACEPTAR_DOCUMENTACION, Rol.ACADEMICO, Estado.DOC_REV, Estado.ANAL_PEND),
+            new Transicion(PROPONER_FECHAS, Rol.ACADEMICO, Estado.ANAL_PEND, Estado.REU_FEC_ASP_1),
+            new Transicion(SOLICITAR_OTRAS_FECHAS, Rol.ASPIRANTE, Estado.REU_FEC_ASP_1, Estado.REU_FEC_ACAD),
+            new Transicion(PROPONER_SEGUNDA_RONDA, Rol.ACADEMICO, Estado.REU_FEC_ACAD, Estado.REU_FEC_ASP_2),
+            new Transicion(ELEGIR_HORARIO, Rol.ASPIRANTE, Estado.REU_FEC_ASP_1, Estado.REU_PEND),
+            new Transicion(ELEGIR_HORARIO, Rol.ASPIRANTE, Estado.REU_FEC_ASP_2, Estado.REU_PEND),
+            new Transicion(RECHAZAR_SEGUNDA_RONDA, Rol.ASPIRANTE, Estado.REU_FEC_ASP_2, Estado.REU_CHAT));
 
     private final HistorialEstadoRepository historial;
     private final PermisosService permisos;

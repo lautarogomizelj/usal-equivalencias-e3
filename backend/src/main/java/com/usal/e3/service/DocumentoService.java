@@ -28,7 +28,7 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class DocumentoService {
 
-    private static final long MAX_ARCHIVO = 10L * 1024 * 1024;
+    static final long MAX_ARCHIVO = 10L * 1024 * 1024;
     private static final long MAX_ENVIO = 50L * 1024 * 1024;
 
     /** RF-ASP-002 y Anexo A #3 de interfaces: Analítico, Plan de estudios y al menos un Programa. */
@@ -98,10 +98,7 @@ public class DocumentoService {
         if (enBorrador + contenido.length > MAX_ENVIO) {
             throw new ApiException(ErrorCode.LIMITE_TAMANO, "Entre todos los archivos no pueden superar los 50 MB.");
         }
-        // Por año y DNI (RF-ACAD-009), con una carpeta por expediente.
-        String carpeta = solicitud.getFechaCreacion().getYear() + "/" + solicitud.getAspirante().getDni() + "/"
-                + solicitud.getCodigoExp();
-        String ruta = archivos.guardar(carpeta, contenido, extension);
+        String ruta = archivos.guardar(carpeta(solicitud), contenido, extension);
         archivos.borrarSiSeDeshace(ruta);
         // Recién con el archivo nuevo aceptado y guardado.
         descartados.forEach(this::eliminar);
@@ -269,8 +266,14 @@ public class DocumentoService {
         return descripcion.strip();
     }
 
+    /** Por año y DNI (RF-ACAD-009), con una carpeta por expediente. */
+    static String carpeta(Solicitud solicitud) {
+        return solicitud.getFechaCreacion().getYear() + "/" + solicitud.getAspirante().getDni() + "/"
+                + solicitud.getCodigoExp();
+    }
+
     /** Por el contenido y no por el nombre: un ejecutable renombrado a `.pdf` no pasa. */
-    private static String extension(byte[] contenido) {
+    static String extension(byte[] contenido) {
         if (contenido.length >= 4
                 && contenido[0] == '%'
                 && contenido[1] == 'P'
@@ -288,7 +291,7 @@ public class DocumentoService {
     }
 
     /** Solo para mostrar: sin carpetas y con un máximo de 255 caracteres. */
-    private static String nombreVisible(String original, String extension) {
+    static String nombreVisible(String original, String extension) {
         String nombre = original == null ? "" : original.replaceAll(".*[/\\\\]", "").strip();
         if (nombre.isEmpty()) {
             return "documento." + extension;

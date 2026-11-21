@@ -192,11 +192,14 @@ public class SolicitudService {
         if (cuenta.tipo() != TitularTipo.USUARIO) {
             return acciones;
         }
-        if ((Rol.ACADEMICO.equals(cuenta.rolCodigo()) || Rol.ADMIN.equals(cuenta.rolCodigo()))
-                && Estado.DOC_REV.equals(estado.getCodigo())
-                && transiciones.puedeActuar(cuenta, solicitud)) {
+        boolean actuaComoAcademico = (Rol.ACADEMICO.equals(cuenta.rolCodigo()) || Rol.ADMIN.equals(cuenta.rolCodigo()))
+                && transiciones.puedeActuar(cuenta, solicitud);
+        if (actuaComoAcademico && Estado.DOC_REV.equals(estado.getCodigo())) {
             acciones.add(RevisionService.GUARDAR_MARCAS);
             acciones.add(RevisionService.AGREGAR_FALTANTE);
+        }
+        if (actuaComoAcademico && Estado.REU_PEND.equals(estado.getCodigo())) {
+            acciones.add(ReunionService.CARGAR_ENLACE_MEET);
         }
         if (solicitud.tieneComoResponsable(cuenta)) {
             if (!permisos.otrosConAcceso(cuenta, solicitud).isEmpty()) {

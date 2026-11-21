@@ -216,7 +216,7 @@ class RevisionIntegrationTest extends IntegracionBase {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.estado.codigo").value("ANAL-PEND"))
                 .andExpect(jsonPath("$.resumenDocumentos.ok").value(1))
-                .andExpect(jsonPath("$.accionesDisponibles", empty()));
+                .andExpect(jsonPath("$.accionesDisponibles", contains("PROPONER_FECHAS")));
 
         verify(mail).enviarAviso(eq(ASPIRANTE), conTexto("fue aceptada"), anyString());
         mvc.perform(get(ruta("/historial")).cookie(aspirante))

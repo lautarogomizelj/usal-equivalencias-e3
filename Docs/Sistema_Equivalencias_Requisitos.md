@@ -21,6 +21,7 @@
 | 13.1 | 2026-11-17 | jumaluc | Nombre y apellido en campos separados para aspirantes y usuarios: registro (RF-AUTH-001), perfil (RF-AUTH-007) y tablas `usuarios` y `aspirantes` (CC-012) |
 | 13.2 | 2026-11-20 | jumaluc | RF-AUTH-003: mientras el sistema no esté publicado con Google, Académico, Secretaría y Revisor entran con usuario y contraseña (provisorio, CC-016) |
 | 13.3 | 2026-11-20 | jumaluc | RF-PROC-002: para actuar, el personal tiene que ser participante y además el responsable del rol de la etapa; el Admin General no necesita ninguna de las dos cosas (auditoría del 2026-11-19, CC-017) |
+| 13.4 | 2026-11-20 | jumaluc | RF-ACAD-002: las fechas de reunión se proponen desde el día siguiente y hasta dentro de 30 días, en lugar de "próximos 14-30 días" (CC-018) |
 
 ---
 
@@ -682,7 +683,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - Académico prepara:
   - **Matriz de equivalencias** (puede cargar archivo o escribir notas)
   - **Posible horario de cursada** (puede cargar archivo o escribir notas)
-  - **Fechas disponibles para la reunión:** abre **calendario integrado** y propone hasta **7 horarios disponibles** (próximos 14-30 días), duración 1 hora (10:00-18:00, franjas académicas)
+  - **Fechas disponibles para la reunión:** abre **calendario integrado** y propone hasta **7 horarios disponibles** (desde el día siguiente y hasta dentro de 30 días), duración 1 hora (10:00-18:00, franjas académicas)
 - Botón: "Guardar propuesta"
   - Sistema envía al aspirante las fechas junto con los documentos (matriz y horario de cursada)
   - Mail al aspirante: "Elegí un horario para la reunión..."

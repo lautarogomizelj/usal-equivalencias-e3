@@ -3,7 +3,9 @@ import { useState } from 'react'
 import { useParams } from 'react-router'
 import { EncabezadoPagina } from '@/components/privado/EncabezadoPagina'
 import { PanelDetalles, PanelHistorial } from '@/components/solicitudes/DetalleSolicitud'
+import { DocumentacionAcademica } from '@/components/solicitudes/DocumentacionAcademica'
 import { RevisionDocumentos } from '@/components/solicitudes/RevisionDocumentos'
+import { VISTAS_PERSONAL } from '@/components/solicitudes/vistas'
 import { Aviso, Banner, Button, EstadoBadge, ModalConfirmacion, Pestanias, Seccion, type Pestania } from '@/components/ui'
 import { BANNER_PERSONAL, ESTADOS_DE_ACCION, VARIANTE_POR_ESTADO } from '@/constants/estados'
 import { ROUTES } from '@/constants/routes'
@@ -103,6 +105,7 @@ function Solicitud({ id }: { id: number }) {
     const puedeTomar = accionesDisponibles.includes('TOMAR_PROCESO')
     const puedeDarseDeBaja = accionesDisponibles.includes('DARSE_DE_BAJA')
     const meToca = soyResponsable && Boolean(ESTADOS_DE_ACCION[rol]?.includes(estado.codigo))
+    const Panel = VISTAS_PERSONAL[estado.codigo]
     // Una revisión con observación previa es una recarga: los documentos nuevos llegan pendientes (§5.6.2).
     const texto =
       rol === 'SECRE' && !estado.esTerminal
@@ -187,14 +190,30 @@ function Solicitud({ id }: { id: number }) {
 
         <div>
           <Pestanias pestanias={PESTANIAS} activa={activa} onCambiar={setActiva} />
-          <div role="tabpanel" aria-labelledby={`pestania-${activa}`} className="flex flex-col gap-4">
+          {/* El primer bloque de cada pestaña se une a la barra de pestañas: sin las puntas de arriba redondeadas. */}
+          <div
+            role="tabpanel"
+            aria-labelledby={`pestania-${activa}`}
+            className="flex flex-col gap-4 *:first:rounded-t-none"
+          >
             {activa === 'analisis' && (
-              <RevisionDocumentos
-                key={estado.codigo}
-                detalle={detalle}
-                onActualizada={actualizar}
-                onEstadoCambio={() => recargar()}
-              />
+              <>
+                {Panel && (
+                  <Panel
+                    key={`panel-${estado.codigo}`}
+                    detalle={detalle}
+                    onActualizada={actualizar}
+                    onEstadoCambio={() => recargar()}
+                  />
+                )}
+                <RevisionDocumentos
+                  key={estado.codigo}
+                  detalle={detalle}
+                  onActualizada={actualizar}
+                  onEstadoCambio={() => recargar()}
+                />
+                <DocumentacionAcademica key={`academica-${estado.codigo}`} soloSiHay solicitudId={detalle.id} />
+              </>
             )}
             {activa === 'detalles' && <PanelDetalles completo detalle={detalle} />}
             {activa === 'chat' && (

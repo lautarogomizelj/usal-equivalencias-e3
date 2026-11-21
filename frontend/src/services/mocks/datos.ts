@@ -125,6 +125,9 @@ const LISTADO: [string, string, string | null, string | null, string, string, nu
   ['EXP-2026-005', 'DOC-REV', null, null, '2026-11-02', '2026-11-05', 0, 0],
   ['EXP-2026-006', 'DOC-REV', null, null, '2026-10-20', '2026-10-27', 2, 0],
   ['EXP-2026-007', 'SOL-INI', null, null, '2026-11-12', '2026-11-12', 1, 1],
+  ['EXP-2026-008', 'ANAL-PEND', 'academico@usal.edu.ar', null, '2026-11-03', '2026-11-16'],
+  ['EXP-2026-009', 'REU-FEC-ASP-1', 'academico@usal.edu.ar', null, '2026-10-28', '2026-11-17'],
+  ['EXP-2026-010', 'REU-PEND', 'academico@usal.edu.ar', null, '2026-10-15', '2026-11-18'],
 ]
 
 export const SOLICITUDES: SolicitudResumen[] = LISTADO.map(

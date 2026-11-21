@@ -104,6 +104,62 @@ export interface Marca {
   comentario: string | null
 }
 
+export type TipoAnalisis = 'MATRIZ_EQUIVALENCIAS' | 'HORARIO_CURSADA'
+
+/**
+ * Matriz de equivalencias u horario de cursada que cargó el Académico (contrato de la API §6.6). Llega solo la
+ * versión vigente, con archivo, con notas o con las dos cosas.
+ */
+export interface Analisis {
+  id: number
+  tipo: TipoAnalisis
+  version: number
+  nombreArchivo: string | null
+  notas: string | null
+  fechaCarga: string
+  subidoPor: string
+  urlDescarga: string | null
+}
+
+export interface HorarioPropuesto {
+  id: number
+  inicio: string
+  fin: string
+  elegido: boolean
+}
+
+export interface RondaReunion {
+  numero: number
+  horarios: HorarioPropuesto[]
+  motivoOtrasFechas: string | null
+  disponibilidadAspirante: string | null
+}
+
+export interface Reunion {
+  inicio: string
+  fin: string
+  origen: 'ELEGIDA_ASPIRANTE' | 'FIJADA_CHAT'
+  enlaceMeet: string | null
+  resultado: 'PENDIENTE' | 'REALIZADA' | 'NO_ASISTIO'
+}
+
+/** Rondas de fechas y reunión vigente de una solicitud (contrato de la API §6.6). */
+export interface ReunionInfo {
+  rondaActual: number | null
+  rondas: RondaReunion[]
+  reunion: Reunion | null
+}
+
+/** Lo que el Académico carga en el análisis preliminar: de cada documento, archivo, notas o las dos cosas. */
+export interface PropuestaAnalisis {
+  matrizArchivo: File | null
+  matrizNotas: string
+  horarioArchivo: File | null
+  horarioNotas: string
+  /** Inicio de cada horario de reunión, en ISO 8601. */
+  horarios: string[]
+}
+
 /** Filtros de la bandeja del personal (contrato de la API §6.2). Los vacíos no se envían. */
 export interface FiltrosBandeja {
   q?: string

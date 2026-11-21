@@ -3,18 +3,23 @@
  * Responden según quién tiene la sesión abierta, igual que el backend. Todo vive en memoria.
  */
 import { ESTADOS_DE_ACCION } from '@/constants/estados'
+import { finDeReunion, REUNION } from '@/constants/reunion'
 import { ApiError } from '@/services/api/ApiError'
 import type { Sesion } from '@/types/sesion'
 import type {
+  Analisis,
   DatosNuevaSolicitud,
   Documento,
   EstadoRevision,
   EventoHistorial,
   Marca,
+  ReunionInfo,
   SolicitudDetalle,
   SolicitudResumen,
+  TipoAnalisis,
   TipoDocumento,
 } from '@/types/solicitud'
+import { hoyEnArgentina, sumarDias } from '@/utils/fechas'
 import { nombreCompleto } from '@/utils/personas'
 import { CARRERAS, ESTADOS, PERFIL, responsable, SESION_ASPIRANTE, SESIONES_USAL, SOLICITUDES } from './datos'
 
@@ -35,13 +40,29 @@ const ORIGEN_DEMO: SolicitudDetalle['datosOrigen'] = {
 const RECORRIDOS: Record<string, string[]> = {
   'DOC-REV': ['SOL-INI', 'DOC-REV'],
   'DOC-RECH': ['SOL-INI', 'DOC-REV', 'DOC-RECH'],
+  'ANAL-PEND': ['SOL-INI', 'DOC-REV', 'ANAL-PEND'],
+  'REU-FEC-ASP-1': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1'],
+  'REU-PEND': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND'],
   'INSC-ACEP': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND', 'ANAL-POST', 'INSC-ACEP'],
 }
+
+/** Estados anteriores a que el Académico cargue el análisis y proponga fechas. */
+const SIN_ANALISIS = ['SOL-INI', 'DOC-REV', 'DOC-RECH', 'ANAL-PEND', 'SOL-CANC']
 
 /** Acciones del aspirante en cada estado (contrato de la API §7.1). */
 const ACCIONES_ASPIRANTE: Record<string, string[]> = {
   'SOL-INI': ['ENVIAR_DOCUMENTACION', 'CANCELAR_SOLICITUD'],
   'DOC-RECH': ['ENVIAR_DOCUMENTACION'],
+  'REU-FEC-ASP-1': ['ELEGIR_HORARIO', 'SOLICITAR_OTRAS_FECHAS'],
+  'REU-FEC-ASP-2': ['ELEGIR_HORARIO', 'RECHAZAR_SEGUNDA_RONDA'],
+}
+
+/** Acciones del Académico responsable en cada estado (contrato de la API §7.1 y §7.2). */
+const ACCIONES_ACADEMICO: Record<string, string[]> = {
+  'DOC-REV': ['RECHAZAR_DOCUMENTACION', 'ACEPTAR_DOCUMENTACION', 'GUARDAR_MARCAS', 'AGREGAR_FALTANTE'],
+  'ANAL-PEND': ['PROPONER_FECHAS'],
+  'REU-FEC-ACAD': ['PROPONER_SEGUNDA_RONDA'],
+  'REU-PEND': ['CARGAR_ENLACE_MEET'],
 }
 
 /** Estados de tipo A de cada rol: con ellos se calcula `requiereMiAccion`. */
@@ -67,7 +88,10 @@ const origenes = new Map<number, SolicitudDetalle['datosOrigen']>()
 const documentos = new Map<number, Documento[]>()
 const historiales = new Map<number, EventoHistorial[]>()
 const observaciones = new Map<number, NonNullable<SolicitudDetalle['ultimaObservacion']>>()
+const analisis = new Map<number, Analisis[]>()
+const reuniones = new Map<number, ReunionInfo>()
 let ultimoDocumentoId = 300
+let ultimoIdReunion = 500
 
 function error(status: number, code: string, errors?: Record<string, string[]>) {
   return ApiError.fromStatus(status, { status, code, errors })
@@ -118,9 +142,7 @@ function accionesDe(sesion: Sesion, solicitud: SolicitudResumen) {
     return responsableDe(solicitud, sesion.rol) || solicitud.estado.esTerminal ? [] : ['TOMAR_PROCESO']
   }
   return [
-    ...(sesion.rol === 'ACAD' && codigo === 'DOC-REV'
-      ? ['RECHAZAR_DOCUMENTACION', 'ACEPTAR_DOCUMENTACION', 'GUARDAR_MARCAS', 'AGREGAR_FALTANTE']
-      : []),
+    ...(sesion.rol === 'ACAD' ? (ACCIONES_ACADEMICO[codigo] ?? []) : []),
     ...(hayOtrosConAcceso(sesion, solicitud) ? ['DARSE_DE_BAJA'] : []),
   ]
 }
@@ -415,7 +437,8 @@ function cambiarEstado(sesion: Sesion, solicitud: SolicitudResumen, nuevo: strin
   const ahora = new Date().toISOString()
   const usuario = sesion.tipo === 'ASPIRANTE' ? solicitud.aspirante.nombre : nombreCompleto(sesion)
   historialDe(solicitud.id).unshift(cambioEstado(ahora, solicitud.estado.codigo, nuevo, usuario, comentario))
-  if (comentario) observaciones.set(solicitud.id, { comentario, usuario, fecha: ahora })
+  // Lo que escribe el aspirante queda en el historial, pero no es una observación del personal.
+  if (comentario && sesion.tipo === 'USUARIO') observaciones.set(solicitud.id, { comentario, usuario, fecha: ahora })
   solicitud.estado = estado(nuevo)
   solicitud.fechaUltimaMod = ahora
 }
@@ -531,6 +554,189 @@ function revisar(sesion: Sesion, body: unknown, id: number, aceptar: boolean) {
   return detalle(sesion, id)
 }
 
+function documentoAnalisis(
+  tipo: TipoAnalisis,
+  nombreArchivo: string | null,
+  notas: string | null,
+  urlDescarga: string | null,
+  subidoPor: string,
+  fechaCarga: string,
+): Analisis {
+  ultimoDocumentoId += 1
+  return { id: ultimoDocumentoId, tipo, version: 1, nombreArchivo, notas, fechaCarga, subidoPor, urlDescarga }
+}
+
+function analisisDe(id: number) {
+  if (!analisis.has(id)) {
+    const { estado: actual, fechaUltimaMod, responsableAcademico } = buscar(id)
+    const autor = responsableAcademico?.nombre ?? ''
+    analisis.set(
+      id,
+      SIN_ANALISIS.includes(actual.codigo)
+        ? []
+        : [
+            documentoAnalisis(
+              'MATRIZ_EQUIVALENCIAS',
+              'matriz-equivalencias.pdf',
+              'Se reconocen 6 materias de primer año.',
+              ARCHIVO_DEMO,
+              autor,
+              fechaUltimaMod,
+            ),
+            documentoAnalisis(
+              'HORARIO_CURSADA',
+              null,
+              'Turno noche: lunes, miércoles y viernes de 18 a 22.',
+              null,
+              autor,
+              fechaUltimaMod,
+            ),
+          ],
+    )
+  }
+  return analisis.get(id)!
+}
+
+/** Dentro de `dias` días a la hora indicada de Argentina. */
+function fechaDemo(dias: number, hora: number) {
+  return `${sumarDias(hoyEnArgentina(), dias)}T${String(hora).padStart(2, '0')}:00:00${REUNION.DESFASE_HORARIO}`
+}
+
+function ronda(numero: number, inicios: string[]) {
+  return {
+    numero,
+    horarios: [...inicios].sort().map((inicio) => {
+      ultimoIdReunion += 1
+      return { id: ultimoIdReunion, inicio, fin: finDeReunion(inicio), elegido: false }
+    }),
+    motivoOtrasFechas: null,
+    disponibilidadAspirante: null,
+  }
+}
+
+/** Las de ejemplo ya traen la 1ª ronda propuesta; las que pasaron la elección, también la reunión. */
+function reunionDe(id: number) {
+  if (!reuniones.has(id)) {
+    const codigo = buscar(id).estado.codigo
+    const info: ReunionInfo = { rondaActual: null, rondas: [], reunion: null }
+    if (!SIN_ANALISIS.includes(codigo)) {
+      const primera = ronda(1, [fechaDemo(3, 10), fechaDemo(3, 15), fechaDemo(5, 11), fechaDemo(8, 16)])
+      info.rondaActual = 1
+      info.rondas = [primera]
+      if (codigo !== 'REU-FEC-ASP-1') {
+        const [elegido] = primera.horarios
+        elegido.elegido = true
+        info.reunion = {
+          inicio: elegido.inicio,
+          fin: elegido.fin,
+          origen: 'ELEGIDA_ASPIRANTE',
+          enlaceMeet: null,
+          resultado: codigo === 'REU-PEND' ? 'PENDIENTE' : 'REALIZADA',
+        }
+      }
+    }
+    reuniones.set(id, info)
+  }
+  return reuniones.get(id)!
+}
+
+function abrirRonda(id: number, numero: number, horarios: { inicio: string }[]) {
+  if (!horarios.length || horarios.length > REUNION.MAX_HORARIOS) {
+    throw error(400, 'VALIDACION', { horarios: [`Proponé entre 1 y ${REUNION.MAX_HORARIOS} horarios.`] })
+  }
+  const info = reunionDe(id)
+  info.rondas.push(ronda(numero, horarios.map(({ inicio }) => inicio)))
+  info.rondaActual = numero
+}
+
+/** La parte `datos` llega como JSON dentro del formulario, igual que en el backend. */
+async function proponerFechas(sesion: Sesion, body: unknown, id: number) {
+  const formulario = body as FormData
+  const { estadoEsperado, horarios } = JSON.parse(await (formulario.get('datos') as Blob).text()) as {
+    estadoEsperado: string
+    horarios: { inicio: string }[]
+  }
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, 'PROPONER_FECHAS', estadoEsperado)
+  const ahora = new Date().toISOString()
+  const cargar = (tipo: TipoAnalisis, campo: string) => {
+    const archivo = formulario.get(`${campo}Archivo`) as File | null
+    const notas = formulario.get(`${campo}Notas`) as string | null
+    if (!archivo && !notas) throw error(400, 'VALIDACION', { [campo]: ['Cargá un archivo, notas o las dos cosas.'] })
+    return documentoAnalisis(
+      tipo,
+      archivo?.name ?? null,
+      notas,
+      archivo && URL.createObjectURL(archivo),
+      nombreCompleto(sesion),
+      ahora,
+    )
+  }
+  const cargados = [cargar('MATRIZ_EQUIVALENCIAS', 'matriz'), cargar('HORARIO_CURSADA', 'horario')]
+  abrirRonda(id, 1, horarios)
+  analisis.set(id, cargados)
+  cambiarEstado(sesion, solicitud, 'REU-FEC-ASP-1')
+  return detalle(sesion, id)
+}
+
+function proponerSegundaRonda(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, horarios } = body as { estadoEsperado: string; horarios: { inicio: string }[] }
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, 'PROPONER_SEGUNDA_RONDA', estadoEsperado)
+  abrirRonda(id, 2, horarios)
+  cambiarEstado(sesion, solicitud, 'REU-FEC-ASP-2')
+  return detalle(sesion, id)
+}
+
+function elegirHorario(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, horarioId } = body as { estadoEsperado: string; horarioId: number }
+  const solicitud = visible(sesion, id)
+  exigir(sesion, solicitud, 'ELEGIR_HORARIO', estadoEsperado)
+  const info = reunionDe(id)
+  const elegido = info.rondas.at(-1)!.horarios.find((horario) => horario.id === horarioId)
+  if (!elegido) throw error(400, 'VALIDACION', { horarioId: ['Elegí uno de los horarios propuestos.'] })
+  elegido.elegido = true
+  info.reunion = {
+    inicio: elegido.inicio,
+    fin: elegido.fin,
+    origen: 'ELEGIDA_ASPIRANTE',
+    enlaceMeet: null,
+    resultado: 'PENDIENTE',
+  }
+  cambiarEstado(sesion, solicitud, 'REU-PEND')
+  return detalle(sesion, id)
+}
+
+function solicitarOtrasFechas(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, motivo, disponibilidad } = body as Record<string, string>
+  const solicitud = visible(sesion, id)
+  exigir(sesion, solicitud, 'SOLICITAR_OTRAS_FECHAS', estadoEsperado)
+  if (!motivo?.trim()) throw error(400, 'VALIDACION', { motivo: ['Contanos por qué no podés en esos horarios.'] })
+  if (!disponibilidad?.trim()) throw error(400, 'VALIDACION', { disponibilidad: ['Indicá cuándo podés reunirte.'] })
+  Object.assign(reunionDe(id).rondas.at(-1)!, { motivoOtrasFechas: motivo, disponibilidadAspirante: disponibilidad })
+  cambiarEstado(sesion, solicitud, 'REU-FEC-ACAD', `Motivo: ${motivo} · Puede: ${disponibilidad}`)
+  return detalle(sesion, id)
+}
+
+function rechazarSegundaRonda(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, motivo } = body as Record<string, string>
+  const solicitud = visible(sesion, id)
+  exigir(sesion, solicitud, 'RECHAZAR_SEGUNDA_RONDA', estadoEsperado)
+  cambiarEstado(sesion, solicitud, 'REU-CHAT', motivo?.trim() || null)
+  return detalle(sesion, id)
+}
+
+/** No cambia el estado: devuelve la reunión con el enlace. */
+function cargarEnlaceMeet(sesion: Sesion, body: unknown, id: number) {
+  const enlaceMeet = (body as { enlaceMeet: string }).enlaceMeet.trim()
+  exigir(sesion, buscar(id), 'CARGAR_ENLACE_MEET')
+  if (!enlaceMeet.startsWith(REUNION.PREFIJO_MEET)) {
+    throw error(400, 'VALIDACION', { enlaceMeet: [`Pegá el enlace de Google Meet (${REUNION.PREFIJO_MEET}…).`] })
+  }
+  reunionDe(id).reunion!.enlaceMeet = enlaceMeet
+  return structuredClone(reunionDe(id))
+}
+
 type Manejador = (body: unknown, ids: number[], consulta: URLSearchParams) => unknown
 
 export function rutasSolicitudes(sesionActual: () => Sesion): Record<string, Manejador> {
@@ -550,5 +756,14 @@ export function rutasSolicitudes(sesionActual: () => Sesion): Record<string, Man
     'POST /solicitudes/:id/cancelar': (body, [id]) => cancelar(sesionActual(), body, id),
     'POST /solicitudes/:id/responsables/tomar': (_, [id]) => cambiarResponsable(sesionActual(), id, true),
     'POST /solicitudes/:id/responsables/baja': (_, [id]) => cambiarResponsable(sesionActual(), id, false),
+    'GET /solicitudes/:id/analisis': (_, [id]) => [...analisisDe(visible(sesionActual(), id).id)],
+    'POST /solicitudes/:id/analisis/propuesta': (body, [id]) => proponerFechas(sesionActual(), body, id),
+    'GET /solicitudes/:id/reunion': (_, [id]) => structuredClone(reunionDe(visible(sesionActual(), id).id)),
+    'POST /solicitudes/:id/reunion/segunda-ronda': (body, [id]) => proponerSegundaRonda(sesionActual(), body, id),
+    'POST /solicitudes/:id/reunion/elegir-horario': (body, [id]) => elegirHorario(sesionActual(), body, id),
+    'POST /solicitudes/:id/reunion/solicitar-otras-fechas': (body, [id]) =>
+      solicitarOtrasFechas(sesionActual(), body, id),
+    'POST /solicitudes/:id/reunion/rechazar-ronda': (body, [id]) => rechazarSegundaRonda(sesionActual(), body, id),
+    'PUT /solicitudes/:id/reunion/enlace': (body, [id]) => cargarEnlaceMeet(sesionActual(), body, id),
   }
 }

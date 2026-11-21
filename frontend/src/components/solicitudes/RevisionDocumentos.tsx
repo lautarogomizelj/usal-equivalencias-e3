@@ -232,7 +232,7 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
             ? 'Revisá cada documento, indicá su estado y agregá comentarios. Después aceptá o rechazá la documentación.'
             : 'Documentos que presentó el aspirante, con su marca de revisión.'
         }
-        className="formulario-compacto rounded-t-none"
+        className="formulario-compacto"
       >
         {estadoEsperado === 'DOC-RECH' && detalle.ultimaObservacion && (
           <p className="mb-4 rounded-md bg-danger-soft p-3 text-base text-text">

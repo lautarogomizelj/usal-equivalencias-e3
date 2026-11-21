@@ -3,10 +3,12 @@ import { ENV } from '@/constants/env'
 import { api } from '@/services/api/client'
 import type { Page } from '@/types/api'
 import type {
+  Analisis,
   DatosNuevaSolicitud,
   Documento,
   EventoHistorial,
   FiltrosBandeja,
+  ReunionInfo,
   SolicitudDetalle,
   SolicitudResumen,
   TipoDocumento,
@@ -31,6 +33,8 @@ export const solicitudes = {
     api.get<EventoHistorial[]>(`/solicitudes/${id}/historial`, { signal }),
   documentos: (id: number, signal?: AbortSignal) =>
     api.get<Documento[]>(`/solicitudes/${id}/documentos`, { signal }),
+  analisis: (id: number, signal?: AbortSignal) => api.get<Analisis[]>(`/solicitudes/${id}/analisis`, { signal }),
+  reunion: (id: number, signal?: AbortSignal) => api.get<ReunionInfo>(`/solicitudes/${id}/reunion`, { signal }),
   /** `reemplazaAId` va en la recarga: es el documento marcado para recargar que el archivo reemplaza. */
   subirDocumento: (id: number, archivo: File, tipo: TipoDocumento, descripcion?: string, reemplazaAId?: number) => {
     const cuerpo = new FormData()

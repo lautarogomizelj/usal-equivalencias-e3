@@ -1,4 +1,4 @@
-import { Download, FileText, GraduationCap, History, MessageCircle, Paperclip, User, Users } from 'lucide-react'
+import { Download, FileText, History, MessageCircle, Paperclip, User, Users } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Badge, Banner, EstadoBadge, Pestanias, Seccion, Tabla, type ColumnaTabla, type Pestania } from '@/components/ui'
 import { MARCA_REVISION, NOMBRE_TIPO_DOCUMENTO } from '@/constants/documentos'
@@ -8,6 +8,7 @@ import { catalogos } from '@/services/catalogos'
 import { solicitudes } from '@/services/solicitudes'
 import type { Documento, EventoHistorial, Responsable, SolicitudDetalle } from '@/types/solicitud'
 import { formatearFecha, formatearFechaHora } from '@/utils/fechas'
+import { DocumentacionAcademica } from './DocumentacionAcademica'
 import { ACCIONES_EN_BANNER, type VistaSolicitudProps } from './vistas'
 
 const PESTANIAS: Pestania[] = [
@@ -103,15 +104,7 @@ function PanelDocumentacion({ solicitudId }: { solicitudId: number }) {
           onReintentar={reintentar}
         />
       </Seccion>
-      <Seccion
-        Icono={GraduationCap}
-        titulo="Documentación académica"
-        descripcion="Documentos generados por el área académica para el análisis de la equivalencia."
-      >
-        <p className="rounded-md border border-border px-4 py-6 text-center text-base text-text-muted">
-          El área académica todavía no cargó la matriz de equivalencias ni el horario de cursada.
-        </p>
-      </Seccion>
+      <DocumentacionAcademica solicitudId={solicitudId} />
     </>
   )
 }

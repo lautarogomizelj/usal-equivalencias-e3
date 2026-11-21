@@ -1,4 +1,4 @@
-import type { EstadoRevision, TipoDocumento } from '@/types/solicitud'
+import type { EstadoRevision, TipoAnalisis, TipoDocumento } from '@/types/solicitud'
 import type { VarianteEstado } from './estados'
 
 /** Reglas de carga documental (RF-SOL-002). */
@@ -15,6 +15,12 @@ export const NOMBRE_TIPO_DOCUMENTO: Record<TipoDocumento, string> = {
   PLAN: 'Plan de estudios',
   PROGRAMA: 'Programa de la asignatura',
   OTRO: 'Otro documento',
+}
+
+/** Nombre a mostrar de los documentos que carga el Académico en el análisis preliminar (contrato de la API §6.6). */
+export const NOMBRE_ANALISIS: Record<TipoAnalisis, string> = {
+  MATRIZ_EQUIVALENCIAS: 'Matriz tentativa de equivalencias',
+  HORARIO_CURSADA: 'Posible horario de cursada',
 }
 
 /** Marca de revisión de un documento (frontend-interfaces.md §2.8). */

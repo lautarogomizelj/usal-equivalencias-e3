@@ -8,13 +8,25 @@ interface ModalProps {
   Icono?: LucideIcon
   /** Modal ancho, para resúmenes con varios datos. */
   grande?: boolean
+  /** Modal más ancho todavía, para elegir entre varias tarjetas. */
+  amplio?: boolean
   onCerrar: () => void
   children?: ReactNode
   acciones?: ReactNode
 }
 
 /** Modal base sobre `<dialog>`: aporta el foco atrapado y el cierre con Escape (§0.6). */
-export function Modal({ abierto, titulo, descripcion, Icono, grande = false, onCerrar, children, acciones }: ModalProps) {
+export function Modal({
+  abierto,
+  titulo,
+  descripcion,
+  Icono,
+  grande = false,
+  amplio = false,
+  onCerrar,
+  children,
+  acciones,
+}: ModalProps) {
   const dialogo = useRef<HTMLDialogElement>(null)
 
   useEffect(() => {
@@ -30,7 +42,7 @@ export function Modal({ abierto, titulo, descripcion, Icono, grande = false, onC
         evento.preventDefault()
         onCerrar()
       }}
-      className={`m-auto w-full rounded-xl bg-surface p-6 text-text shadow-lg backdrop:bg-overlay ${grande ? 'max-w-(--size-modal-lg)' : 'max-w-(--size-modal-md)'}`}
+      className={`m-auto w-full rounded-xl bg-surface p-6 text-text shadow-lg backdrop:bg-overlay ${amplio ? 'max-w-(--size-modal-xl)' : grande ? 'max-w-(--size-modal-lg)' : 'max-w-(--size-modal-md)'}`}
     >
       <header className="flex items-start gap-4">
         {Icono && (

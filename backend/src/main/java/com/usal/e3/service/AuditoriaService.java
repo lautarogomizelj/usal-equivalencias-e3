@@ -33,6 +33,12 @@ public class AuditoriaService {
                 ip));
     }
 
+    /** Lo que alguien hace sobre una solicitud o un documento sin cambiar el estado: tomar el proceso, marcar… */
+    public void registrarEn(
+            Cuenta actor, String accion, String entidad, Integer entidadId, Map<String, Object> detalles, String ip) {
+        auditoria.save(new EventoAuditoria(usuarioId(actor), actor.getEmail(), accion, entidad, entidadId, detalles, ip));
+    }
+
     /** Siempre por código, nunca por nombre de estado (RF-ESTADO-004). */
     public void registrarCambioEstado(
             Cuenta actor, Integer solicitudId, String anterior, String nuevo, String comentario, String ip) {

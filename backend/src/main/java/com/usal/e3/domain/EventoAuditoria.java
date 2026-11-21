@@ -77,4 +77,12 @@ public class EventoAuditoria {
     public String getAccion() {
         return accion;
     }
+
+    public OffsetDateTime getFecha() {
+        return fecha;
+    }
+
+    public Map<String, Object> getDetalles() {
+        return detalles;
+    }
 }

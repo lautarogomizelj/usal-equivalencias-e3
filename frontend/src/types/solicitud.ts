@@ -74,14 +74,17 @@ export interface EventoHistorial {
 export type TipoDocumento = 'ANALITICO' | 'PLAN' | 'PROGRAMA' | 'OTRO'
 export type EstadoRevision = 'PENDIENTE' | 'OK' | 'RECARGAR'
 
-/** Documento de una solicitud (contrato de la API §6.5). */
+/**
+ * Documento de una solicitud (contrato de la API §6.5). Un requerido faltante (`esRequeridoFaltante`)
+ * todavía no tiene archivo: llega sin nombre, tamaño, fecha ni dirección de descarga.
+ */
 export interface Documento {
   id: number
   tipo: TipoDocumento
   descripcion: string | null
-  nombreArchivo: string
-  tamanoBytes: number
-  fechaCarga: string
+  nombreArchivo: string | null
+  tamanoBytes: number | null
+  fechaCarga: string | null
   version: number
   reemplazaAId: number | null
   borrador: boolean
@@ -92,4 +95,79 @@ export interface Documento {
   fechaRevision: string | null
   esRequeridoFaltante: boolean
   urlDescarga: string | null
+}
+
+/** Marca de revisión que el Académico pone sobre un documento (contrato de la API §7.3). */
+export interface Marca {
+  documentoId: number
+  estadoRevision: EstadoRevision
+  comentario: string | null
+}
+
+export type TipoAnalisis = 'MATRIZ_EQUIVALENCIAS' | 'HORARIO_CURSADA'
+
+/**
+ * Matriz de equivalencias u horario de cursada que cargó el Académico (contrato de la API §6.6). Llega solo la
+ * versión vigente, con archivo, con notas o con las dos cosas.
+ */
+export interface Analisis {
+  id: number
+  tipo: TipoAnalisis
+  version: number
+  nombreArchivo: string | null
+  notas: string | null
+  fechaCarga: string
+  subidoPor: string
+  urlDescarga: string | null
+}
+
+export interface HorarioPropuesto {
+  id: number
+  inicio: string
+  fin: string
+  elegido: boolean
+}
+
+export interface RondaReunion {
+  numero: number
+  horarios: HorarioPropuesto[]
+  motivoOtrasFechas: string | null
+  disponibilidadAspirante: string | null
+}
+
+export interface Reunion {
+  inicio: string
+  fin: string
+  origen: 'ELEGIDA_ASPIRANTE' | 'FIJADA_CHAT'
+  enlaceMeet: string | null
+  resultado: 'PENDIENTE' | 'REALIZADA' | 'NO_ASISTIO'
+}
+
+/** Rondas de fechas y reunión vigente de una solicitud (contrato de la API §6.6). */
+export interface ReunionInfo {
+  rondaActual: number | null
+  rondas: RondaReunion[]
+  reunion: Reunion | null
+}
+
+/** Lo que el Académico carga en el análisis preliminar: de cada documento, archivo, notas o las dos cosas. */
+export interface PropuestaAnalisis {
+  matrizArchivo: File | null
+  matrizNotas: string
+  horarioArchivo: File | null
+  horarioNotas: string
+  /** Inicio de cada horario de reunión, en ISO 8601. */
+  horarios: string[]
+}
+
+/** Filtros de la bandeja del personal (contrato de la API §6.2). Los vacíos no se envían. */
+export interface FiltrosBandeja {
+  q?: string
+  estado?: string[]
+  desde?: string
+  hasta?: string
+  asignadas?: boolean
+  sinResponsable?: boolean
+  finalizadas?: boolean
+  size?: number
 }

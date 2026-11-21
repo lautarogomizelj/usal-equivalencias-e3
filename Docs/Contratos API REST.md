@@ -11,8 +11,12 @@
 | 1.4 | 2026-11-15 | jumaluc | Cancelación del aspirante: estado terminal `SOL-CANC` y acción `CANCELAR_SOLICITUD` (`POST /solicitudes/{id}/cancelar`) desde `SOL-INI`, que elimina los borradores (requisitos v13.0, CC-010) |
 | 1.5 | 2026-11-17 | jumaluc | `apellido` separado de `nombre` en `usuarios`, `aspirantes`, registro, `Sesion`, `Perfil` y `PATCH /perfil`; las referencias a personas dentro de una solicitud siguen con el nombre completo (CC-012) |
 | 1.6 | 2026-11-20 | jumaluc | Correcciones de la auditoría del 2026-11-19 y login del personal: CSRF activado y CORS sin el puerto 5273 (§1), el error de Google vuelve a `/login-personal` y `POST /auth/personal/login` reemplaza al login simulado `POST /auth/dev/login` (§4.1 y §10.1) (CC-014, CC-015, CC-016) |
+| 1.7 | 2026-11-20 | jumaluc | Sprint 4: bandeja del personal con el filtro `sinResponsable`, `TOMAR_PROCESO`, `DARSE_DE_BAJA`, `GUARDAR_MARCAS`, `AGREGAR_FALTANTE`, aceptar y rechazar la documentación, recarga selectiva con `reemplazaAId`, `CAMBIO_RESPONSABLE` en el historial y mails por cambio de estado (CC-013) |
+| 1.8 | 2026-11-20 | jumaluc | Aclaraciones tras la revisión del Sprint 4: `desde` y `hasta` de la bandeja son días de Argentina (§6.2), y en la recarga el borrador anterior se descarta recién cuando el archivo nuevo fue aceptado (§6.5) |
+| 1.9 | 2026-11-20 | jumaluc | De la auditoría del 2026-11-19, lo que depende del Sprint 4: código `NO_RESPONSABLE` y orden de validación con el responsable (§1 y §7), y el Admin ejecuta las acciones del Académico y de Secretaría (§7 y §10.1) (CC-017) |
+| 1.10 | 2026-11-20 | jumaluc | Sprint 5: `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO`, `RECHAZAR_SEGUNDA_RONDA` y `CARGAR_ENLACE_MEET` implementadas; lectura de `Analisis`, que suma `subidoPor`, y de `ReunionInfo`; las fechas se proponen en punto, desde mañana y hasta dentro de 30 días (§2.10 a §2.12, §6.6 y §7; CC-018, CC-019) |
 
-> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos (§6, sin análisis, reunión, informe ni pago) y la acción `ENVIAR_DOCUMENTACION` desde `SOL-INI` (§7). El resto del documento es el contrato a acordar.
+> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos y la bandeja del personal (§6, con el análisis académico y las fechas de reunión; sin informe ni pago) y, del trámite (§7), las acciones del aspirante sobre su documentación, tomar el proceso, darse de baja, la revisión de la documentación inicial, el análisis preliminar con la propuesta de fechas, las rondas de fechas y el enlace de Meet. El resto del documento es el contrato a acordar.
 
 Este documento fija el contrato entre el frontend (React, `services/api/client.ts`) y el backend (Spring Boot, a implementar) del sistema E3. Se basa en los Requisitos v13.0 (21 estados, 27 transiciones). Donde los requisitos no definen algo, la decisión figura como **Propuesta** y hay que validarla con backend.
 
@@ -70,7 +74,7 @@ Compatible con `ApiErrorBody` (`message`, `errors`) de `types/api.ts`; suma `sta
 | 204 | Acción sin cuerpo de respuesta | — |
 | 400 | Validación de campos (`errors` por campo) | `bad_request` |
 | 401 | Sin sesión o sesión vencida | `unauthorized` |
-| 403 | Rol sin permiso, observador intentando actuar o pedido sin el token CSRF | `forbidden` |
+| 403 | Rol sin permiso, observador o participante no responsable intentando actuar, o pedido sin el token CSRF | `forbidden` |
 | 404 | Recurso inexistente o no visible para el usuario | `not_found` |
 | 409 | Transición inválida, proceso ya tomado, email o DNI duplicado | `conflict` |
 | 413 | Archivo de más de 10 MB o total de más de 50 MB | `bad_request` |
@@ -92,6 +96,7 @@ Compatible con `ApiErrorBody` (`message`, `errors`) de `types/api.ts`; suma `sta
 | `USUARIO_NO_REGISTRADO` | 403 | Login Google con email fuera de `usal.edu.ar`, inexistente o inactivo |
 | `TRANSICION_INVALIDA` | 409 | La acción no corresponde al estado actual |
 | `NO_PARTICIPANTE` | 403 | El usuario es observador en esa solicitud (RF-AUTH-005) |
+| `NO_RESPONSABLE` | 403 | El usuario es participante, pero no es el responsable de su rol en esa solicitud o todavía no hay responsable (RF-PROC-003) |
 | `PROCESO_YA_TOMADO` | 409 | Otro usuario tomó el proceso antes |
 | `UNICO_RESPONSABLE` | 409 | No puede darse de baja: es el único con acceso (RF-PROC-004) |
 | `PROCESO_ACTIVO` | 409 | Revocación de permiso con proceso activo sin `forzar` (RF-ADMIN-004) |
@@ -263,7 +268,7 @@ Campo `borrador` (boolean): `true` mientras el aspirante subió el archivo pero 
 
 ### 2.10 Ronda de reunión (`rondas_reunion`) — Propuesta
 
-Los requisitos definen las rondas como estados (`REU-FEC-ASP-1` y `-2`) pero no dónde se guardan las fechas propuestas.
+Los requisitos definen las rondas como estados (`REU-FEC-ASP-1` y `-2`) pero no dónde se guardan las fechas propuestas. Esta tabla y las de §2.11 y §2.12 se implementaron así en el Sprint 5 (migración `V7`, CC-019).
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
@@ -282,7 +287,7 @@ Los requisitos definen las rondas como estados (`REU-FEC-ASP-1` y `-2`) pero no 
 | --- | --- | --- |
 | id | int | PK |
 | rondaId | int | FK. Hasta 7 por ronda |
-| inicio | datetime | Franja 10:00 a 18:00, dentro de 14 a 30 días |
+| inicio | datetime | En punto, entre las 10:00 y las 17:00 de Argentina; desde mañana y hasta dentro de 30 días (CC-018) |
 | fin | datetime | inicio + 1 h |
 | elegido | boolean | Uno solo por solicitud |
 
@@ -643,11 +648,15 @@ Un mismo recurso `/solicitudes` sirve a todos los roles: el backend filtra segú
 
 ### 6.2 Listado y bandeja
 
-Filtros de `GET /solicitudes`: `estado` (código, repetible), `carreraId`, `desde` y `hasta` (última actualización), `q` (busca en `codigoExp`, nombre del aspirante y carrera), `asignadas=true` ("Mis asignadas"), `finalizadas=true|false`.
+Filtros de `GET /solicitudes`: `estado` (código, repetible), `carreraId`, `desde` y `hasta` (última actualización, en días de Argentina), `q` (busca en `codigoExp`, nombre del aspirante y carrera), `asignadas=true` ("Mis asignadas"), `sinResponsable=true` y `finalizadas=true|false`.
 
 El orden por defecto lo resuelve el backend: primero las carreras con permiso del usuario, agrupadas, y después el resto alfabético por carrera (RF-PROC-001). Para el aspirante: primero las que requieren su acción, después por última actualización.
 
-Hoy `GET /solicitudes` responde solo al aspirante, con los filtros `estado` y `finalizadas`. La bandeja del personal, con el resto de los filtros, llega en el Sprint 4; hasta entonces el personal recibe 403 `ACCESO_DENEGADO`. En el aspirante, `esDeMisCarreras` siempre es `false`.
+El aspirante solo usa `estado` y `finalizadas`; el personal (Académico, Secretaría, Revisor y Admin) tiene todos los filtros. Dentro de cada carrera, la última actualización va primero.
+
+- `sinResponsable=true` deja las solicitudes que quien pregunta puede tomar: no finalizadas, sin responsable de su rol y donde es participante (CC-013).
+- `requiereMiAccion`: para el aspirante, que el estado espere su acción; para el personal, que sea el responsable de su rol y el estado sea de tipo A para ese rol.
+- `esDeMisCarreras`: la carrera destino es una de las que tiene con permiso permanente. En el aspirante siempre es `false`.
 
 **`SolicitudResumen`**
 
@@ -685,7 +694,7 @@ Hoy `GET /solicitudes` responde solo al aspirante, con los filtros `estado` y `f
 
 Los datos personales no se envían: salen de la cuenta. El backend genera `codigoExp`, deja la solicitud en `SOL-INI` sin responsable y notifica a quienes tienen permiso sobre la carrera. Errores: 403 `EMAIL_NO_VALIDADO`, 400 `VALIDACION` (carrera inexistente o inactiva, en `errors.carreraDestinoCodigo`). Responde 201 con `Location`.
 
-El aviso por mail a la carrera todavía no se envía: llega con el servicio de notificaciones del Sprint 4 (RF-ESTADO-002).
+Al crearla se avisa por mail al Académico y a Secretaría con permiso permanente sobre la carrera (RF-ESTADO-002). Los mails son avisos: si uno falla se registra en el log y la acción sigue adelante.
 
 ### 6.4 Detalle
 
@@ -719,7 +728,7 @@ El aviso por mail a la carrera todavía no se envía: llega con el servicio de n
 }
 ```
 
-`miRelacion` vale `ASPIRANTE`, `PARTICIPANTE`, `OBSERVADOR`, `ADMIN` o `REVISOR`, y resuelve el modo de las interfaces (acción o solo lectura). `accionesDisponibles` usa los códigos de la sección 7.1 y solo incluye las acciones ya implementadas.
+`miRelacion` vale `ASPIRANTE`, `PARTICIPANTE`, `OBSERVADOR`, `ADMIN` o `REVISOR`, y resuelve el modo de las interfaces (acción o solo lectura). `accionesDisponibles` usa los códigos de las secciones 7.1 y 7.2 y solo incluye las acciones ya implementadas. `DARSE_DE_BAJA` aparece solo si hay otra persona de su rol con acceso a la carrera: si el responsable no la recibe, es el único.
 
 `ultimaObservacion` es el último comentario que dejó el personal en un cambio de estado, o `null`. `resumenDocumentos` cuenta los documentos vigentes que ve quien pregunta. `chatHabilitado` es `true` cuando hay algún responsable, y `mensajesNoLeidos` vale 0 hasta que exista el chat (Sprint 6).
 
@@ -736,7 +745,7 @@ El aviso por mail a la carrera todavía no se envía: llega con el servicio de n
 }
 ```
 
-`tipo`: `CAMBIO_ESTADO`, `CAMBIO_RESPONSABLE` o `DOCUMENTO_CARGADO`. En `DOCUMENTO_CARGADO`, `comentario` trae el nombre del archivo y los borradores no aparecen. `CAMBIO_RESPONSABLE` llega con Tomar proceso (Sprint 4).
+`tipo`: `CAMBIO_ESTADO`, `CAMBIO_RESPONSABLE` o `DOCUMENTO_CARGADO`. En `DOCUMENTO_CARGADO`, `comentario` trae el nombre del archivo y los borradores no aparecen. En `CAMBIO_RESPONSABLE`, `usuario` es quien tomó el proceso o se dio de baja y `comentario` lo describe ("Tomó el proceso como responsable académico.").
 
 ### 6.5 Documentos
 
@@ -745,15 +754,18 @@ El aviso por mail a la carrera todavía no se envía: llega con el servicio de n
 | Parte | Tipo | Obligatorio | Notas |
 | --- | --- | --- | --- |
 | `archivo` | file | Sí | PDF o JPG, máx. 10 MB; 50 MB entre todos los del envío |
-| `tipo` | string | Sí | `ANALITICO`, `PLAN`, `PROGRAMA`, `OTRO` |
+| `tipo` | string | Sí, salvo en recargas | `ANALITICO`, `PLAN`, `PROGRAMA`, `OTRO` |
 | `descripcion` | string | No | ej. "Programa de Física I" |
 | `reemplazaAId` | int | En recargas | Documento marcado `RECARGAR` que se reemplaza |
 
 Se acepta en `SOL-INI` (documentos nuevos) y en `DOC-RECH` y `LEG-RECH` (solo reemplazos de documentos `RECARGAR`). Cada archivo se sube al elegirlo y queda como borrador hasta `ENVIAR_DOCUMENTACION`. Errores: 400 `ARCHIVO_INVALIDO`, 413 `LIMITE_TAMANO`, 409 `DOCUMENTO_BLOQUEADO`, 409 `TRANSICION_INVALIDA`.
 
-Implementado hoy (CC-009):
+Implementado hoy (CC-009 y CC-013):
 
-- Solo en `SOL-INI`. Los reemplazos con `reemplazaAId` llegan con la recarga selectiva (Sprint 4).
+- En `SOL-INI` (documentos nuevos) y en `DOC-RECH` (recarga). La recarga de `LEG-RECH` llega con su sprint.
+- En `DOC-RECH`, `reemplazaAId` es obligatorio (400 `VALIDACION` con `errors.reemplazaAId`) y tiene que ser un documento vigente marcado `RECARGAR`: si no existe responde 404 y si está en `OK` o `PENDIENTE`, 409 `DOCUMENTO_BLOQUEADO`. El archivo nuevo hereda el tipo y la descripción del que reemplaza, y `version` sube en uno salvo que reemplace a un requerido faltante, que no tenía archivo.
+- Subir otro archivo para el mismo documento descarta el borrador anterior, recién cuando el nuevo fue aceptado: si se rechaza (por ejemplo, por superar los 50 MB), el anterior queda como estaba.
+- Un borrador no archiva al documento que reemplaza hasta que se envía: mientras tanto el aspirante recibe los dos (el observado y su reemplazo, unidos por `reemplazaAId`) y el personal, solo el observado.
 - El formato se reconoce por el contenido del archivo, no por su nombre ni por el `Content-Type`.
 - Los 50 MB se cuentan entre los borradores todavía no enviados.
 - `tipo` fuera del catálogo: 400 `VALIDACION` con `errors.tipo`.
@@ -761,7 +773,7 @@ Implementado hoy (CC-009):
 - `CANCELAR_SOLICITUD` elimina los borradores con sus archivos; después la solicitud ya no acepta documentos.
 - Los archivos se guardan en disco por año, DNI y expediente; el nombre original solo se muestra.
 
-`ENVIAR_DOCUMENTACION` desde `SOL-INI` exige Analítico, Plan de estudios y al menos un Programa entre los borradores (Anexo A #3 de interfaces). Si falta alguno responde 400 `VALIDACION` con `errors.documentos`.
+`ENVIAR_DOCUMENTACION` desde `SOL-INI` exige Analítico, Plan de estudios y al menos un Programa entre los borradores (Anexo A #3 de interfaces). Desde `DOC-RECH` exige un archivo nuevo para cada documento marcado `RECARGAR`. Si falta alguno responde 400 `VALIDACION` con `errors.documentos`.
 
 **`Documento`**
 
@@ -786,13 +798,17 @@ Implementado hoy (CC-009):
 }
 ```
 
+Un requerido faltante (`esRequeridoFaltante`) todavía no tiene archivo: `nombreArchivo`, `tamanoBytes`, `fechaCarga` y `urlDescarga` llegan en `null`.
+
 ### 6.6 Otras respuestas de lectura
 
 **`Analisis`** — una entrada por tipo, solo la vigente:
 
 ```json
-{ "id": 88, "tipo": "MATRIZ_EQUIVALENCIAS", "version": 2, "nombreArchivo": "matriz.pdf", "notas": "Se reconocen 6 materias", "fechaCarga": "2026-10-20T12:00:00-03:00", "urlDescarga": "/solicitudes/42/analisis/88/archivo" }
+{ "id": 88, "tipo": "MATRIZ_EQUIVALENCIAS", "version": 2, "nombreArchivo": "matriz.pdf", "notas": "Se reconocen 6 materias", "fechaCarga": "2026-10-20T12:00:00-03:00", "subidoPor": "María Gómez", "urlDescarga": "/solicitudes/42/analisis/88/archivo" }
 ```
+
+`subidoPor` es el nombre de quien lo cargó. `nombreArchivo` y `urlDescarga` llegan en `null` cuando el documento se cargó solo con notas, y `notas` en `null` cuando se cargó solo con archivo.
 
 **`ReunionInfo`**
 
@@ -813,7 +829,7 @@ Implementado hoy (CC-009):
 }
 ```
 
-`reunion`, cuando existe: `{ inicio, fin, origen, enlaceMeet, resultado }`.
+`reunion`, cuando existe: `{ inicio, fin, origen, enlaceMeet, resultado }`. `rondaActual` es `null` hasta que el Académico propone la primera ronda, y los horarios de cada ronda llegan del más cercano al más lejano.
 
 **`Informe`**
 
@@ -841,9 +857,13 @@ Implementado hoy (CC-009):
 
 ## 7. Acciones del trámite
 
-Cada transición de RF-ESTADO-001 es un `POST` propio bajo `/solicitudes/{id}`. Todas reciben `estadoEsperado` y devuelven 200 `SolicitudDetalle` con el estado nuevo. El backend valida rol, permiso de participante y estado; si algo no cumple responde 403 `NO_PARTICIPANTE` o 409 `TRANSICION_INVALIDA`.
+Cada transición de RF-ESTADO-001 es un `POST` propio bajo `/solicitudes/{id}`. Todas reciben `estadoEsperado` y devuelven 200 `SolicitudDetalle` con el estado nuevo. El backend valida rol, permiso de participante, responsable y estado; si algo no cumple responde 403 `NO_PARTICIPANTE`, 403 `NO_RESPONSABLE` o 409 `TRANSICION_INVALIDA`.
 
-El motor valida en este orden (CC-009): el rol (403 `ACCESO_DENEGADO`), la participación (403 `NO_PARTICIPANTE`; para el aspirante, que la solicitud sea suya) y el estado (409 `TRANSICION_INVALIDA`, también si `estadoEsperado` no coincide). La solicitud se bloquea durante la acción, así que de dos pedidos simultáneos solo uno parte del estado esperado. Cada cambio deja una fila en `estados_solicitud` y otra en auditoría, incluida la creación (`estadoAnterior` nulo). Hoy están implementadas `ENVIAR_DOCUMENTACION` y `CANCELAR_SOLICITUD`, las dos desde `SOL-INI`.
+El motor valida en este orden (CC-009 y CC-017): el rol (403 `ACCESO_DENEGADO`), la participación (403 `NO_PARTICIPANTE`; para el aspirante, que la solicitud sea suya), el responsable (403 `NO_RESPONSABLE`, solo para el personal) y el estado (409 `TRANSICION_INVALIDA`, también si `estadoEsperado` no coincide). La solicitud se bloquea durante la acción, así que de dos pedidos simultáneos solo uno parte del estado esperado. Cada cambio deja una fila en `estados_solicitud` y otra en auditoría, incluida la creación (`estadoAnterior` nulo). Hoy están implementadas `ENVIAR_DOCUMENTACION` (desde `SOL-INI` y `DOC-RECH`), `CANCELAR_SOLICITUD`, `ACEPTAR_DOCUMENTACION`, `RECHAZAR_DOCUMENTACION`, `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO` y `RECHAZAR_SEGUNDA_RONDA`.
+
+Para el personal, participar no alcanza: tiene que ser además el responsable de su rol en esa solicitud. Un participante que no es el responsable recibe 403 `NO_RESPONSABLE` y, si todavía no hay responsable, su única acción es `TOMAR_PROCESO` (CC-013 y CC-017). Un responsable al que le revocaron el permiso recibe 403 `NO_PARTICIPANTE`, porque la participación se valida antes.
+
+El Admin ejecuta las transiciones del Académico y de Secretaría, y también `GUARDAR_MARCAS` y `AGREGAR_FALTANTE`, sin ser participante ni responsable (frontend-interfaces §7.0, CC-017). El estado y `estadoEsperado` se validan igual, el cambio queda registrado a su nombre y el responsable de la solicitud no cambia. Las transiciones del aspirante no entran: recibe 403 `ACCESO_DENEGADO`.
 
 ### 7.1 Transiciones (27)
 
@@ -891,6 +911,15 @@ Las 27 transiciones quedan en 23 acciones: el reenvío de documentación (4) y d
 
 `TOMAR_PROCESO` asigna `responsableAcademico` o `responsableAdministrativo` según el rol de quien llama y devuelve el detalle. Errores: 409 `PROCESO_YA_TOMADO` (otro lo tomó primero), 409 `UNICO_RESPONSABLE` (baja).
 
+Implementado hoy (CC-013): `TOMAR_PROCESO`, `DARSE_DE_BAJA`, `GUARDAR_MARCAS` y `AGREGAR_FALTANTE`, las dos últimas solo en `DOC-REV`. Del Sprint 5 (CC-019), `CARGAR_ENLACE_MEET`.
+
+- `TOMAR_PROCESO` y `DARSE_DE_BAJA` no llevan body y devuelven 200 `SolicitudDetalle`. Una solicitud finalizada no se toma (409 `TRANSICION_INVALIDA`); quien no es participante recibe 403 `NO_PARTICIPANTE`, y quien se da de baja sin ser el responsable, 403 `ACCESO_DENEGADO`.
+- La baja se permite cuando hay otra persona activa del mismo rol con permiso permanente sobre la carrera.
+- Las dos avisan por mail a los demás del mismo rol con acceso a la carrera (RF-PROC-003 y 004) y dejan una fila de auditoría (`tomar_proceso`, `baja_responsable`).
+- `GUARDAR_MARCAS` devuelve 200 `Documento[]` con los vigentes. Cada cambio de marca deja una fila de auditoría (`marca_documento`, con la marca anterior y la nueva).
+- `AGREGAR_FALTANTE` exige `tipo` del catálogo y `descripcion`, y devuelve 201 `Documento` marcado `RECARGAR` y sin archivo.
+- `CARGAR_ENLACE_MEET` la ejecuta el Académico responsable, o el Admin, solo en `REU-PEND`: en otro estado responde 409 `TRANSICION_INVALIDA`. El enlace tiene que empezar con `https://meet.google.com/` y no llevar espacios (400 `VALIDACION` con `errors.enlaceMeet`). Devuelve 200 `ReunionInfo`, avisa al aspirante por mail, deja una fila de auditoría (`enlace_meet`) y se puede repetir para corregirlo.
+
 ### 7.3 Bodies
 
 **Marcas** (en `GUARDAR_MARCAS`, aceptar y rechazar documentación o legalizados)
@@ -906,7 +935,9 @@ Las 27 transiciones quedan en 23 acciones: el reenvío de documentación (4) y d
 }
 ```
 
-Para rechazar: al menos un `RECARGAR` y ningún documento en `PENDIENTE`, si no 409 `MARCAS_INCOMPLETAS`. `comentario` general obligatorio en todo rechazo.
+Para rechazar: al menos un `RECARGAR` y ningún documento en `PENDIENTE`, si no 409 `MARCAS_INCOMPLETAS`. `comentario` general obligatorio en todo rechazo (400 `VALIDACION` con `errors.comentario`). Si el rechazo no pasa, las marcas que traía tampoco se guardan.
+
+Cada `documentoId` tiene que ser un documento vigente de la solicitud y cada comentario admite hasta 500 caracteres; si no, 400 `VALIDACION` con `errors.marcas`. Un requerido faltante solo admite `RECARGAR`. En aceptar, `marcas` es opcional.
 
 **`PROPONER_FECHAS`** — `multipart/form-data`
 
@@ -918,7 +949,9 @@ Para rechazar: al menos un `RECARGAR` y ningún documento en `PENDIENTE`, si no 
 | `horarioNotas` | string |  |
 | `datos` | JSON | `{ "estadoEsperado": "ANAL-PEND", "horarios": [{ "inicio": "2026-10-28T10:00:00-03:00" }] }` |
 
-Reglas de `horarios` (también en `PROPONER_SEGUNDA_RONDA`): de 1 a 7, duración fija de 1 hora, entre 10:00 y 18:00, entre 14 y 30 días desde hoy.
+Reglas de `horarios` (también en `PROPONER_SEGUNDA_RONDA`): de 1 a 7, sin repetidos, duración fija de 1 hora, en punto y entre las 10:00 y las 18:00 de Argentina (el último empieza a las 17:00), desde mañana y hasta dentro de 30 días (CC-018). Si no cumplen, 400 `VALIDACION` con `errors.horarios`.
+
+La parte `datos` viaja con `Content-Type: application/json`. Cada archivo es PDF o JPG de hasta 10 MB (400 `ARCHIVO_INVALIDO`, 413 `LIMITE_TAMANO`) y las notas admiten hasta 2000 caracteres. Si a la matriz o al horario de cursada les faltan el archivo y las notas, 400 `VALIDACION` con `errors.matriz` o `errors.horario`. No hay borradores: si algo falla no se guarda nada (CC-019). El mail al aspirante lista los horarios y avisa que los dos documentos están en su solicitud, sin adjuntarlos.
 
 **Reunión**
 
@@ -933,6 +966,8 @@ Reglas de `horarios` (también en `PROPONER_SEGUNDA_RONDA`): de 1 a 7, duración
 ```json
 { "estadoEsperado": "REU-CHAT", "inicio": "2026-11-04T15:00:00-03:00" }
 ```
+
+En `SOLICITAR_OTRAS_FECHAS`, `motivo` y `disponibilidad` son obligatorios y admiten hasta 500 caracteres (400 `VALIDACION` con `errors.motivo` o `errors.disponibilidad`); quedan en la ronda y en el historial, sin contar como `ultimaObservacion`. En `RECHAZAR_SEGUNDA_RONDA`, `motivo` es opcional. En `ELEGIR_HORARIO`, `horarioId` tiene que ser un horario de la ronda vigente que todavía no pasó (400 `VALIDACION` con `errors.horarioId`). `FIJAR_FECHA` llega con el Sprint 6.
 
 **Legalización**
 
@@ -1106,8 +1141,8 @@ La "Actividad reciente" del dashboard sale de `GET /auditoria?size=10`.
 | Solicitudes, lectura (§6) | Solo las suyas | Todas | Todas | Todas | Todas |
 | Crear solicitud y subir documentos (§6) | Sí | — | — | — | — |
 | Transiciones del aspirante (§7.1) | Sí | — | — | — | — |
-| Transiciones académicas y marcas (§7) | — | Si es participante | — | A definir | — |
-| Cupón y verificación de pago (§7.1) | — | — | Si es participante | A definir | — |
+| Transiciones académicas y marcas (§7) | — | Si es participante y responsable | — | Sí, sin ser participante ni responsable (interfaces §7.0) | — |
+| Cupón y verificación de pago (§7.1) | — | — | Si es participante y responsable | Sí, sin ser participante ni responsable (interfaces §7.0) | — |
 | Tomar proceso y darse de baja (§7.2) | — | Si es participante | Si es participante | — | — |
 | Chat (§8.1) | Escribe si hay responsable | Escribe si es responsable; si no, lee | Escribe si es responsable; si no, lee | Lee | Lee |
 | Notificaciones (§8.2) | Sí | Sí | Sí | Sí | Sí |
@@ -1141,6 +1176,6 @@ Los DTOs de este documento van en `frontend/src/types/` con los mismos nombres (
 - [x] Dónde se guardan los datos de origen de la solicitud: en `solicitudes` (CC-009).
 - [ ] Qué valores tiene "Condición académica" (Anexo A #2 de interfaces); hoy es texto libre.
 - [ ] Quién carga el informe de materias estructurado y en qué estado (`CARGAR_INFORME`, Anexo A #8).
-- [ ] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables.
+- [x] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables: ejecuta las del Académico y de Secretaría, no las del aspirante (§7, CC-017).
 - [ ] Descarga del expediente por el aspirante y reapertura: dependen de los estados posteriores a `E3-INI` (RF-ASP-008, RF-ADMIN-006).
 - [ ] Cambios CC-001 a CC-005 (permisos por facultad), aprobados el 2026-11-19: al implementarlos cambian `/admin/usuarios/{id}/permisos/…` y `Sesion.carrerasConPermiso`.

@@ -51,6 +51,8 @@ public class SeedDemo implements ApplicationRunner {
     public void run(ApplicationArguments args) {
         crearUsuario("admin@usal.edu.ar", "Admin", Rol.ADMIN, false);
         crearUsuario("academico@usal.edu.ar", "Académico", Rol.ACADEMICO, true);
+        // Segundo Académico de la carrera: sin él nadie podría darse de baja (RF-PROC-004).
+        crearUsuario("academico2@usal.edu.ar", "Académico 2", Rol.ACADEMICO, true);
         crearUsuario("secretaria@usal.edu.ar", "Secretaría", Rol.SECRETARIA, true);
         crearUsuario("revisor@usal.edu.ar", "Revisor", Rol.REVISOR, false);
         // Observador no es un rol: es un Académico sin permiso de proceso (RF-AUTH-005).

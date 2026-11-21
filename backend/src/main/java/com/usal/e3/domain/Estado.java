@@ -15,6 +15,20 @@ public class Estado {
     public static final String SOL_INI = "SOL-INI";
     public static final String DOC_REV = "DOC-REV";
     public static final String SOL_CANC = "SOL-CANC";
+    public static final String DOC_RECH = "DOC-RECH";
+    public static final String ANAL_PEND = "ANAL-PEND";
+    public static final String REU_FEC_ASP_1 = "REU-FEC-ASP-1";
+    public static final String REU_FEC_ASP_2 = "REU-FEC-ASP-2";
+    public static final String REU_FEC_ACAD = "REU-FEC-ACAD";
+    public static final String REU_CHAT = "REU-CHAT";
+    public static final String REU_PEND = "REU-PEND";
+
+    /** Estados de tipo A para el Académico (interfaces §5.1). */
+    public static final Set<String> ESPERAN_AL_ACADEMICO =
+            Set.of("DOC-REV", "ANAL-PEND", "REU-FEC-ACAD", "REU-CHAT", "REU-PEND", "ANAL-POST", "LEG-REV");
+
+    /** Estados de tipo A para Secretaría (interfaces §6.1). */
+    public static final Set<String> ESPERAN_A_SECRETARIA = Set.of("CUPON-SOL", "PAG-CTRL");
 
     /** Estados de tipo A para el aspirante: "Requieren tu acción" (interfaces §4.2). */
     public static final Set<String> ESPERAN_AL_ASPIRANTE = Set.of(

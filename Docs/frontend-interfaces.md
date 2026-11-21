@@ -26,6 +26,9 @@ Los diseños visuales están en la carpeta compartida de Google Drive **Interfac
 | 3.7 | 2026-11-17 | jumaluc | Mi perfil para todos los roles (§2.12); nombre y apellido siempre separados (§4.3 y Anexo B, punto 1; CC-012); "Recuérdame" de 30 días en el Login Aspirante (§3.4) |
 | 3.8 | 2026-11-17 | jumaluc | Stepper de etapas construido en el detalle de la solicitud, en todos los estados (§4.5 y Anexo B, punto 18) |
 | 3.9 | 2026-11-20 | jumaluc | Correcciones de la auditoría del 2026-11-19 y login del personal: el login del aspirante no tiene ruta propia, está en el inicio (§3.4); el personal entra con usuario y contraseña mientras no esté Google, sin botón de Google, sin bloque de cuentas demo y sin enlace al login de Admin (§3.6); al login de Admin se llega escribiendo la dirección (§3.7) (CC-014, CC-015, CC-016) |
+| 3.10 | 2026-11-20 | jumaluc | Sprint 4: panel de inicio, bandeja y detalle del Académico y de Secretaría, revisión por documento y recarga del aspirante en `DOC-RECH` (§4.6.3, §5.1, §5.2, §5.4, §5.7 y Anexo B, puntos 18, 20 y 21; CC-013) |
+| 3.11 | 2026-11-20 | jumaluc | Revisión del Sprint 4: en la bandeja, una vista que acota los estados limita el filtro "Estado" a esos (§5.2); aceptar con documentos marcados ❌ avisa en el modal (§5.6.2); banner del personal en `ANAL-PEND` (§5.6.4) |
+| 3.12 | 2026-11-20 | jumaluc | Sprint 5: análisis preliminar del Académico, panel de reunión del personal, elección de fecha del aspirante, reunión pactada con el enlace de Meet y documentación académica en el detalle (§4.6.5 a §4.6.9, §5.4, §5.6.4 a §5.6.8 y Anexo B, puntos 19 y 22); las fechas se proponen desde mañana y hasta dentro de 30 días (CC-018, CC-019) |
 
 ---
 
@@ -1354,6 +1357,8 @@ La pantalla construida sigue el diseño de filas con zona de arrastre, con los d
 
 **Resultado:** estado → `DOC-REV`. Cada archivo recargado se guarda como nueva versión con revisión ⏳; la anterior queda archivada.
 
+La pantalla construida sigue el diseño: el detalle conserva sus pestañas y la recarga va dentro del banner, con el motivo general y una tabla que lista solo los documentos a recargar (documento, motivo, responsable y "Subir nuevamente"). La tabla completa, con los correctos bloqueados, queda en la pestaña Documentación.
+
 ---
 
 ### 4.6.4 `ASP-ANAL-PEND` – Análisis preliminar pendiente
@@ -1377,6 +1382,8 @@ La pantalla construida sigue el diseño de filas con zona de arrastre, con los d
 **Modal `ASP-REU-FEC-M1`:** responsable académico, hasta 7 fechas de 1 hora como tarjetas de **selección única** y la opción **"No puedo en ninguno de estos horarios"** con motivo y detalle de cuándo puede reunirse (obligatorios).
 
 **Resultado:** al elegir fecha → `REU-PEND`, sin confirmación posterior del Académico. Al solicitar otras → `REU-FEC-ACAD`.
+
+La pantalla construida: dentro del banner van el responsable académico y el botón. El modal muestra los horarios como tarjetas de selección única, en hora de Argentina, y la opción de no poder en ninguno, que pide el motivo y cuándo puede reunirse. Un horario que ya pasó se ve deshabilitado. La matriz y el horario de cursada están en la pestaña Documentación, en el bloque "Documentación académica" (Anexo B, punto 22).
 
 ---
 
@@ -1406,6 +1413,8 @@ Igual que 4.6.5 con el indicador "Ronda 2 de 2". En vez de solicitar otras fecha
 
 **Contenido:** el detalle se abre en la pestaña **Chat**, por defecto. La fecha la fija el Académico; el aspirante no cambia el estado.
 
+Hasta que exista el chat (Sprint 6), el banner avisa que todavía no está disponible y el detalle se abre en Documentación.
+
 ---
 
 ### 4.6.9 `ASP-REU-PEND` – Reunión pactada
@@ -1415,6 +1424,8 @@ Igual que 4.6.5 con el indicador "Ronda 2 de 2". En vez de solicitar otras fecha
 **Banner:** "Reunión pactada, pendiente de realizarse."
 
 **Contenido:** fecha, horario, modalidad, responsable académico y botón **"Unirme a la reunión"** cuando el Académico cargó el enlace de Meet. **Acciones:** ninguna de trámite.
+
+La pantalla construida lo muestra dentro del banner. Mientras no hay enlace, avisa que va a aparecer ahí.
 
 ---
 
@@ -1650,6 +1661,8 @@ Widgets:
 
 Filtros rápidos. Diseño: `Interfaces/Academicos/Inicio/Dashboard Inicio.png`.
 
+La pantalla construida sigue el diseño: saludo, cuatro indicadores (solicitudes activas, requieren tu acción, sin responsable y con observaciones) y la tabla de las solicitudes que requieren tu acción. Cada indicador lleva a la bandeja con ese filtro aplicado (Anexo B, punto 20). Secretaría usa la misma pantalla con sus estados.
+
 ---
 
 ## 5.2 Listado de Solicitudes
@@ -1673,6 +1686,8 @@ Ordenamiento:
 
 - Si el usuario tiene carreras asignadas (permisos permanentes activos): primero las solicitudes de esas carreras agrupadas por carrera, luego el resto alfabéticamente por carrera.
 - Si no tiene carreras asignadas: todas alfabéticamente por carrera.
+
+La pantalla construida: buscador, botón "Filtrar" que abre el panel (Mostrar, Estado, Actualizadas desde y hasta) y tabla con N° solicitud, Aspirante con su universidad de origen, Carrera destino, Estado actual, Responsable del rol de quien mira, Última actualización y "Ver solicitud". "Mostrar" reúne las vistas Todas, Mis asignadas, Requieren mi acción, Sin responsable, Con observaciones y Activas. Cuando la vista ya acota los estados ("Requieren mi acción", "Con observaciones"), el filtro "Estado" solo ofrece esos, y al cambiar de vista se descarta un estado que no le corresponde. Los filtros viven en la dirección (`?vista=…&estado=…`). "Tomar proceso" está en el detalle y no en la fila (Anexo B, punto 20).
 
 ---
 
@@ -1713,6 +1728,8 @@ Se repite en todos los estados.
 
 Regla: las pestañas Documentación, Análisis y Reunión son de **consulta**. Si el estado permite una acción sobre lo que muestran, incluyen un botón "Ir a la acción" que lleva a "Acción actual". Así cada acción vive en un solo lugar.
 
+La pantalla construida sigue el diseño (Anexo B, punto 21): tarjeta del aspirante con las carreras, los dos responsables y el botón "Tomar proceso" o "Darse de baja"; banner de estado; y las pestañas Análisis de solicitud (la acción actual), Detalles, Chat e Historial. El banner dice quién tiene que actuar: "Te toca a vos", "Sin responsable", "En espera", "Solo lectura" (observador) o "Trámite cerrado". Desde el Sprint 5, la pestaña Análisis de solicitud muestra primero el panel del estado (5.6), después los documentos del aspirante y, cuando el Académico ya la cargó, la documentación académica.
+
 ---
 
 ## 5.5 Pestaña Información General
@@ -1744,7 +1761,7 @@ Banner: "El aspirante todavía no envió su documentación." Datos de la solicit
 **Acciones**
 
 - **Guardar marcas** (no cambia el estado).
-- **Aceptar documentación** → modal `ACAD-DOC-REV-M1` (doble verificación) → `ANAL-PEND`. Marcar es opcional.
+- **Aceptar documentación** → modal `ACAD-DOC-REV-M1` (doble verificación) → `ANAL-PEND`. Marcar es opcional. Si quedan documentos marcados ❌, el modal avisa que el aspirante ya no va a poder recargarlos.
 - **Rechazar documentación** → modal `ACAD-DOC-REV-M2` (doble verificación) → `DOC-RECH`. Comentario general obligatorio, al menos un ❌ y ningún ⏳.
 
 ---
@@ -1763,9 +1780,11 @@ Banner: "Esperando que el aspirante recargue los documentos marcados." Tabla en 
 
 - **Matriz de equivalencias:** archivo o notas.
 - **Horario de cursada:** archivo o notas.
-- **Fechas disponibles:** hasta 7 horarios de 1 hora, entre 10:00 y 18:00, dentro de los próximos 14 a 30 días.
+- **Fechas disponibles:** hasta 7 horarios de 1 hora, en punto, entre las 10:00 y las 18:00 de Argentina, desde mañana y dentro de los próximos 30 días (CC-018).
 
 **Acción:** **Guardar propuesta** → modal `ACAD-ANAL-PEND-M1` (doble verificación) → `REU-FEC-ASP-1`. Se envía mail al aspirante.
+
+La pantalla construida sigue el diseño `Documentos Tentativos y Horarios.png`: dos tarjetas para la matriz y el horario de cursada, cada una con su cargador de archivo y un campo de notas, y debajo la lista de horarios, que se arma eligiendo día y franja. El botón dice "Enviar al aspirante". El formulario lo ve solo el Académico responsable y no hay borradores (Anexo B, punto 22).
 
 ---
 
@@ -1791,6 +1810,8 @@ Motivo y disponibilidad del aspirante, o aviso de inasistencia. Calendario de pr
 
 Se abre el chat por defecto. **Fijar fecha** abre un modal con la fecha pautada → `REU-PEND`.
 
+Hasta el Sprint 6 (chat y "Fijar fecha"), el panel muestra las rondas en solo lectura y el banner avisa que el chat todavía no está disponible.
+
 ---
 
 ### 5.6.8 `ACAD-REU-PEND` – Realización de la reunión (A)
@@ -1801,6 +1822,8 @@ Se abre el chat por defecto. **Fijar fecha** abre un modal con la fecha pautada 
 - **Notas de la reunión:** opcional.
 - **Indicar que la reunión finalizó** (doble verificación) → `ANAL-POST`.
 - **Indicar que el aspirante no se presentó** (doble verificación) → `REU-FEC-ACAD`.
+
+Construido en el Sprint 5: la reunión pactada y el enlace de Meet, que tiene que empezar con `https://meet.google.com/` y se puede corregir. Las notas, "Indicar que la reunión finalizó" e "Indicar que el aspirante no se presentó" llegan con el Sprint 6.
 
 ---
 
@@ -1881,6 +1904,8 @@ Reglas visuales:
 - Cada cambio de marca se audita (lo hace el backend).
 - Los observadores ven las marcas pero no pueden cambiarlas.
 - Cuando el aspirante recarga (`DOC-RECH` → `DOC-REV` o `LEG-RECH` → `LEG-REV`), se resaltan los recargados (⏳) y se mantienen los ✅; el Académico puede cambiar cualquier marca.
+
+En la pantalla construida la marca es un selector por documento y el comentario admite hasta 500 caracteres. Un recargado se reconoce por la versión junto al archivo ("v2, recargado"). Un requerido faltante queda fijo en "Debe recargar" y, por ahora, no se puede quitar una vez agregado.
 
 ---
 
@@ -2456,8 +2481,11 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 | 15 | Mis solicitudes | Columnas con fecha de creación y un responsable por columna; botón "Ver solicitud"; sin filtros | Columnas con carrera destino, universidad de origen e indicador "Requiere tu acción"; filtros por actividad y por estado (4.4) | Diseño para la tabla. El orden por defecto lo resuelve el backend y el color del badge marca los estados que esperan al aspirante. Los filtros quedan pendientes |
 | 16 | Menú del aspirante | "Ayuda" y "Cerrar sesión" en el menú lateral; nombre y rol arriba a la derecha, sin campana | Barra superior con notificaciones, perfil y cerrar sesión (2.1 y 4.1) | Diseño. "Ayuda" no tiene contenido definido y la campana llega con las notificaciones del Sprint 8 |
 | 17 | Panel de inicio del aspirante | Saludo, contadores de solicitudes activas y finalizadas, y la tabla de Mis solicitudes con "Ver solicitud" | Tres bloques de tarjetas (requieren tu acción, en curso y finalizadas) con un botón distinto según el estado (4.2) | Diseño. "Finalizadas" cuenta los estados terminales del catálogo; el color del badge marca los estados que esperan al aspirante |
-| 18 | Detalle de la solicitud | Pestañas Documentación, Detalles, Chat e Historial; responsables dentro de Detalles; sin stepper; `SOL-INI` como pantalla propia "Carga de documentación", sin pestañas; el banner de `DOC-REV` trae una tabla con el documento recargado | Encabezado, stepper, bloque de responsables, banner y pestañas Mi trámite, Documentación, Chat, Historial e Informe (4.5) | Diseño. La pestaña Documentación cumple el papel de "Mi trámite". El stepper se suma arriba del banner, como piden los requisitos. La pestaña Informe y la tabla del banner quedan pendientes. En `SOL-INI` los responsables se ven en Mis solicitudes |
-| 19 | Tabla de documentos | Columnas Documento, Estado, Fecha de carga, Archivo, Observaciones y un menú de acciones; marca "Aprobado"; bloque Documentación académica con sus dos filas vacías | Columnas con versión y tamaño; marcas "Pendiente de revisión", "Correcto" y "Debe recargar" (2.8) | Diseño para las columnas, con la versión al lado del archivo cuando no es la primera y un botón de descarga en lugar del menú. Requisitos para los nombres de las marcas. La Documentación académica muestra un aviso hasta el Sprint 5 |
+| 18 | Detalle de la solicitud | Pestañas Documentación, Detalles, Chat e Historial; responsables dentro de Detalles; sin stepper; `SOL-INI` como pantalla propia "Carga de documentación", sin pestañas; el banner de `DOC-REV` trae una tabla con el documento recargado | Encabezado, stepper, bloque de responsables, banner y pestañas Mi trámite, Documentación, Chat, Historial e Informe (4.5) | Diseño. La pestaña Documentación cumple el papel de "Mi trámite". El stepper se suma arriba del banner, como piden los requisitos. La tabla del banner se construyó en `DOC-RECH`, donde el aspirante recarga (4.6.3). La pestaña Informe queda pendiente. En `SOL-INI` los responsables se ven en Mis solicitudes |
+| 19 | Tabla de documentos | Columnas Documento, Estado, Fecha de carga, Archivo, Observaciones y un menú de acciones; marca "Aprobado"; bloque Documentación académica con sus dos filas vacías | Columnas con versión y tamaño; marcas "Pendiente de revisión", "Correcto" y "Debe recargar" (2.8) | Diseño para las columnas, con la versión al lado del archivo cuando no es la primera y un botón de descarga en lugar del menú. Requisitos para los nombres de las marcas. La Documentación académica se construyó en el Sprint 5 (punto 22) |
+| 20 | Panel y bandeja del personal | Indicadores "Solicitudes aprobadas en el último mes" y "Con observaciones"; buscador y "Filtrar"; columnas Estudiante con LU, Carrera de origen y Fecha de creación; menú con "Solicitudes de equivalencia", "Mis tareas", "Calendario" y "Ayuda" | Widgets Mis solicitudes, Sin responsable, Pendientes y Reuniones próximas (5.1); columnas Aspirante, Universidad origen, Carrera destino, Estado, Responsable y Última actualización, con filtros por estado, fecha, búsqueda y "Mis asignadas" (5.2) | Diseño para la composición; requisitos para las columnas y los filtros. Los indicadores son activas, requieren tu acción, sin responsable y con observaciones. "Aprobadas en el último mes" y "Reuniones próximas" quedan pendientes. El ítem del menú dice "Solicitudes" porque el texto del diseño no entra en el ancho del menú. "Tomar proceso" está en el detalle |
+| 21 | Detalle del personal | Tarjeta del estudiante con LU, carreras y fechas; pestañas Análisis de solicitud, Detalles, Chat e Historial; sin banner ni responsables; botones "Guardar borrador" y "Enviar evaluación" | Encabezado, bloque de responsables con "Tomar proceso" y "Darse de baja", banner de estado y ocho pestañas (5.4) | Diseño para la composición, con la segunda opción de `Documentacion Inicial`. La tarjeta muestra el DNI en lugar del LU y los dos responsables en lugar de las fechas, que están en Detalles. Se suma el banner de estado. Las acciones son las de los requisitos (punto 11). Las pestañas Documentación, Análisis, Reunión y Auditoría llegan con sus sprints |
+| 22 | Análisis preliminar y reunión | El Académico elige entre "Usar mis horarios de reunión del perfil" e "Ingresar horarios personalizados", sube archivos PDF, JPG o PNG y envía con "Enviar a estudiante"; el aspirante elige una o más fechas y, si no puede, escribe solo el motivo; la tabla de Documentación académica trae una columna Estado y un menú de acciones; la reunión confirmada promete un recordatorio el día anterior | Hasta 7 horarios de 1 hora cargados para esa solicitud; matriz y horario de cursada como archivo o notas; "Guardar propuesta"; una sola fecha; motivo y disponibilidad obligatorios; no hay recordatorios (RF-ACAD-002 y 003, RF-ASP-005) | Diseño para la composición. Los horarios se cargan solo a mano, porque la disponibilidad del perfil no existe (punto 10). Cada documento admite archivo PDF o JPG y notas. El botón dice "Enviar al aspirante". Se elige una sola fecha (punto 8) y, al no poder, se piden el motivo y cuándo puede. La tabla de Documentación académica muestra Fecha de envío, Responsable, Archivo y Notas, sin columna Estado, porque esos documentos no se revisan. No se promete el recordatorio |
 
 ---
 

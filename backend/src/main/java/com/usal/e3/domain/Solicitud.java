@@ -73,6 +73,32 @@ public class Solicitud {
         this.fechaUltimaMod = fecha;
     }
 
+    /** Tomar el proceso (RF-PROC-003) o darse de baja, con `responsable` nulo (RF-PROC-004). El estado no cambia. */
+    public void asignarResponsable(String rolCodigo, Usuario responsable, OffsetDateTime fecha) {
+        if (Rol.ACADEMICO.equals(rolCodigo)) {
+            this.responsableAcademico = responsable;
+            this.fechaAsignacionAcademico = responsable == null ? null : fecha;
+        } else {
+            this.responsableAdministrativo = responsable;
+            this.fechaAsignacionAdministrativo = responsable == null ? null : fecha;
+        }
+        this.fechaUltimaMod = fecha;
+    }
+
+    /** El Académico responde por las etapas académicas y Secretaría por las administrativas. */
+    public Usuario responsableDe(String rolCodigo) {
+        return switch (rolCodigo) {
+            case Rol.ACADEMICO -> responsableAcademico;
+            case Rol.SECRETARIA -> responsableAdministrativo;
+            default -> null;
+        };
+    }
+
+    public boolean tieneComoResponsable(Cuenta cuenta) {
+        Usuario responsable = responsableDe(cuenta.rolCodigo());
+        return responsable != null && responsable.getId().equals(cuenta.getId());
+    }
+
     /** El personal ve todas (acceso básico, RF-AUTH-005); el aspirante, solo las suyas. */
     public boolean visiblePara(Cuenta cuenta) {
         return cuenta.tipo() == TitularTipo.USUARIO || esPropiaDe(cuenta);

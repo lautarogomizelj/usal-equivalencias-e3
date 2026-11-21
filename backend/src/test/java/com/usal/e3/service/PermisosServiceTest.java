@@ -14,6 +14,7 @@ import com.usal.e3.domain.Rol;
 import com.usal.e3.domain.Solicitud;
 import com.usal.e3.repository.PermisoCarreraRepository;
 import com.usal.e3.repository.PermisoSolicitudRepository;
+import com.usal.e3.repository.UsuarioRepository;
 import java.util.List;
 import org.junit.jupiter.api.Test;
 
@@ -21,7 +22,8 @@ class PermisosServiceTest {
 
     private final PermisoCarreraRepository repositorio = mock(PermisoCarreraRepository.class);
     private final PermisoSolicitudRepository temporales = mock(PermisoSolicitudRepository.class);
-    private final PermisosService permisos = new PermisosService(repositorio, temporales);
+    private final PermisosService permisos =
+            new PermisosService(repositorio, temporales, mock(UsuarioRepository.class));
 
     @Test
     void academicoYSecretariaVenSusCarrerasActivas() {

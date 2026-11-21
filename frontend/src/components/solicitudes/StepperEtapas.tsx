@@ -17,7 +17,7 @@ export function StepperEtapas({ codigoEstado }: { codigoEstado: string }) {
   if (actual === -1) return null
 
   return (
-    <ol aria-label="Etapas del trámite" className="flex gap-2 overflow-x-auto rounded-lg bg-surface px-4 py-3 shadow-md">
+    <ol aria-label="Etapas del trámite" className="relative flex gap-2 overflow-x-auto rounded-lg bg-surface px-4 py-3 shadow-md">
       {ETAPAS.map(({ nombre }, indice) => {
         const situacion = indice < actual ? 'hecha' : indice > actual ? 'pendiente' : cierre ? 'cortada' : 'activa'
 

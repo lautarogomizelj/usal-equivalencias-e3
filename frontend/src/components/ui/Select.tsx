@@ -13,11 +13,11 @@ interface SelectProps extends CampoProps, Omit<SelectHTMLAttributes<HTMLSelectEl
   textoVacio?: string
 }
 
-export function Select({ etiqueta, ayuda, error, opciones, textoVacio, className = '', ...props }: SelectProps) {
+export function Select({ etiqueta, ayuda, error, etiquetaOculta, opciones, textoVacio, className = '', ...props }: SelectProps) {
   const id = useId()
 
   return (
-    <Campo id={id} etiqueta={etiqueta} ayuda={ayuda} error={error} requerido={props.required}>
+    <Campo id={id} etiqueta={etiqueta} ayuda={ayuda} error={error} etiquetaOculta={etiquetaOculta} requerido={props.required}>
       <div className="relative">
         <select
           id={id}

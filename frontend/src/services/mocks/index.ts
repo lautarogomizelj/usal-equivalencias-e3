@@ -5,9 +5,9 @@
  */
 import { ApiError } from '@/services/api/ApiError'
 import type { Sesion } from '@/types/sesion'
-import { CARRERAS, ESTADOS, PASSWORD_VALIDA, SESION_ASPIRANTE, SESIONES_USAL, SOLICITUDES } from './datos'
+import { CARRERAS, ESTADOS, PASSWORD_VALIDA, SESION_ASPIRANTE, SESIONES_USAL } from './datos'
 import { rutasPerfil } from './perfil'
-import { RUTAS_SOLICITUDES } from './solicitudes'
+import { rutasSolicitudes } from './solicitudes'
 
 const DEMORA_MS = 300
 const CODIGO_VALIDO = '483920'
@@ -63,8 +63,8 @@ function sesionActual() {
   return sesion
 }
 
-/** Los números de la ruta se escriben `:id` y llegan en `ids`, en orden. */
-const RUTAS: Record<string, (body: unknown, ids: number[]) => unknown> = {
+/** Los números de la ruta se escriben `:id` y llegan en `ids`, en orden; `consulta` trae lo que sigue al `?`. */
+const RUTAS: Record<string, (body: unknown, ids: number[], consulta: URLSearchParams) => unknown> = {
   'GET /carreras': () => CARRERAS,
   'GET /estados': () => ESTADOS,
   'POST /auth/registro': (body) => {
@@ -81,20 +81,13 @@ const RUTAS: Record<string, (body: unknown, ids: number[]) => unknown> = {
   'POST /auth/logout': () => sessionStorage.removeItem(CLAVE_SESION),
   'GET /auth/me': () => ({ ...sesionActual() }),
   ...rutasPerfil(sesionActual, abrirSesion),
-  'GET /solicitudes': () => ({
-    content: SOLICITUDES,
-    page: 0,
-    size: 20,
-    totalElements: SOLICITUDES.length,
-    totalPages: 1,
-  }),
-  ...RUTAS_SOLICITUDES,
+  ...rutasSolicitudes(sesionActual),
 }
 
 export async function resolverMock<T>(metodo: string, ruta: string, body?: unknown): Promise<T> {
   await new Promise((resolver) => setTimeout(resolver, DEMORA_MS))
 
-  const camino = ruta.split('?')[0]
+  const [camino, consulta] = ruta.split('?')
   const responder = RUTAS[`${metodo} ${camino.replace(/\d+/g, ':id')}`]
   if (!responder) {
     throw ApiError.fromStatus(404, {
@@ -104,5 +97,5 @@ export async function resolverMock<T>(metodo: string, ruta: string, body?: unkno
       path: ruta,
     })
   }
-  return responder(body, (camino.match(/\d+/g) ?? []).map(Number)) as T
+  return responder(body, (camino.match(/\d+/g) ?? []).map(Number), new URLSearchParams(consulta)) as T
 }

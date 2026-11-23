@@ -13,7 +13,9 @@ import type {
   Documento,
   EstadoRevision,
   EventoHistorial,
+  InformeMaterias,
   Marca,
+  Pago,
   ReunionInfo,
   SolicitudDetalle,
   SolicitudResumen,
@@ -37,6 +39,8 @@ const ORIGEN_DEMO: SolicitudDetalle['datosOrigen'] = {
   observaciones: '',
 }
 
+const HASTA_LA_INSCRIPCION = ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND', 'ANAL-POST', 'INSC-ACEP']
+
 /** Estados por los que pasó cada solicitud de ejemplo, según su estado actual. */
 const RECORRIDOS: Record<string, string[]> = {
   'DOC-REV': ['SOL-INI', 'DOC-REV'],
@@ -47,7 +51,14 @@ const RECORRIDOS: Record<string, string[]> = {
   'REU-CHAT': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-FEC-ACAD', 'REU-FEC-ASP-2', 'REU-CHAT'],
   'ANAL-POST': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND', 'ANAL-POST'],
   'INSC-ACEP': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND', 'ANAL-POST', 'INSC-ACEP'],
+  'LEG-REV': [...HASTA_LA_INSCRIPCION, 'LEG-REV'],
+  'CUPON-SOL': [...HASTA_LA_INSCRIPCION, 'LEG-REV', 'CUPON-SOL'],
+  'PAG-CTRL': [...HASTA_LA_INSCRIPCION, 'LEG-REV', 'CUPON-SOL', 'CUPON-PAG', 'PAG-CTRL'],
 }
+
+/** Desde `CUPON-SOL` existe el informe de materias, y desde `CUPON-PAG` el cupón. */
+const CON_INFORME = ['CUPON-SOL', 'CUPON-PAG', 'PAG-CTRL', 'PAG-REENV', 'E3-INI']
+const MONTO_DEMO = 150000
 
 /** Estados anteriores a que el Académico cargue el análisis y proponga fechas. */
 const SIN_ANALISIS = ['SOL-INI', 'DOC-REV', 'DOC-RECH', 'ANAL-PEND', 'SOL-CANC']
@@ -58,6 +69,11 @@ const ACCIONES_ASPIRANTE: Record<string, string[]> = {
   'DOC-RECH': ['ENVIAR_DOCUMENTACION'],
   'REU-FEC-ASP-1': ['ELEGIR_HORARIO', 'SOLICITAR_OTRAS_FECHAS'],
   'REU-FEC-ASP-2': ['ELEGIR_HORARIO', 'RECHAZAR_SEGUNDA_RONDA'],
+  'INSC-ACEP': ['INDICAR_LEGALIZACION'],
+  'LEG-PEND': ['AVISAR_LEGALIZADO'],
+  'LEG-RECH': ['ENVIAR_DOCUMENTACION'],
+  'CUPON-PAG': ['ENVIAR_COMPROBANTE'],
+  'PAG-REENV': ['ENVIAR_COMPROBANTE'],
 }
 
 /** Acciones del Académico responsable en cada estado (contrato de la API §7.1 y §7.2). */
@@ -68,6 +84,13 @@ const ACCIONES_ACADEMICO: Record<string, string[]> = {
   'REU-CHAT': ['FIJAR_FECHA'],
   'REU-PEND': ['MARCAR_NO_ASISTIO', 'FINALIZAR_REUNION', 'CARGAR_ENLACE_MEET'],
   'ANAL-POST': ['ACEPTAR_INSCRIPCION', 'RECHAZAR_INSCRIPCION', 'ACTUALIZAR_ANALISIS'],
+  'LEG-REV': ['RECHAZAR_LEGALIZADOS', 'ACEPTAR_LEGALIZADOS', 'GUARDAR_MARCAS', 'AGREGAR_FALTANTE'],
+}
+
+/** Acciones de la Secretaría responsable en cada estado (contrato de la API §7.1). */
+const ACCIONES_SECRETARIA: Record<string, string[]> = {
+  'CUPON-SOL': ['ENVIAR_CUPON'],
+  'PAG-CTRL': ['ACEPTAR_PAGO', 'RECHAZAR_PAGO'],
 }
 
 /** Estados de tipo A de cada rol: con ellos se calcula `requiereMiAccion`. */
@@ -97,6 +120,8 @@ const historiales = new Map<number, EventoHistorial[]>()
 const observaciones = new Map<number, NonNullable<SolicitudDetalle['ultimaObservacion']>>()
 const analisis = new Map<number, Analisis[]>()
 const reuniones = new Map<number, ReunionInfo>()
+const informes = new Map<number, InformeMaterias>()
+const pagos = new Map<number, Pago>()
 /** Los mensajes se guardan sin `visto` ni `esMio`, que dependen de quién mira. */
 const mensajes = new Map<number, MensajeGuardado[]>()
 /** Hasta qué mensaje leyó cada participante: por solicitud, y adentro por lector. */
@@ -154,7 +179,7 @@ function accionesDe(sesion: Sesion, solicitud: SolicitudResumen) {
     return responsableDe(solicitud, sesion.rol) || solicitud.estado.esTerminal ? [] : ['TOMAR_PROCESO']
   }
   return [
-    ...(sesion.rol === 'ACAD' ? (ACCIONES_ACADEMICO[codigo] ?? []) : []),
+    ...((sesion.rol === 'ACAD' ? ACCIONES_ACADEMICO : ACCIONES_SECRETARIA)[codigo] ?? []),
     ...(hayOtrosConAcceso(sesion, solicitud) ? ['DARSE_DE_BAJA'] : []),
   ]
 }
@@ -201,7 +226,7 @@ function documento(
 function documentosDe(id: number) {
   if (!documentos.has(id)) {
     const { estado: actual, fechaCreacion } = buscar(id)
-    const revision = actual.codigo === 'DOC-REV' ? 'PENDIENTE' : 'OK'
+    const revision = actual.codigo === 'DOC-REV' || actual.codigo === 'LEG-REV' ? 'PENDIENTE' : 'OK'
     const rechazada = actual.codigo === 'DOC-RECH'
     documentos.set(
       id,
@@ -414,7 +439,7 @@ function subirDocumento(sesion: Sesion, body: unknown, id: number) {
   const archivo = formulario.get('archivo') as File
   const reemplazaAId = Number(formulario.get('reemplazaAId')) || null
   const observado = vigentes(id).find((item) => item.id === reemplazaAId)
-  if (solicitud.estado.codigo === 'DOC-RECH') {
+  if (RECARGAS[solicitud.estado.codigo]) {
     if (!observado) throw error(400, 'VALIDACION', { reemplazaAId: ['Indicá qué documento reemplaza el archivo.'] })
     if (observado.estadoRevision !== 'RECARGAR') throw error(409, 'DOCUMENTO_BLOQUEADO')
     documentos.set(
@@ -458,11 +483,14 @@ function cambiarEstado(sesion: Sesion, solicitud: SolicitudResumen, nuevo: strin
   solicitud.fechaUltimaMod = ahora
 }
 
+/** Estados de recarga y a cuál vuelve la solicitud al enviar lo recargado. */
+const RECARGAS: Record<string, string> = { 'DOC-RECH': 'DOC-REV', 'LEG-RECH': 'LEG-REV' }
+
 function enviarDocumentacion(sesion: Sesion, body: unknown, id: number) {
   const solicitud = visible(sesion, id)
   exigir(sesion, solicitud, 'ENVIAR_DOCUMENTACION', (body as { estadoEsperado: string }).estadoEsperado)
   const borradores = documentosDe(id).filter(({ borrador }) => borrador)
-  const recarga = solicitud.estado.codigo === 'DOC-RECH'
+  const recarga = RECARGAS[solicitud.estado.codigo]
   const falta = recarga
     ? vigentes(id).some(
         (item) => item.estadoRevision === 'RECARGAR' && !borradores.some((nuevo) => nuevo.reemplazaAId === item.id),
@@ -472,7 +500,7 @@ function enviarDocumentacion(sesion: Sesion, body: unknown, id: number) {
   borradores.forEach((item) => {
     item.borrador = false
   })
-  cambiarEstado(sesion, solicitud, 'DOC-REV')
+  cambiarEstado(sesion, solicitud, recarga ?? 'DOC-REV')
   historialDe(id).splice(1, 0, ...borradores.map((cargado) => documentoCargado(cargado, solicitud.aspirante.nombre)))
   return detalle(sesion, id)
 }
@@ -553,10 +581,18 @@ function agregarFaltante(sesion: Sesion, body: unknown, id: number) {
   return faltante
 }
 
-function revisar(sesion: Sesion, body: unknown, id: number, aceptar: boolean) {
-  const { estadoEsperado, comentario, marcas } = body as { estadoEsperado: string; comentario?: string; marcas: Marca[] }
+/** `legalizados` es la revisión de `LEG-REV`: al aceptar exige el informe y que no quede nada por recargar. */
+function revisar(sesion: Sesion, body: unknown, id: number, aceptar: boolean, legalizados = false) {
+  const { estadoEsperado, comentario, marcas, materiasReconocidas, observaciones } = body as {
+    estadoEsperado: string
+    comentario?: string
+    marcas: Marca[]
+    materiasReconocidas?: number
+    observaciones?: string
+  }
   const solicitud = buscar(id)
-  exigir(sesion, solicitud, aceptar ? 'ACEPTAR_DOCUMENTACION' : 'RECHAZAR_DOCUMENTACION', estadoEsperado)
+  const que = legalizados ? 'LEGALIZADOS' : 'DOCUMENTACION'
+  exigir(sesion, solicitud, `${aceptar ? 'ACEPTAR' : 'RECHAZAR'}_${que}`, estadoEsperado)
   if (!aceptar && !comentario?.trim()) throw error(400, 'VALIDACION', { comentario: ['Indicá el motivo del rechazo.'] })
   const resultantes = vigentes(id).map(
     (item) => marcas.find((marca) => marca.documentoId === item.id)?.estadoRevision ?? item.estadoRevision,
@@ -564,8 +600,124 @@ function revisar(sesion: Sesion, body: unknown, id: number, aceptar: boolean) {
   if (!aceptar && (!resultantes.includes('RECARGAR') || resultantes.includes('PENDIENTE'))) {
     throw error(409, 'MARCAS_INCOMPLETAS')
   }
+  if (legalizados && aceptar) {
+    if (resultantes.includes('RECARGAR')) throw error(400, 'VALIDACION', { marcas: ['Hay documentos a recargar.'] })
+    if (!Number.isInteger(materiasReconocidas) || materiasReconocidas! < 0) {
+      throw error(400, 'VALIDACION', { materiasReconocidas: ['Indicá la cantidad de materias reconocidas.'] })
+    }
+    informes.set(id, { materiasReconocidas: materiasReconocidas!, observaciones: observaciones?.trim() || null, montoAPagar: null })
+  }
   marcar(sesion, id, marcas)
-  cambiarEstado(sesion, solicitud, aceptar ? 'ANAL-PEND' : 'DOC-RECH', aceptar ? null : comentario!.trim())
+  const destino = legalizados ? (aceptar ? 'CUPON-SOL' : 'LEG-RECH') : aceptar ? 'ANAL-PEND' : 'DOC-RECH'
+  cambiarEstado(sesion, solicitud, destino, aceptar ? null : comentario!.trim())
+  return detalle(sesion, id)
+}
+
+/** Al pasar a `LEG-REV` los documentos se revisan de nuevo, ahora en la etapa de legalización. */
+function iniciarLegalizacion(id: number) {
+  vigentes(id).forEach((item) => {
+    item.etapaRevision = 'LEGALIZACION'
+    if (item.nombreArchivo) Object.assign(item, { estadoRevision: 'PENDIENTE', comentarioRevision: null, revisadoPor: null })
+  })
+}
+
+function indicarLegalizacion(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, legalizados } = body as { estadoEsperado: string; legalizados?: boolean }
+  const solicitud = visible(sesion, id)
+  exigir(sesion, solicitud, 'INDICAR_LEGALIZACION', estadoEsperado)
+  if (typeof legalizados !== 'boolean') throw error(400, 'VALIDACION', { legalizados: ['Indicá si están legalizados.'] })
+  if (legalizados) iniciarLegalizacion(id)
+  cambiarEstado(sesion, solicitud, legalizados ? 'LEG-REV' : 'LEG-PEND')
+  return detalle(sesion, id)
+}
+
+function avisarLegalizado(sesion: Sesion, body: unknown, id: number) {
+  const solicitud = visible(sesion, id)
+  exigir(sesion, solicitud, 'AVISAR_LEGALIZADO', (body as { estadoEsperado: string }).estadoEsperado)
+  iniciarLegalizacion(id)
+  cambiarEstado(sesion, solicitud, 'LEG-REV')
+  return detalle(sesion, id)
+}
+
+function pagoDe(id: number) {
+  if (!pagos.has(id)) {
+    const { estado: actual, fechaUltimaMod } = buscar(id)
+    const conCupon = CON_INFORME.includes(actual.codigo) && actual.codigo !== 'CUPON-SOL'
+    pagos.set(id, {
+      cupon: conCupon ? { monto: MONTO_DEMO, fechaEmision: fechaUltimaMod, urlDescarga: ARCHIVO_DEMO } : null,
+      comprobantes:
+        actual.codigo === 'PAG-CTRL'
+          ? [
+              {
+                id: 1,
+                version: 1,
+                nombreArchivo: 'comprobante-transferencia.pdf',
+                tamanoBytes: 240 * 1024,
+                fechaCarga: fechaUltimaMod,
+                estadoVerificacion: 'PENDIENTE',
+                comentarioSecretaria: null,
+                urlDescarga: ARCHIVO_DEMO,
+              },
+            ]
+          : [],
+    })
+  }
+  return pagos.get(id)!
+}
+
+function informeDe(sesion: Sesion, id: number): InformeMaterias {
+  const solicitud = visible(sesion, id)
+  if (!CON_INFORME.includes(solicitud.estado.codigo)) throw error(404, 'NO_ENCONTRADO')
+  const informe = informes.get(id) ?? {
+    materiasReconocidas: 6,
+    observaciones: 'Quedan Física II y Química para cursar.',
+    montoAPagar: null,
+  }
+  return { ...informe, montoAPagar: pagoDe(id).cupon?.monto ?? null }
+}
+
+function enviarCupon(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, monto } = body as { estadoEsperado: string; monto?: number }
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, 'ENVIAR_CUPON', estadoEsperado)
+  if (typeof monto !== 'number' || monto <= 0) throw error(400, 'VALIDACION', { monto: ['Indicá el monto del cupón.'] })
+  pagoDe(id).cupon = { monto, fechaEmision: new Date().toISOString(), urlDescarga: ARCHIVO_DEMO }
+  cambiarEstado(sesion, solicitud, 'CUPON-PAG')
+  return detalle(sesion, id)
+}
+
+function enviarComprobante(sesion: Sesion, body: unknown, id: number) {
+  const formulario = body as FormData
+  const archivo = formulario.get('archivo') as File | null
+  const solicitud = visible(sesion, id)
+  exigir(sesion, solicitud, 'ENVIAR_COMPROBANTE', formulario.get('estadoEsperado') as string)
+  if (!archivo) throw error(400, 'VALIDACION', { archivo: ['Cargá el comprobante de pago.'] })
+  const { comprobantes } = pagoDe(id)
+  comprobantes.push({
+    id: comprobantes.length + 1,
+    version: comprobantes.length + 1,
+    nombreArchivo: archivo.name,
+    tamanoBytes: archivo.size,
+    fechaCarga: new Date().toISOString(),
+    estadoVerificacion: 'PENDIENTE',
+    comentarioSecretaria: null,
+    urlDescarga: URL.createObjectURL(archivo),
+  })
+  cambiarEstado(sesion, solicitud, 'PAG-CTRL')
+  return detalle(sesion, id)
+}
+
+function verificarPago(sesion: Sesion, body: unknown, id: number, aceptar: boolean) {
+  const { estadoEsperado, comentario } = body as { estadoEsperado: string; comentario?: string }
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, aceptar ? 'ACEPTAR_PAGO' : 'RECHAZAR_PAGO', estadoEsperado)
+  const limpio = comentario?.trim() || null
+  if (!aceptar && !limpio) throw error(400, 'VALIDACION', { comentario: ['Indicá por qué se rechaza el pago.'] })
+  Object.assign(pagoDe(id).comprobantes.at(-1)!, {
+    estadoVerificacion: aceptar ? 'ACEPTADO' : 'RECHAZADO',
+    comentarioSecretaria: limpio,
+  })
+  cambiarEstado(sesion, solicitud, aceptar ? 'E3-INI' : 'PAG-REENV', limpio)
   return detalle(sesion, id)
 }
 
@@ -999,6 +1151,16 @@ export function rutasSolicitudes(sesionActual: () => Sesion): Record<string, Man
     'POST /solicitudes/:id/reunion/finalizar': (body, [id]) => cerrarReunion(sesionActual(), body, id, true),
     'POST /solicitudes/:id/inscripcion/aceptar': (body, [id]) => decidirInscripcion(sesionActual(), body, id, true),
     'POST /solicitudes/:id/inscripcion/rechazar': (body, [id]) => decidirInscripcion(sesionActual(), body, id, false),
+    'POST /solicitudes/:id/legalizacion/indicar': (body, [id]) => indicarLegalizacion(sesionActual(), body, id),
+    'POST /solicitudes/:id/legalizacion/listo': (body, [id]) => avisarLegalizado(sesionActual(), body, id),
+    'POST /solicitudes/:id/legalizacion/aceptar': (body, [id]) => revisar(sesionActual(), body, id, true, true),
+    'POST /solicitudes/:id/legalizacion/rechazar': (body, [id]) => revisar(sesionActual(), body, id, false, true),
+    'GET /solicitudes/:id/informe': (_, [id]) => informeDe(sesionActual(), id),
+    'GET /solicitudes/:id/pago': (_, [id]) => structuredClone(pagoDe(visible(sesionActual(), id).id)),
+    'POST /solicitudes/:id/pago/cupon': (body, [id]) => enviarCupon(sesionActual(), body, id),
+    'POST /solicitudes/:id/pago/comprobante': (body, [id]) => enviarComprobante(sesionActual(), body, id),
+    'POST /solicitudes/:id/pago/aceptar': (body, [id]) => verificarPago(sesionActual(), body, id, true),
+    'POST /solicitudes/:id/pago/rechazar': (body, [id]) => verificarPago(sesionActual(), body, id, false),
     'GET /solicitudes/:id/chat/mensajes': (_, [id], consulta) => listarMensajes(sesionActual(), id, consulta),
     'POST /solicitudes/:id/chat/mensajes': (body, [id]) => enviarMensaje(sesionActual(), body, id),
     'POST /solicitudes/:id/chat/leidos': (body, [id]) => marcarLeidos(sesionActual(), body, id),

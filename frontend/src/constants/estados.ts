@@ -40,8 +40,16 @@ export const BANNER_ASPIRANTE: Record<string, string> = {
   'REU-CHAT': 'Es necesario coordinar la fecha de la reunión por chat con tu responsable académico.',
   'REU-PEND': 'Reunión pactada, pendiente de realizarse.',
   'ANAL-POST': 'La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción.',
-  'INSC-ACEP':
-    'Tu inscripción fue aceptada. El paso que sigue es indicar si tus documentos están legalizados: todavía no está disponible.',
+  'INSC-ACEP': 'Tu inscripción fue aceptada. Para continuar, indicá si tus documentos están legalizados.',
+  'LEG-PEND':
+    'Tus documentos todavía no están legalizados. Legalizalos con las indicaciones que te enviamos por mail y avisanos cuando estén listos.',
+  'LEG-REV': 'Tu responsable académico está analizando tus documentos legalizados.',
+  'LEG-RECH': 'Hay observaciones sobre tus documentos legalizados. Recargá los que están marcados.',
+  'CUPON-SOL': 'Tus documentos legalizados fueron aceptados. Secretaría te va a enviar el cupón de pago.',
+  'CUPON-PAG': 'Tu cupón de pago está listo. Descargalo, hacé el pago y cargá el comprobante.',
+  'PAG-CTRL': 'Recibimos tu comprobante. Secretaría está verificando el pago.',
+  'PAG-REENV': 'Hubo un problema con tu comprobante de pago. Cargá uno nuevo.',
+  'E3-INI': 'Tu pago fue verificado. Tu trámite de equivalencias quedó iniciado.',
   'INSC-RECH': 'Lamentablemente tu solicitud no pudo ser aprobada.',
   'SOL-CANC': 'Cancelaste esta solicitud antes de enviar la documentación. Si querés retomar el trámite, creá una nueva.',
 }
@@ -62,6 +70,14 @@ export const BANNER_PERSONAL: Record<string, string> = {
   'ANAL-POST':
     'La reunión se realizó. Falta decidir la inscripción; antes se pueden actualizar la matriz y el horario de cursada.',
   'INSC-ACEP': 'Esperando que el aspirante indique la legalización de sus documentos.',
+  'LEG-PEND': 'El aspirante indicó que sus documentos no están legalizados. Esperando que avise cuando los legalice.',
+  'LEG-REV': 'El aspirante indicó que sus documentos están legalizados. Falta analizarlos.',
+  'LEG-RECH': 'Esperando que el aspirante recargue los documentos legalizados marcados.',
+  'CUPON-SOL': 'Los documentos legalizados fueron aceptados. Secretaría tiene que generar y enviar el cupón de pago.',
+  'CUPON-PAG': 'El cupón fue enviado. Esperando que el aspirante pague y cargue el comprobante.',
+  'PAG-CTRL': 'El aspirante cargó el comprobante. Secretaría tiene que verificar el pago.',
+  'PAG-REENV': 'El pago fue rechazado. Esperando que el aspirante cargue un comprobante nuevo.',
+  'E3-INI': 'El pago fue verificado: inicio de E3.',
   'INSC-RECH': 'La inscripción fue rechazada: el trámite terminó.',
   'SOL-CANC': 'El aspirante canceló la solicitud antes de enviar la documentación.',
 }
@@ -74,6 +90,9 @@ export const ESTADOS_DE_ACCION: Record<string, string[]> = {
 
 /** Estados en los que el aspirante tiene que corregir algo que le observaron. */
 export const ESTADOS_CON_OBSERVACIONES = ['DOC-RECH', 'LEG-RECH', 'PAG-REENV']
+
+/** Etapa administrativa: desde acá el trámite lo lleva Secretaría (frontend-interfaces.md §6.4). */
+export const ESTADOS_DE_PAGO = ['CUPON-SOL', 'CUPON-PAG', 'PAG-CTRL', 'PAG-REENV', 'E3-INI']
 
 /** Macro-etapas del trámite y los estados que activan cada una (frontend-interfaces.md §2.9 y §4.5.2). */
 export const ETAPAS: { nombre: string; estados: string[] }[] = [

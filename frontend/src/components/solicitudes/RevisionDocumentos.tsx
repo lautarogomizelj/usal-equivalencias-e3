@@ -28,6 +28,8 @@ import type { VistaSolicitudProps } from './vistas'
 const MARCAS: EstadoRevision[] = ['PENDIENTE', 'OK', 'RECARGAR']
 const TIPOS = Object.entries(NOMBRE_TIPO_DOCUMENTO).map(([valor, texto]) => ({ valor, texto }))
 const MAX_COMENTARIO = 500
+const MAX_OBSERVACIONES = 2000
+const CON_MOTIVO_DE_RECHAZO = ['DOC-RECH', 'LEG-RECH']
 
 interface MarcaLocal {
   estadoRevision: EstadoRevision
@@ -58,8 +60,9 @@ function SelectorMarca({ valor, etiqueta, onCambiar }: { valor: EstadoRevision; 
 
 /**
  * Documentos de la solicitud vistos por el personal (frontend-interfaces.md §5.6 y §5.7). Con la acción
- * `GUARDAR_MARCAS` disponible es la revisión del Académico responsable (`ACAD-DOC-REV`): marca cada documento
- * y acepta o rechaza. En cualquier otro caso es la misma tabla en solo lectura.
+ * `GUARDAR_MARCAS` disponible es la revisión del Académico responsable: marca cada documento y acepta o
+ * rechaza, la documentación inicial en `ACAD-DOC-REV` y los legalizados en `ACAD-LEG-REV`, donde al aceptar
+ * informa las materias reconocidas. En cualquier otro caso es la misma tabla en solo lectura.
  */
 export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: VistaSolicitudProps) {
   const carga = useCarga((signal) => solicitudes.documentos(detalle.id, signal))
@@ -71,10 +74,14 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
   const [motivo, setMotivo] = useState('')
   const [errorMotivo, setErrorMotivo] = useState<string | null>(null)
   const [faltante, setFaltante] = useState({ tipo: 'PROGRAMA' as TipoDocumento, descripcion: '' })
+  const [materias, setMaterias] = useState('')
+  const [observaciones, setObservaciones] = useState('')
+  const [errorMaterias, setErrorMaterias] = useState<string | null>(null)
 
   const editable = detalle.accionesDisponibles.includes('GUARDAR_MARCAS')
   const documentos = carga.datos ?? []
   const estadoEsperado = detalle.estado.codigo
+  const legalizacion = estadoEsperado === 'LEG-REV'
   const marcaDe = (documento: Documento): MarcaLocal =>
     cambios[documento.id] ?? { estadoRevision: documento.estadoRevision, comentario: documento.comentarioRevision ?? '' }
   const marcas: Marca[] = documentos.map((documento) => {
@@ -84,6 +91,8 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
   const cantidad = (marca: EstadoRevision) => marcas.filter(({ estadoRevision }) => estadoRevision === marca).length
   const aRecargar = documentos.filter((documento) => marcaDe(documento).estadoRevision === 'RECARGAR')
   const puedeRechazar = aRecargar.length > 0 && cantidad('PENDIENTE') === 0
+  // Los legalizados no se aceptan con documentos a recargar (RF-ACAD-005).
+  const puedeAceptar = !legalizacion || aRecargar.length === 0
 
   function cambiar(documento: Documento, cambio: Partial<MarcaLocal>) {
     setGuardado(false)
@@ -93,6 +102,7 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
   function abrir(cual: 'aceptar' | 'rechazar' | 'faltante') {
     setError(null)
     setErrorMotivo(null)
+    setErrorMaterias(null)
     setModal(cual)
   }
 
@@ -128,11 +138,29 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
       ),
     )
 
+  function aceptarLegalizados() {
+    const cantidadMaterias = Number(materias)
+    if (!materias.trim() || !Number.isInteger(cantidadMaterias) || cantidadMaterias < 0) {
+      return setErrorMaterias('Indicá la cantidad de materias reconocidas.')
+    }
+    return ejecutar(async () =>
+      onActualizada(
+        await acciones.aceptarLegalizados(detalle.id, estadoEsperado, marcas, cantidadMaterias, observaciones.trim()),
+        'Los documentos legalizados fueron aceptados. Le avisamos a Secretaría para que envíe el cupón de pago.',
+      ),
+    )
+  }
+
   function rechazar() {
     if (!motivo.trim()) return setErrorMotivo(MENSAJES.MOTIVO_REQUERIDO)
     return ejecutar(async () =>
       onActualizada(
-        await acciones.rechazarDocumentacion(detalle.id, estadoEsperado, motivo.trim(), marcas),
+        await (legalizacion ? acciones.rechazarLegalizados : acciones.rechazarDocumentacion)(
+          detalle.id,
+          estadoEsperado,
+          motivo.trim(),
+          marcas,
+        ),
         'La documentación fue rechazada. Le avisamos al aspirante qué tiene que recargar.',
       ),
     )
@@ -226,15 +254,23 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
     <>
       <Seccion
         Icono={FileText}
-        titulo={editable ? 'Documentación inicial de la solicitud' : 'Documentación de la solicitud'}
+        titulo={
+          !editable
+            ? 'Documentación de la solicitud'
+            : legalizacion
+              ? 'Documentos legalizados'
+              : 'Documentación inicial de la solicitud'
+        }
         descripcion={
-          editable
-            ? 'Revisá cada documento, indicá su estado y agregá comentarios. Después aceptá o rechazá la documentación.'
-            : 'Documentos que presentó el aspirante, con su marca de revisión.'
+          !editable
+            ? 'Documentos que presentó el aspirante, con su marca de revisión.'
+            : legalizacion
+              ? 'Verificá la legalización de cada documento, indicá su estado y agregá comentarios. Después aceptá o rechazá la documentación.'
+              : 'Revisá cada documento, indicá su estado y agregá comentarios. Después aceptá o rechazá la documentación.'
         }
         className="formulario-compacto"
       >
-        {estadoEsperado === 'DOC-RECH' && detalle.ultimaObservacion && (
+        {CON_MOTIVO_DE_RECHAZO.includes(estadoEsperado) && detalle.ultimaObservacion && (
           <p className="mb-4 rounded-md bg-danger-soft p-3 text-base text-text">
             <strong className="text-danger">Motivo del rechazo:</strong> {detalle.ultimaObservacion.comentario}
           </p>
@@ -276,6 +312,7 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
                   </p>
                 )}
                 {!puedeRechazar && <p>{MENSAJES.RECHAZO_INCOMPLETO}</p>}
+                {!puedeAceptar && <p>Para aceptar no puede quedar ningún documento como "Debe recargar".</p>}
                 {error && !modal && (
                   <p role="alert" className="flex items-center gap-1 text-danger">
                     <CircleAlert aria-hidden className="size-(--size-icon-sm) shrink-0" />
@@ -296,7 +333,7 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
                   <X aria-hidden className="size-(--size-icon-md)" />
                   Rechazar documentación
                 </Button>
-                <Button tamanio="lg" disabled={procesando} onClick={() => abrir('aceptar')}>
+                <Button tamanio="lg" disabled={procesando || !puedeAceptar} onClick={() => abrir('aceptar')}>
                   <Check aria-hidden className="size-(--size-icon-md)" />
                   Aceptar documentación
                 </Button>
@@ -306,8 +343,60 @@ export function RevisionDocumentos({ detalle, onActualizada, onEstadoCambio }: V
         )}
       </Seccion>
 
+      <Modal
+        abierto={modal === 'aceptar' && legalizacion}
+        titulo="Aceptar los documentos legalizados"
+        descripcion={`Solicitud ${detalle.codigoExp}. Indicá el resultado de las equivalencias: el aspirante lo ve en su solicitud.`}
+        Icono={Check}
+        onCerrar={() => setModal(null)}
+        acciones={
+          <>
+            <Button variante="outline" disabled={procesando} onClick={() => setModal(null)}>
+              Cancelar
+            </Button>
+            <Button disabled={procesando} onClick={aceptarLegalizados}>
+              {procesando ? 'Procesando…' : 'Aceptar documentación'}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4">
+          <Input
+            required
+            type="number"
+            inputMode="numeric"
+            min="0"
+            step="1"
+            etiqueta="Materias reconocidas"
+            ayuda="Cantidad de materias que se le reconocen por equivalencia."
+            value={materias}
+            error={errorMaterias}
+            onChange={(evento) => {
+              setMaterias(evento.target.value)
+              setErrorMaterias(null)
+            }}
+          />
+          <Textarea
+            etiqueta="Observaciones (opcional)"
+            ayuda="Por ejemplo, las materias que le quedan por cursar."
+            maxLength={MAX_OBSERVACIONES}
+            value={observaciones}
+            onChange={(evento) => setObservaciones(evento.target.value)}
+          />
+        </div>
+        <p className="mt-4 rounded-md bg-warning-soft p-3 text-sm text-warning">
+          La solicitud pasa a la etapa de pago: se le avisa a Secretaría para que envíe el cupón y al aspirante la
+          cantidad de materias. No se puede deshacer.
+        </p>
+        {error && (
+          <p role="alert" className="mt-3 rounded-md bg-danger-soft p-3 text-sm text-danger">
+            {error}
+          </p>
+        )}
+      </Modal>
+
       <ModalConfirmacion
-        abierto={modal === 'aceptar'}
+        abierto={modal === 'aceptar' && !legalizacion}
         titulo="Aceptar la documentación"
         accion={`Vas a aceptar la documentación de la solicitud ${detalle.codigoExp}.`}
         consecuencia={`${

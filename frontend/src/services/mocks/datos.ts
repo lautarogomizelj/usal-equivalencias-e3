@@ -130,6 +130,9 @@ const LISTADO: [string, string, string | null, string | null, string, string, nu
   ['EXP-2026-010', 'REU-PEND', 'academico@usal.edu.ar', null, '2026-10-15', '2026-11-18'],
   ['EXP-2026-011', 'REU-CHAT', 'academico@usal.edu.ar', null, '2026-10-10', '2026-11-19'],
   ['EXP-2026-012', 'ANAL-POST', 'academico@usal.edu.ar', null, '2026-10-05', '2026-11-20'],
+  ['EXP-2026-013', 'LEG-REV', 'academico@usal.edu.ar', 'secretaria@usal.edu.ar', '2026-09-28', '2026-11-21'],
+  ['EXP-2026-014', 'CUPON-SOL', 'academico@usal.edu.ar', 'secretaria@usal.edu.ar', '2026-09-20', '2026-11-21'],
+  ['EXP-2026-015', 'PAG-CTRL', 'academico@usal.edu.ar', 'secretaria@usal.edu.ar', '2026-09-12', '2026-11-22'],
 ]
 
 export const SOLICITUDES: SolicitudResumen[] = LISTADO.map(

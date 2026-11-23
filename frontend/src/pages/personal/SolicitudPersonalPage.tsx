@@ -12,7 +12,7 @@ import {
   VISTAS_PERSONAL,
 } from '@/components/solicitudes/vistas'
 import { Aviso, Banner, Button, EstadoBadge, ModalConfirmacion, Pestanias, type Pestania } from '@/components/ui'
-import { BANNER_PERSONAL, ESTADOS_DE_ACCION, VARIANTE_POR_ESTADO } from '@/constants/estados'
+import { BANNER_PERSONAL, ESTADOS_DE_ACCION, ESTADOS_DE_PAGO, VARIANTE_POR_ESTADO } from '@/constants/estados'
 import { ROUTES } from '@/constants/routes'
 import { useCarga } from '@/hooks/useCarga'
 import { acciones } from '@/services/acciones'
@@ -118,7 +118,7 @@ function Solicitud({ id }: { id: number }) {
     )
     // Una revisión con observación previa es una recarga: los documentos nuevos llegan pendientes (§5.6.2).
     const texto =
-      rol === 'SECRE' && !estado.esTerminal
+      rol === 'SECRE' && !estado.esTerminal && !ESTADOS_DE_PAGO.includes(estado.codigo)
         ? 'En etapa académica.'
         : estado.codigo === 'DOC-REV' && detalle.ultimaObservacion
           ? 'El aspirante recargó documentos: los nuevos figuran pendientes de revisión.'

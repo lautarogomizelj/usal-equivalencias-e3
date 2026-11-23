@@ -165,6 +165,30 @@ export interface PropuestaAnalisis {
   horarios: string[]
 }
 
+/** Lo que informó el Académico al aceptar los legalizados; el monto llega con el cupón (contrato §6.6). */
+export interface InformeMaterias {
+  materiasReconocidas: number
+  observaciones: string | null
+  montoAPagar: number | null
+}
+
+export interface Comprobante {
+  id: number
+  version: number
+  nombreArchivo: string
+  tamanoBytes: number
+  fechaCarga: string
+  estadoVerificacion: 'PENDIENTE' | 'ACEPTADO' | 'RECHAZADO'
+  comentarioSecretaria: string | null
+  urlDescarga: string
+}
+
+/** Cupón y comprobantes de una solicitud (contrato de la API §6.6). `cupon` es `null` hasta que se envía. */
+export interface Pago {
+  cupon: { monto: number; fechaEmision: string; urlDescarga: string } | null
+  comprobantes: Comprobante[]
+}
+
 /** Filtros de la bandeja del personal (contrato de la API §6.2). Los vacíos no se envían. */
 export interface FiltrosBandeja {
   q?: string

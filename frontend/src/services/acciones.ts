@@ -78,4 +78,36 @@ export const acciones = {
     api.post<SolicitudDetalle>(`/solicitudes/${id}/inscripcion/aceptar`, { estadoEsperado }),
   rechazarInscripcion: (id: number, estadoEsperado: string, comentario: string) =>
     api.post<SolicitudDetalle>(`/solicitudes/${id}/inscripcion/rechazar`, { estadoEsperado, comentario }),
+  indicarLegalizacion: (id: number, estadoEsperado: string, legalizados: boolean) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/legalizacion/indicar`, { estadoEsperado, legalizados }),
+  avisarLegalizado: (id: number, estadoEsperado: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/legalizacion/listo`, { estadoEsperado }),
+  /** Con la aceptación va el informe de materias: cuántas se reconocen y las observaciones. */
+  aceptarLegalizados: (
+    id: number,
+    estadoEsperado: string,
+    marcas: Marca[],
+    materiasReconocidas: number,
+    observaciones: string,
+  ) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/legalizacion/aceptar`, {
+      estadoEsperado,
+      marcas,
+      materiasReconocidas,
+      observaciones,
+    }),
+  rechazarLegalizados: (id: number, estadoEsperado: string, comentario: string, marcas: Marca[]) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/legalizacion/rechazar`, { estadoEsperado, comentario, marcas }),
+  enviarCupon: (id: number, estadoEsperado: string, monto: number) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/pago/cupon`, { estadoEsperado, monto }),
+  enviarComprobante: (id: number, estadoEsperado: string, archivo: File) => {
+    const cuerpo = new FormData()
+    cuerpo.append('estadoEsperado', estadoEsperado)
+    cuerpo.append('archivo', archivo)
+    return api.post<SolicitudDetalle>(`/solicitudes/${id}/pago/comprobante`, cuerpo)
+  },
+  aceptarPago: (id: number, estadoEsperado: string, comentario: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/pago/aceptar`, { estadoEsperado, comentario }),
+  rechazarPago: (id: number, estadoEsperado: string, comentario: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/pago/rechazar`, { estadoEsperado, comentario }),
 }

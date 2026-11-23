@@ -39,4 +39,30 @@ public class PermisoCarrera {
     public void setRevokedAt(OffsetDateTime revokedAt) {
         this.revokedAt = revokedAt;
     }
+
+    /** La tabla admite una sola fila por usuario y carrera: volver a asignar reactiva la revocada. */
+    public void reactivar() {
+        this.assignedAt = OffsetDateTime.now();
+        this.revokedAt = null;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public Carrera getCarrera() {
+        return carrera;
+    }
+
+    public OffsetDateTime getAssignedAt() {
+        return assignedAt;
+    }
+
+    public OffsetDateTime getRevokedAt() {
+        return revokedAt;
+    }
 }

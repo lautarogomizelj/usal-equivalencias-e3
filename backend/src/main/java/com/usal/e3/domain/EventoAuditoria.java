@@ -74,6 +74,48 @@ public class EventoAuditoria {
         return evento;
     }
 
+    /** El motivo que escribe el Admin al asignar un responsable o revocar un permiso (RF-ADMIN-004 y 005). */
+    public EventoAuditoria conComentario(String comentarios) {
+        this.comentarios = comentarios;
+        return this;
+    }
+
+    public Long getId() {
+        return id;
+    }
+
+    public Integer getUsuarioId() {
+        return usuarioId;
+    }
+
+    public String getUsuarioEmail() {
+        return usuarioEmail;
+    }
+
+    public String getEntidad() {
+        return entidad;
+    }
+
+    public Integer getEntidadId() {
+        return entidadId;
+    }
+
+    public String getEstadoCodigoAnterior() {
+        return estadoCodigoAnterior;
+    }
+
+    public String getEstadoCodigoNuevo() {
+        return estadoCodigoNuevo;
+    }
+
+    public String getComentarios() {
+        return comentarios;
+    }
+
+    public String getIpOrigen() {
+        return ipOrigen;
+    }
+
     public String getAccion() {
         return accion;
     }

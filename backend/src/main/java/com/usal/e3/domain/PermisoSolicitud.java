@@ -41,4 +41,32 @@ public class PermisoSolicitud {
     public void setRevokedAt(OffsetDateTime revokedAt) {
         this.revokedAt = revokedAt;
     }
+
+    /** La tabla admite una sola fila por usuario y solicitud: volver a asignar reactiva la anterior. */
+    public void reactivar(Integer assignedBy, OffsetDateTime expiresAt) {
+        this.assignedAt = OffsetDateTime.now();
+        this.assignedBy = assignedBy;
+        this.expiresAt = expiresAt;
+        this.revokedAt = null;
+    }
+
+    public Integer getId() {
+        return id;
+    }
+
+    public Integer getUserId() {
+        return userId;
+    }
+
+    public Integer getSolicitudId() {
+        return solicitudId;
+    }
+
+    public OffsetDateTime getAssignedAt() {
+        return assignedAt;
+    }
+
+    public OffsetDateTime getExpiresAt() {
+        return expiresAt;
+    }
 }

@@ -2,6 +2,8 @@ package com.usal.e3.repository;
 
 import com.usal.e3.domain.Aspirante;
 import jakarta.persistence.LockModeType;
+import java.time.OffsetDateTime;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Lock;
@@ -14,6 +16,9 @@ public interface AspiranteRepository extends JpaRepository<Aspirante, Integer> {
     boolean existsByEmail(String email);
 
     boolean existsByDni(String dni);
+
+    /** Cuentas con el bloqueo todavía vigente (RF-ADMIN-007). */
+    List<Aspirante> findByBloqueadoHastaAfter(OffsetDateTime ahora);
 
     /** Con bloqueo de fila: dos intentos simultáneos no pueden perder un fallo. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

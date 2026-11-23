@@ -43,7 +43,7 @@ public record SolicitudDetalleResponse(
 
     public record ResumenDocumentos(long ok, long recargar, long pendiente) {}
 
-    static SolicitudDetalleResponse de(DetalleSolicitud detalle) {
+    public static SolicitudDetalleResponse de(DetalleSolicitud detalle) {
         Solicitud s = detalle.solicitud();
         Aspirante aspirante = s.getAspirante();
         DatosOrigen origen = s.getDatosOrigen();

@@ -18,7 +18,25 @@ public class Carrera {
     private String nombre;
     private String facultad;
     private String descripcion;
-    private boolean activo;
+    private boolean activo = true;
+
+    public Carrera() {}
+
+    public Carrera(String codigo, String nombre, String facultad, String descripcion) {
+        editar(codigo, nombre, facultad, descripcion);
+    }
+
+    /** RF-ADMIN-002: el Admin cambia los datos; la baja es lógica, con `activo`. */
+    public void editar(String codigo, String nombre, String facultad, String descripcion) {
+        this.codigo = codigo;
+        this.nombre = nombre;
+        this.facultad = facultad;
+        this.descripcion = descripcion;
+    }
+
+    public void setActivo(boolean activo) {
+        this.activo = activo;
+    }
 
     public Integer getId() {
         return id;

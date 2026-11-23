@@ -41,14 +41,21 @@ public record EventoHistorialResponse(
                 cambio.getComentarios());
     }
 
-    /** Sale de la auditoría de "tomar proceso" y "darse de baja", que guarda el nombre y el rol. */
+    /**
+     * Sale de la auditoría de "tomar proceso" y "darse de baja", que guarda el nombre y el rol, y de las dos del
+     * Admin (RF-ADMIN-004 y 005), que además guardan a quién asignó o quitó.
+     */
     private static EventoHistorialResponse responsable(EventoAuditoria evento) {
         String papel = Rol.ACADEMICO.equals(evento.getDetalles().get("rol"))
                 ? "responsable académico"
                 : "responsable administrativo";
-        String comentario = "tomar_proceso".equals(evento.getAccion())
-                ? "Tomó el proceso como " + papel + "."
-                : "Se dio de baja como " + papel + ".";
+        Object otro = evento.getDetalles().get("responsable");
+        String comentario = switch (evento.getAccion()) {
+            case "tomar_proceso" -> "Tomó el proceso como " + papel + ".";
+            case "asignar_responsable" -> "Asignó a " + otro + " como " + papel + ".";
+            case "quitar_responsable" -> "Revocó el permiso de " + otro + ", que dejó de ser " + papel + ".";
+            default -> "Se dio de baja como " + papel + ".";
+        };
         return new EventoHistorialResponse(
                 evento.getFecha(), "CAMBIO_RESPONSABLE", null, null, (String) evento.getDetalles().get("usuario"), comentario);
     }

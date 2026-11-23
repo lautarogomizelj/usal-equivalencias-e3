@@ -37,6 +37,8 @@ public class SolicitudesController {
     /** Sin `@NotBlank` en el comentario: el servicio responde con un mensaje propio. */
     record RechazoRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, String comentario) {}
 
+    record LegalizacionRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, Boolean legalizados) {}
+
     private final SolicitudService solicitudes;
     private final ProcesoService proceso;
     private final RevisionService revision;
@@ -151,6 +153,52 @@ public class SolicitudesController {
             HttpServletRequest request) {
         return SolicitudDetalleResponse.de(analisis.rechazarInscripcion(
                 actual, id, body.estadoEsperado(), body.comentario(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/{id}/legalizacion/indicar")
+    SolicitudDetalleResponse indicarLegalizacion(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody LegalizacionRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(solicitudes.indicarLegalizacion(
+                actual, id, body.estadoEsperado(), body.legalizados(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/{id}/legalizacion/listo")
+    SolicitudDetalleResponse avisarLegalizado(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody AccionRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(
+                solicitudes.avisarLegalizado(actual, id, body.estadoEsperado(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/{id}/legalizacion/aceptar")
+    SolicitudDetalleResponse aceptarLegalizados(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody MarcasRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(revision.aceptarLegalizados(
+                actual,
+                id,
+                body.estadoEsperado(),
+                body.aMarcas(),
+                body.materiasReconocidas(),
+                body.observaciones(),
+                request.getRemoteAddr()));
+    }
+
+    @PostMapping("/{id}/legalizacion/rechazar")
+    SolicitudDetalleResponse rechazarLegalizados(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody MarcasRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(revision.rechazarLegalizados(
+                actual, id, body.estadoEsperado(), body.comentario(), body.aMarcas(), request.getRemoteAddr()));
     }
 
     @PostMapping("/{id}/responsables/tomar")

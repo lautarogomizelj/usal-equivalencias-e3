@@ -25,6 +25,14 @@ public class Estado {
     public static final String ANAL_POST = "ANAL-POST";
     public static final String INSC_ACEP = "INSC-ACEP";
     public static final String INSC_RECH = "INSC-RECH";
+    public static final String LEG_PEND = "LEG-PEND";
+    public static final String LEG_REV = "LEG-REV";
+    public static final String LEG_RECH = "LEG-RECH";
+    public static final String CUPON_SOL = "CUPON-SOL";
+    public static final String CUPON_PAG = "CUPON-PAG";
+    public static final String PAG_CTRL = "PAG-CTRL";
+    public static final String PAG_REENV = "PAG-REENV";
+    public static final String E3_INI = "E3-INI";
 
     /** Estados de tipo A para el Académico (interfaces §5.1). */
     public static final Set<String> ESPERAN_AL_ACADEMICO =

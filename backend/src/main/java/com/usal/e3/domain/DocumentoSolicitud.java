@@ -93,8 +93,14 @@ public class DocumentoSolicitud {
 
     /** Documento requerido que el aspirante no cargó: sin archivo y marcado para recargar (RF-ACAD-009). */
     public static DocumentoSolicitud faltante(
-            Integer solicitudId, Tipo tipo, String descripcion, Usuario revisor, OffsetDateTime fecha) {
+            Integer solicitudId,
+            Tipo tipo,
+            String descripcion,
+            EtapaRevision etapa,
+            Usuario revisor,
+            OffsetDateTime fecha) {
         DocumentoSolicitud faltante = new DocumentoSolicitud();
+        faltante.etapaRevision = etapa;
         faltante.solicitudId = solicitudId;
         faltante.tipo = tipo;
         faltante.descripcion = descripcion;
@@ -113,6 +119,17 @@ public class DocumentoSolicitud {
         this.reemplazaAId = anterior.id;
         this.version = anterior.tieneArchivo() ? anterior.version + 1 : anterior.version;
         this.etapaRevision = anterior.etapaRevision;
+    }
+
+    /**
+     * Al entrar a `LEG-REV` por primera vez (RF-ACAD-005): el Académico vuelve a revisar cada documento, ahora
+     * legalizado. Uno que sigue sin archivo conserva su marca de recarga.
+     */
+    public void iniciarLegalizacion() {
+        this.etapaRevision = EtapaRevision.LEGALIZACION;
+        if (tieneArchivo()) {
+            marcar(EstadoRevision.PENDIENTE, null, null, null);
+        }
     }
 
     public void marcar(EstadoRevision estado, String comentario, Usuario revisor, OffsetDateTime fecha) {

@@ -60,8 +60,8 @@ public class DocumentoService {
     }
 
     /**
-     * En `SOL-INI` son documentos nuevos. En `DOC-RECH` cada archivo reemplaza a un documento marcado para
-     * recargar (`reemplazaAId`), del que hereda tipo y descripción; los de `LEG-RECH` llegan con su sprint.
+     * En `SOL-INI` son documentos nuevos. En `DOC-RECH` y `LEG-RECH` cada archivo reemplaza a un documento
+     * marcado para recargar (`reemplazaAId`), del que hereda tipo, descripción y etapa de revisión.
      */
     @Transactional
     public DocumentoSolicitud subir(
@@ -74,7 +74,8 @@ public class DocumentoService {
             byte[] contenido) {
         Solicitud solicitud = propia(cuentas.de(actual), solicitudId);
         DocumentoSolicitud anterior = null;
-        if (Estado.DOC_RECH.equals(solicitud.getEstadoCodigo())) {
+        if (Estado.DOC_RECH.equals(solicitud.getEstadoCodigo())
+                || Estado.LEG_RECH.equals(solicitud.getEstadoCodigo())) {
             anterior = aRecargar(solicitud, reemplazaAId);
         } else if (!Estado.SOL_INI.equals(solicitud.getEstadoCodigo())) {
             throw new ApiException(ErrorCode.TRANSICION_INVALIDA);
@@ -187,7 +188,13 @@ public class DocumentoService {
         borradores.forEach(DocumentoSolicitud::enviar);
     }
 
-    /** Antes de volver a `DOC-REV`: cada documento marcado para recargar tiene que traer su archivo nuevo. */
+    /** Al pasar a `LEG-REV` desde `INSC-ACEP` o `LEG-PEND`: los documentos vigentes se revisan de nuevo. */
+    void iniciarLegalizacion(Solicitud solicitud) {
+        vigentes(documentos.findBySolicitudIdOrderByIdAsc(solicitud.getId()))
+                .forEach(DocumentoSolicitud::iniciarLegalizacion);
+    }
+
+    /** Antes de volver a `DOC-REV` o a `LEG-REV`: cada documento a recargar tiene que traer su archivo nuevo. */
     void enviarRecarga(Solicitud solicitud) {
         List<DocumentoSolicitud> borradores = borradores(solicitud);
         Set<Integer> recargados =

@@ -15,9 +15,10 @@
 | 1.8 | 2026-11-20 | jumaluc | Aclaraciones tras la revisión del Sprint 4: `desde` y `hasta` de la bandeja son días de Argentina (§6.2), y en la recarga el borrador anterior se descarta recién cuando el archivo nuevo fue aceptado (§6.5) |
 | 1.9 | 2026-11-20 | jumaluc | De la auditoría del 2026-11-19, lo que depende del Sprint 4: código `NO_RESPONSABLE` y orden de validación con el responsable (§1 y §7), y el Admin ejecuta las acciones del Académico y de Secretaría (§7 y §10.1) (CC-017) |
 | 1.10 | 2026-11-20 | jumaluc | Sprint 5: `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO`, `RECHAZAR_SEGUNDA_RONDA` y `CARGAR_ENLACE_MEET` implementadas; lectura de `Analisis`, que suma `subidoPor`, y de `ReunionInfo`; las fechas se proponen en punto, desde mañana y hasta dentro de 30 días (§2.10 a §2.12, §6.6 y §7; CC-018, CC-019) |
+| 1.12 | 2026-11-22 | jumaluc | Sprint 7: legalización, informe de materias, cupón y comprobantes implementados (§2.13 a §2.15, §6.5, §6.6 y §7). El informe pasa a ser `materiasReconocidas`, `observaciones` y `montoAPagar`, y se carga con `ACEPTAR_LEGALIZADOS` (se quita `CARGAR_INFORME`); `ENVIAR_CUPON` recibe `monto`; `Pago` suma datos del archivo de cada comprobante; se quita `documentosLegalizados` (CC-022, CC-023) |
 | 1.11 | 2026-11-22 | jumaluc | Sprint 6: chat de la solicitud implementado, con `lecturas_chat`, `puedeEscribirChat`, `autor.rol` y adjuntos PDF, JPG o PNG (§2.16, §6.4 y §8.1); `FIJAR_FECHA` con cualquier fecha futura, `MARCAR_NO_ASISTIO`, `FINALIZAR_REUNION` con notas solo para el personal, `ACTUALIZAR_ANALISIS`, `ACEPTAR_INSCRIPCION` y `RECHAZAR_INSCRIPCION` (§2.12, §6.6, §7.2 y §7.3; CC-020, CC-021) |
 
-> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos y la bandeja del personal (§6, con el análisis académico y las fechas de reunión; sin informe ni pago) y, del trámite (§7), las acciones del aspirante sobre su documentación, tomar el proceso, darse de baja, la revisión de la documentación inicial, el análisis preliminar con la propuesta de fechas, las rondas de fechas, la fecha pautada por chat, el enlace de Meet, el resultado de la reunión, la actualización del análisis y la decisión de inscripción. También el chat de la solicitud (§8.1). El resto del documento es el contrato a acordar.
+> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos y la bandeja del personal (§6, con el análisis académico, las fechas de reunión, el informe de materias y el pago) y todas las acciones del trámite (§7), de la creación de la solicitud a `E3-INI`. También el chat de la solicitud (§8.1). El resto del documento es el contrato a acordar.
 
 Este documento fija el contrato entre el frontend (React, `services/api/client.ts`) y el backend (Spring Boot, a implementar) del sistema E3. Se basa en los Requisitos v13.0 (21 estados, 27 transiciones). Donde los requisitos no definen algo, la decisión figura como **Propuesta** y hay que validarla con backend.
 
@@ -214,7 +215,6 @@ Los campos `codigoValidacion`, `fechaValidacionEnviada` y `expiracionCodigo` de 
 | carreraOrigen | string | **Propuesta** |
 | condicionAcademica | string | **Propuesta**; valores a definir (Anexo A #2). Hasta entonces, texto libre de hasta 50 caracteres |
 | observaciones | string? | **Propuesta** |
-| documentosLegalizados | boolean? | **Propuesta**: respuesta del aspirante en `INSC-ACEP` |
 
 ### 2.7 Historial de estado (`estados_solicitud`)
 
@@ -307,31 +307,33 @@ Los requisitos definen las rondas como estados (`REU-FEC-ASP-1` y `-2`) pero no 
 | resultado | enum | `PENDIENTE`, `REALIZADA`, `NO_ASISTIO` |
 | fechaResultado | datetime? |  |
 
-### 2.13 Informe de materias (`informes_materias`) — Propuesta
+### 2.13 Informe de materias (`informes_materias`)
 
-RF-ASP-006 pide una tabla estructurada, pero la matriz hoy es archivo o notas (Anexo A #8 de interfaces).
+Versión simple (CC-022): lo carga el Académico al aceptar los documentos legalizados. No hay tabla por materia: el detalle está en la matriz de equivalencias. El monto a pagar no se guarda acá: sale del cupón.
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
 | id | int | PK |
 | solicitudId | int | FK, único |
-| cantidadMateriasAdeudar | int |  |
-| montoAPagar | decimal | ARS |
-| observaciones | string? |  |
-| items | lista | `materiaDestino`, `materiaOrigen`, `cargaHoraria`, `correlativas`, `reconocida` |
+| materiasReconocidas | int | De 0 a 200 |
+| observaciones | string? | Máx. 2000 |
+| cargadoPorId | int | Académico |
+| fechaCarga | datetime |  |
 
-### 2.14 Cupón de pago (`cupones_pago`) — Propuesta
+### 2.14 Cupón de pago (`cupones_pago`)
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
 | id | int | PK |
-| solicitudId | int | FK |
-| monto | decimal | Prellenado según política; solo lectura (Anexo A #14) |
+| solicitudId | int | FK, único |
+| monto | decimal | Lo ingresa Secretaría: mayor que 0, hasta 2 decimales (CC-022) |
 | rutaArchivo | string | PDF generado por el sistema |
 | fechaEmision | datetime |  |
 | emitidoPorId | int | Secretaría |
 
-### 2.15 Comprobante de pago (`comprobantes_pago`) — Propuesta
+### 2.15 Comprobante de pago (`comprobantes_pago`)
+
+Además de los campos de abajo guarda `estadoVerificacion` (`PENDIENTE`, `ACEPTADO` o `RECHAZADO`), `comentarioSecretaria`, `verificadoPorId` y `fechaVerificacion`.
 
 | Campo | Tipo | Notas |
 | --- | --- | --- |
@@ -764,7 +766,7 @@ Se acepta en `SOL-INI` (documentos nuevos) y en `DOC-RECH` y `LEG-RECH` (solo re
 
 Implementado hoy (CC-009 y CC-013):
 
-- En `SOL-INI` (documentos nuevos) y en `DOC-RECH` (recarga). La recarga de `LEG-RECH` llega con su sprint.
+- En `SOL-INI` (documentos nuevos) y en `DOC-RECH` y `LEG-RECH` (recarga).
 - En `DOC-RECH`, `reemplazaAId` es obligatorio (400 `VALIDACION` con `errors.reemplazaAId`) y tiene que ser un documento vigente marcado `RECARGAR`: si no existe responde 404 y si está en `OK` o `PENDIENTE`, 409 `DOCUMENTO_BLOQUEADO`. El archivo nuevo hereda el tipo y la descripción del que reemplaza, y `version` sube en uno salvo que reemplace a un requerido faltante, que no tenía archivo.
 - Subir otro archivo para el mismo documento descarta el borrador anterior, recién cuando el nuevo fue aceptado: si se rechaza (por ejemplo, por superar los 50 MB), el anterior queda como estaba.
 - Un borrador no archiva al documento que reemplaza hasta que se envía: mientras tanto el aspirante recibe los dos (el observado y su reemplazo, unidos por `reemplazaAId`) y el personal, solo el observado.
@@ -836,15 +838,10 @@ Un requerido faltante (`esRequeridoFaltante`) todavía no tiene archivo: `nombre
 **`Informe`**
 
 ```json
-{
-  "cantidadMateriasAdeudar": 18,
-  "montoAPagar": 150000.00,
-  "observaciones": "",
-  "items": [
-    { "materiaDestino": "Programación I", "materiaOrigen": "Algoritmos I", "cargaHoraria": 96, "correlativas": [], "reconocida": true }
-  ]
-}
+{ "materiasReconocidas": 6, "observaciones": "Quedan Física II y Química para cursar.", "montoAPagar": 150000.00 }
 ```
+
+Responde 404 antes de `CUPON-SOL`. `montoAPagar` es `null` hasta que Secretaría envía el cupón.
 
 **`Pago`**
 
@@ -852,10 +849,12 @@ Un requerido faltante (`esRequeridoFaltante`) todavía no tiene archivo: `nombre
 {
   "cupon": { "monto": 150000.00, "fechaEmision": "2026-11-20T10:00:00-03:00", "urlDescarga": "/solicitudes/42/pago/cupon/archivo" },
   "comprobantes": [
-    { "id": 9, "version": 1, "fechaCarga": "2026-11-21T18:00:00-03:00", "estadoVerificacion": "RECHAZADO", "comentarioSecretaria": "El monto no coincide" }
+    { "id": 9, "version": 1, "nombreArchivo": "pago.pdf", "tamanoBytes": 240000, "fechaCarga": "2026-11-21T18:00:00-03:00", "estadoVerificacion": "RECHAZADO", "comentarioSecretaria": "El monto no coincide", "urlDescarga": "/solicitudes/42/pago/comprobantes/9/archivo" }
   ]
 }
 ```
+
+`cupon` es `null` hasta que se envía. Los comprobantes llegan del primero al último; el vigente es el de mayor `version`.
 
 ## 7. Acciones del trámite
 
@@ -888,9 +887,9 @@ El Admin ejecuta las transiciones del Académico y de Secretaría, y también `G
 | `RECHAZAR_INSCRIPCION` | `/inscripcion/rechazar` | Académico | `ANAL-POST` → `INSC-RECH` | `comentario` |
 | `INDICAR_LEGALIZACION` | `/legalizacion/indicar` | Aspirante | `INSC-ACEP` → `LEG-REV` (sí) o `LEG-PEND` (no) | `legalizados: boolean` |
 | `AVISAR_LEGALIZADO` | `/legalizacion/listo` | Aspirante | `LEG-PEND` → `LEG-REV` | — |
-| `ACEPTAR_LEGALIZADOS` | `/legalizacion/aceptar` | Académico | `LEG-REV` → `CUPON-SOL` | `marcas?` (ninguna en `RECARGAR`) |
+| `ACEPTAR_LEGALIZADOS` | `/legalizacion/aceptar` | Académico | `LEG-REV` → `CUPON-SOL` | `marcas?` (ninguna en `RECARGAR`), `materiasReconocidas`, `observaciones?`: guarda el informe de materias |
 | `RECHAZAR_LEGALIZADOS` | `/legalizacion/rechazar` | Académico | `LEG-REV` → `LEG-RECH` | `comentario`, `marcas` |
-| `ENVIAR_CUPON` | `/pago/cupon` | Secretaría | `CUPON-SOL` → `CUPON-PAG` | — (genera el PDF con el monto prellenado) |
+| `ENVIAR_CUPON` | `/pago/cupon` | Secretaría | `CUPON-SOL` → `CUPON-PAG` | `monto` (el sistema genera el PDF con ese monto) |
 | `ENVIAR_COMPROBANTE` | `/pago/comprobante` (multipart) | Aspirante | `CUPON-PAG` o `PAG-REENV` → `PAG-CTRL` | `archivo` |
 | `ACEPTAR_PAGO` | `/pago/aceptar` | Secretaría | `PAG-CTRL` → `E3-INI` | `comentario?` |
 | `RECHAZAR_PAGO` | `/pago/rechazar` | Secretaría | `PAG-CTRL` → `PAG-REENV` | `comentario` |
@@ -907,7 +906,6 @@ Las 27 transiciones quedan en 23 acciones: el reenvío de documentación (4) y d
 | `AGREGAR_FALTANTE` | `POST /solicitudes/{id}/documentos/faltantes` | Académico participante | `DOC-REV`, `LEG-REV` | `{ tipo, descripcion }` | RF-ACAD-009 |
 | `CARGAR_ENLACE_MEET` | `PUT /solicitudes/{id}/reunion/enlace` | Académico | `REU-PEND` | `{ enlaceMeet }` | RF-ACAD-003 |
 | `ACTUALIZAR_ANALISIS` | `POST /solicitudes/{id}/analisis` (multipart) | Académico | `ANAL-POST` | `tipo`, `archivo?`, `notas?` | RF-ACAD-004 |
-| `CARGAR_INFORME` | `PUT /solicitudes/{id}/informe` | Académico | `LEG-REV` | `Informe` (6.6) | **Propuesta** (Anexo A #8) |
 | `DESCARGAR_EXPEDIENTE` | `GET /solicitudes/{id}/expediente` | Personal (aspirante a definir) | Siempre | — → ZIP | RF-PROC-005 |
 | `EXPORTAR_EXPEDIENTES` | `GET /solicitudes/expedientes?estado=…&desde=…` | Personal | Siempre | — → ZIP | RF-PROC-005 |
 
@@ -1205,7 +1203,6 @@ Los DTOs de este documento van en `frontend/src/types/` con los mismos nombres (
 - [x] Protección CSRF: cookie `XSRF-TOKEN` y header `X-XSRF-TOKEN`, que `client.ts` ya envía (§1, CC-015).
 - [x] Dónde se guardan los datos de origen de la solicitud: en `solicitudes` (CC-009).
 - [ ] Qué valores tiene "Condición académica" (Anexo A #2 de interfaces); hoy es texto libre.
-- [ ] Quién carga el informe de materias estructurado y en qué estado (`CARGAR_INFORME`, Anexo A #8).
 - [x] Si el Admin puede ejecutar transiciones por "bypass" (sección 2 de requisitos) o solo asignar responsables: ejecuta las del Académico y de Secretaría, no las del aspirante (§7, CC-017).
 - [ ] Descarga del expediente por el aspirante y reapertura: dependen de los estados posteriores a `E3-INI` (RF-ASP-008, RF-ADMIN-006).
 - [ ] Cambios CC-001 a CC-005 (permisos por facultad), aprobados el 2026-11-19: al implementarlos cambian `/admin/usuarios/{id}/permisos/…` y `Sesion.carrerasConPermiso`.

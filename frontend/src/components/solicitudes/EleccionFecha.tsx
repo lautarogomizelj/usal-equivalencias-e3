@@ -1,4 +1,4 @@
-import { CalendarDays, CircleAlert, User } from 'lucide-react'
+import { CalendarDays, CircleAlert } from 'lucide-react'
 import { useState } from 'react'
 import { Button, Modal, Textarea } from '@/components/ui'
 import { REUNION } from '@/constants/reunion'
@@ -6,6 +6,7 @@ import { useAccion } from '@/hooks/useAccion'
 import { useCarga } from '@/hooks/useCarga'
 import { acciones } from '@/services/acciones'
 import { solicitudes } from '@/services/solicitudes'
+import { ResponsableAcademico } from './ResponsableAcademico'
 import { TextoHorario } from './TextoHorario'
 import type { VistaSolicitudProps } from './vistas'
 
@@ -72,18 +73,7 @@ export function EleccionFecha({ detalle, onActualizada, onEstadoCambio }: VistaS
 
   return (
     <div className="mt-3 flex flex-wrap items-center gap-4">
-      {responsableAcademico && (
-        <p className="flex min-w-0 flex-1 items-center gap-3 rounded-md bg-surface p-3 text-base text-text">
-          <User aria-hidden className="size-(--size-icon-lg) shrink-0 text-primary" />
-          <span className="font-medium">Responsable académico</span>
-          <span className="min-w-0 border-l border-border pl-3">
-            {responsableAcademico.nombre}
-            <a href={`mailto:${responsableAcademico.email}`} className="block truncate text-primary underline">
-              {responsableAcademico.email}
-            </a>
-          </span>
-        </p>
-      )}
+      {responsableAcademico && <ResponsableAcademico responsable={responsableAcademico} />}
       {carga.error ? (
         <p role="alert" className="flex items-center gap-3 text-base text-danger">
           {carga.error}

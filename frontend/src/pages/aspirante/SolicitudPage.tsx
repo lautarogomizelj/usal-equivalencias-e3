@@ -73,7 +73,13 @@ function Solicitud({ id }: { id: number }) {
         ) : (
           <>
             <StepperEtapas codigoEstado={detalle.estado.codigo} />
-            <Vista detalle={detalle} onActualizada={actualizar} onEstadoCambio={recargarPorCambio} />
+            {/* Al cambiar el estado la vista arranca de nuevo: abre la pestaña que le corresponde al estado nuevo. */}
+            <Vista
+              key={detalle.estado.codigo}
+              detalle={detalle}
+              onActualizada={actualizar}
+              onEstadoCambio={recargarPorCambio}
+            />
           </>
         )}
       </div>

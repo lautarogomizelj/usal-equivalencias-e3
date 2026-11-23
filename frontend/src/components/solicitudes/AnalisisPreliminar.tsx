@@ -34,7 +34,7 @@ interface DocumentoAnalisisProps {
 }
 
 /** Un documento del análisis: se carga como archivo, como notas o las dos cosas (RF-ACAD-002). */
-function DocumentoAnalisis({ nombre, archivo, notas, error, onArchivo, onNotas }: DocumentoAnalisisProps) {
+export function DocumentoAnalisis({ nombre, archivo, notas, error, onArchivo, onNotas }: DocumentoAnalisisProps) {
   return (
     <div role="group" aria-label={nombre} className="flex flex-col gap-3 rounded-md border border-border p-4">
       <p className="flex items-center gap-2 text-lg font-medium text-text">

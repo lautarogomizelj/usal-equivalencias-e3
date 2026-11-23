@@ -1,10 +1,11 @@
 /**
- * Mocks de solicitudes, documentos, historial y acciones del trámite (contrato de la API §6 y §7).
+ * Mocks de solicitudes, documentos, historial, acciones del trámite y chat (contrato de la API §6, §7 y §8.1).
  * Responden según quién tiene la sesión abierta, igual que el backend. Todo vive en memoria.
  */
 import { ESTADOS_DE_ACCION } from '@/constants/estados'
 import { finDeReunion, REUNION } from '@/constants/reunion'
 import { ApiError } from '@/services/api/ApiError'
+import type { Mensaje, TipoConsulta } from '@/types/chat'
 import type { Sesion } from '@/types/sesion'
 import type {
   Analisis,
@@ -43,6 +44,8 @@ const RECORRIDOS: Record<string, string[]> = {
   'ANAL-PEND': ['SOL-INI', 'DOC-REV', 'ANAL-PEND'],
   'REU-FEC-ASP-1': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1'],
   'REU-PEND': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND'],
+  'REU-CHAT': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-FEC-ACAD', 'REU-FEC-ASP-2', 'REU-CHAT'],
+  'ANAL-POST': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND', 'ANAL-POST'],
   'INSC-ACEP': ['SOL-INI', 'DOC-REV', 'ANAL-PEND', 'REU-FEC-ASP-1', 'REU-PEND', 'ANAL-POST', 'INSC-ACEP'],
 }
 
@@ -62,7 +65,9 @@ const ACCIONES_ACADEMICO: Record<string, string[]> = {
   'DOC-REV': ['RECHAZAR_DOCUMENTACION', 'ACEPTAR_DOCUMENTACION', 'GUARDAR_MARCAS', 'AGREGAR_FALTANTE'],
   'ANAL-PEND': ['PROPONER_FECHAS'],
   'REU-FEC-ACAD': ['PROPONER_SEGUNDA_RONDA'],
-  'REU-PEND': ['CARGAR_ENLACE_MEET'],
+  'REU-CHAT': ['FIJAR_FECHA'],
+  'REU-PEND': ['MARCAR_NO_ASISTIO', 'FINALIZAR_REUNION', 'CARGAR_ENLACE_MEET'],
+  'ANAL-POST': ['ACEPTAR_INSCRIPCION', 'RECHAZAR_INSCRIPCION', 'ACTUALIZAR_ANALISIS'],
 }
 
 /** Estados de tipo A de cada rol: con ellos se calcula `requiereMiAccion`. */
@@ -84,14 +89,21 @@ const ESPERAN_A: Record<string, string[]> = {
 
 const MOTIVO_DEMO = 'El programa de Matemática I no está firmado.'
 
+type MensajeGuardado = Omit<Mensaje, 'visto' | 'esMio'>
+
 const origenes = new Map<number, SolicitudDetalle['datosOrigen']>()
 const documentos = new Map<number, Documento[]>()
 const historiales = new Map<number, EventoHistorial[]>()
 const observaciones = new Map<number, NonNullable<SolicitudDetalle['ultimaObservacion']>>()
 const analisis = new Map<number, Analisis[]>()
 const reuniones = new Map<number, ReunionInfo>()
+/** Los mensajes se guardan sin `visto` ni `esMio`, que dependen de quién mira. */
+const mensajes = new Map<number, MensajeGuardado[]>()
+/** Hasta qué mensaje leyó cada participante: por solicitud, y adentro por lector. */
+const lecturas = new Map<number, Map<string, number>>()
 let ultimoDocumentoId = 300
 let ultimoIdReunion = 500
+let ultimoMensajeId = 800
 
 function error(status: number, code: string, errors?: Record<string, string[]>) {
   return ApiError.fromStatus(status, { status, code, errors })
@@ -312,8 +324,11 @@ function detalle(sesion: Sesion, id: number): SolicitudDetalle {
     accionesDisponibles: accionesDe(sesion, solicitud),
     ultimaObservacion: observacionDe(solicitud),
     resumenDocumentos: { ok: contar('OK'), recargar: contar('RECARGAR'), pendiente: contar('PENDIENTE') },
-    chatHabilitado: Boolean(solicitud.responsableAcademico ?? solicitud.responsableAdministrativo),
-    mensajesNoLeidos: 0,
+    chatHabilitado: hayResponsable(solicitud),
+    puedeEscribirChat: puedeEscribir(sesion, solicitud),
+    mensajesNoLeidos: esDelChat(sesion, solicitud)
+      ? mensajesDe(id).filter((item) => !esAutor(sesion, item) && item.id > leidoHasta(sesion, id)).length
+      : 0,
   }
 }
 
@@ -623,7 +638,15 @@ function reunionDe(id: number) {
       const primera = ronda(1, [fechaDemo(3, 10), fechaDemo(3, 15), fechaDemo(5, 11), fechaDemo(8, 16)])
       info.rondaActual = 1
       info.rondas = [primera]
-      if (codigo !== 'REU-FEC-ASP-1') {
+      if (codigo === 'REU-CHAT') {
+        // Pidió otras fechas en la 1ª ronda y rechazó la 2ª: la fecha se pauta por chat.
+        Object.assign(primera, {
+          motivoOtrasFechas: 'Trabajo en esos horarios.',
+          disponibilidadAspirante: 'Martes por la mañana o jueves por la tarde.',
+        })
+        info.rondaActual = 2
+        info.rondas.push(ronda(2, [fechaDemo(6, 10), fechaDemo(7, 17)]))
+      } else if (codigo !== 'REU-FEC-ASP-1') {
         const [elegido] = primera.horarios
         elegido.elegido = true
         info.reunion = {
@@ -632,6 +655,7 @@ function reunionDe(id: number) {
           origen: 'ELEGIDA_ASPIRANTE',
           enlaceMeet: null,
           resultado: codigo === 'REU-PEND' ? 'PENDIENTE' : 'REALIZADA',
+          notas: codigo === 'REU-PEND' ? null : 'Se acordó reconocer 6 materias de primer año.',
         }
       }
     }
@@ -702,6 +726,7 @@ function elegirHorario(sesion: Sesion, body: unknown, id: number) {
     origen: 'ELEGIDA_ASPIRANTE',
     enlaceMeet: null,
     resultado: 'PENDIENTE',
+    notas: null,
   }
   cambiarEstado(sesion, solicitud, 'REU-PEND')
   return detalle(sesion, id)
@@ -737,6 +762,209 @@ function cargarEnlaceMeet(sesion: Sesion, body: unknown, id: number) {
   return structuredClone(reunionDe(id))
 }
 
+/** La fecha la pautaron por chat: alcanza con que sea a futuro. */
+function fijarFecha(sesion: Sesion, body: unknown, id: number) {
+  const { estadoEsperado, inicio } = body as { estadoEsperado: string; inicio?: string }
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, 'FIJAR_FECHA', estadoEsperado)
+  if (!inicio) throw error(400, 'VALIDACION', { inicio: ['Indicá el día y la hora que pautaron.'] })
+  if (Date.parse(inicio) <= Date.now()) throw error(400, 'VALIDACION', { inicio: ['La reunión tiene que ser a futuro.'] })
+  reunionDe(id).reunion = {
+    inicio,
+    fin: finDeReunion(inicio),
+    origen: 'FIJADA_CHAT',
+    enlaceMeet: null,
+    resultado: 'PENDIENTE',
+    notas: null,
+  }
+  cambiarEstado(sesion, solicitud, 'REU-PEND')
+  return detalle(sesion, id)
+}
+
+/** La reunión se hizo, con notas del Académico, o el aspirante no se presentó y hay que reprogramarla. */
+function cerrarReunion(sesion: Sesion, body: unknown, id: number, finalizo: boolean) {
+  const { estadoEsperado, notas, comentario } = body as Record<string, string | undefined>
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, finalizo ? 'FINALIZAR_REUNION' : 'MARCAR_NO_ASISTIO', estadoEsperado)
+  Object.assign(reunionDe(id).reunion!, {
+    resultado: finalizo ? 'REALIZADA' : 'NO_ASISTIO',
+    notas: (finalizo && notas?.trim()) || null,
+  })
+  // Las notas son del personal: no van al historial que ve el aspirante.
+  cambiarEstado(sesion, solicitud, finalizo ? 'ANAL-POST' : 'REU-FEC-ACAD', finalizo ? null : comentario?.trim() || null)
+  return detalle(sesion, id)
+}
+
+/** No cambia el estado: la versión nueva reemplaza entera a la anterior. */
+function actualizarAnalisis(sesion: Sesion, body: unknown, id: number) {
+  const formulario = body as FormData
+  const tipo = formulario.get('tipo') as TipoAnalisis
+  const archivo = formulario.get('archivo') as File | null
+  const notas = formulario.get('notas') as string | null
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, 'ACTUALIZAR_ANALISIS')
+  if (!archivo && !notas) throw error(400, 'VALIDACION', { notas: ['Cargá un archivo, notas o las dos cosas.'] })
+  const ahora = new Date().toISOString()
+  const autor = nombreCompleto(sesion)
+  analisis.set(
+    id,
+    analisisDe(id).map((anterior) =>
+      anterior.tipo === tipo
+        ? {
+            ...documentoAnalisis(tipo, archivo?.name ?? null, notas, archivo && URL.createObjectURL(archivo), autor, ahora),
+            version: anterior.version + 1,
+          }
+        : anterior,
+    ),
+  )
+  solicitud.fechaUltimaMod = ahora
+  return [...analisisDe(id)]
+}
+
+function decidirInscripcion(sesion: Sesion, body: unknown, id: number, aceptar: boolean) {
+  const { estadoEsperado, comentario } = body as { estadoEsperado: string; comentario?: string }
+  const solicitud = buscar(id)
+  exigir(sesion, solicitud, aceptar ? 'ACEPTAR_INSCRIPCION' : 'RECHAZAR_INSCRIPCION', estadoEsperado)
+  if (!aceptar && !comentario?.trim()) throw error(400, 'VALIDACION', { comentario: ['Indicá el motivo del rechazo.'] })
+  cambiarEstado(sesion, solicitud, aceptar ? 'INSC-ACEP' : 'INSC-RECH', aceptar ? null : comentario!.trim())
+  return detalle(sesion, id)
+}
+
+function hayResponsable(solicitud: SolicitudResumen) {
+  return Boolean(solicitud.responsableAcademico ?? solicitud.responsableAdministrativo)
+}
+
+/** El aspirante dueño y los responsables (RF-MSG-001): el resto del personal solo lee. */
+function esDelChat(sesion: Sesion, solicitud: SolicitudResumen) {
+  return sesion.tipo === 'ASPIRANTE' ? solicitud.aspirante.id === sesion.id : esResponsable(sesion, solicitud)
+}
+
+function puedeEscribir(sesion: Sesion, solicitud: SolicitudResumen) {
+  return esDelChat(sesion, solicitud) && hayResponsable(solicitud) && !solicitud.estado.esTerminal
+}
+
+function esAutor(sesion: Sesion, { autor }: MensajeGuardado) {
+  return autor.tipo === sesion.tipo && autor.id === sesion.id
+}
+
+function lector(tipo: string, id: number) {
+  return `${tipo}-${id}`
+}
+
+function leidoHasta(sesion: Sesion, id: number) {
+  return lecturas.get(id)?.get(lector(sesion.tipo, sesion.id)) ?? 0
+}
+
+function mensaje(
+  autor: Mensaje['autor'],
+  contenido: string,
+  tipoConsulta: TipoConsulta,
+  fechaEnvio: string,
+  adjunto: Mensaje['adjunto'] = null,
+): MensajeGuardado {
+  ultimoMensajeId += 1
+  return { id: ultimoMensajeId, autor, contenido, tipoConsulta, adjunto, fechaEnvio }
+}
+
+/** La solicitud de ejemplo en `REU-CHAT` ya trae la conversación empezada, con un mensaje sin leer para el aspirante. */
+function mensajesDe(id: number) {
+  if (!mensajes.has(id)) {
+    const { estado: actual, aspirante, responsableAcademico, fechaUltimaMod } = buscar(id)
+    const conversacion: MensajeGuardado[] = []
+    if (actual.codigo === 'REU-CHAT' && responsableAcademico) {
+      const { id: academicoId, nombre } = responsableAcademico
+      const academico: Mensaje['autor'] = { tipo: 'USUARIO', id: academicoId, nombre, rol: 'ACAD', avatar: null }
+      const elAspirante: Mensaje['autor'] = { tipo: 'ASPIRANTE', ...aspirante, rol: 'ASPIRANTE', avatar: null }
+      const minutosDespues = (minutos: number) => new Date(Date.parse(fechaUltimaMod) + minutos * 60_000).toISOString()
+      conversacion.push(
+        mensaje(
+          academico,
+          'Hola, te escribo para coordinar la fecha de la reunión. ¿Qué días y horarios te resultan convenientes?',
+          'FECHAS',
+          minutosDespues(10),
+        ),
+        mensaje(
+          elAspirante,
+          'Hola, tengo disponibilidad el martes por la mañana o el jueves por la tarde.',
+          'FECHAS',
+          minutosDespues(14),
+        ),
+        mensaje(academico, 'Perfecto, el jueves a las 15:00 me funciona. ¿Te parece bien?', 'FECHAS', minutosDespues(16)),
+      )
+      const hastaElSegundo = conversacion[1].id
+      lecturas.set(
+        id,
+        new Map([
+          [lector('USUARIO', academicoId), hastaElSegundo],
+          [lector('ASPIRANTE', aspirante.id), hastaElSegundo],
+        ]),
+      )
+    }
+    mensajes.set(id, conversacion)
+  }
+  return mensajes.get(id)!
+}
+
+function listarMensajes(sesion: Sesion, id: number, consulta: URLSearchParams) {
+  visible(sesion, id)
+  const despuesDe = Number(consulta.get('despuesDe') ?? 0)
+  const size = Number(consulta.get('size') ?? 20)
+  const nuevos = mensajesDe(id).filter((item) => item.id > despuesDe)
+  const leidos = [...(lecturas.get(id) ?? [])]
+  return {
+    content: nuevos.slice(0, size).map((item) => ({
+      ...item,
+      esMio: esAutor(sesion, item),
+      visto: leidos.some(([quien, hasta]) => quien !== lector(item.autor.tipo, item.autor.id) && hasta >= item.id),
+    })),
+    page: 0,
+    size,
+    totalElements: nuevos.length,
+    totalPages: Math.ceil(nuevos.length / size),
+  }
+}
+
+function exigirQueSeaDelChat(sesion: Sesion, solicitud: SolicitudResumen) {
+  if (!esDelChat(sesion, solicitud)) {
+    throw error(403, esParticipante(sesion, solicitud) ? 'NO_RESPONSABLE' : 'NO_PARTICIPANTE')
+  }
+}
+
+function enviarMensaje(sesion: Sesion, body: unknown, id: number) {
+  const formulario = body as FormData
+  const contenido = ((formulario.get('contenido') as string | null) ?? '').trim()
+  const adjunto = formulario.get('adjunto') as File | null
+  const solicitud = visible(sesion, id)
+  exigirQueSeaDelChat(sesion, solicitud)
+  if (!hayResponsable(solicitud)) throw error(403, 'CHAT_DESHABILITADO')
+  if (solicitud.estado.esTerminal) throw error(409, 'TRANSICION_INVALIDA')
+  if (!contenido && !adjunto) throw error(400, 'VALIDACION', { contenido: ['Escribí un mensaje o adjuntá un archivo.'] })
+  const nuevo = mensaje(
+    { tipo: sesion.tipo, id: sesion.id, nombre: nombreCompleto(sesion), rol: sesion.rol, avatar: sesion.avatar },
+    contenido,
+    formulario.get('tipoConsulta') as TipoConsulta,
+    new Date().toISOString(),
+    adjunto && { nombre: adjunto.name, urlDescarga: URL.createObjectURL(adjunto) },
+  )
+  mensajesDe(id).push(nuevo)
+  return { ...nuevo, esMio: true, visto: false }
+}
+
+function marcarLeidos(sesion: Sesion, body: unknown, id: number) {
+  exigirQueSeaDelChat(sesion, visible(sesion, id))
+  const deLaSolicitud = lecturas.get(id) ?? new Map<string, number>()
+  const quien = lector(sesion.tipo, sesion.id)
+  deLaSolicitud.set(quien, Math.max(deLaSolicitud.get(quien) ?? 0, (body as { hastaMensajeId: number }).hastaMensajeId))
+  lecturas.set(id, deLaSolicitud)
+}
+
+/** Las notas de la reunión son del personal: al aspirante no le llegan. */
+function reunionPara(sesion: Sesion, id: number) {
+  const info = structuredClone(reunionDe(visible(sesion, id).id))
+  if (sesion.tipo === 'ASPIRANTE' && info.reunion) info.reunion.notas = null
+  return info
+}
+
 type Manejador = (body: unknown, ids: number[], consulta: URLSearchParams) => unknown
 
 export function rutasSolicitudes(sesionActual: () => Sesion): Record<string, Manejador> {
@@ -758,12 +986,21 @@ export function rutasSolicitudes(sesionActual: () => Sesion): Record<string, Man
     'POST /solicitudes/:id/responsables/baja': (_, [id]) => cambiarResponsable(sesionActual(), id, false),
     'GET /solicitudes/:id/analisis': (_, [id]) => [...analisisDe(visible(sesionActual(), id).id)],
     'POST /solicitudes/:id/analisis/propuesta': (body, [id]) => proponerFechas(sesionActual(), body, id),
-    'GET /solicitudes/:id/reunion': (_, [id]) => structuredClone(reunionDe(visible(sesionActual(), id).id)),
+    'POST /solicitudes/:id/analisis': (body, [id]) => actualizarAnalisis(sesionActual(), body, id),
+    'GET /solicitudes/:id/reunion': (_, [id]) => reunionPara(sesionActual(), id),
     'POST /solicitudes/:id/reunion/segunda-ronda': (body, [id]) => proponerSegundaRonda(sesionActual(), body, id),
     'POST /solicitudes/:id/reunion/elegir-horario': (body, [id]) => elegirHorario(sesionActual(), body, id),
     'POST /solicitudes/:id/reunion/solicitar-otras-fechas': (body, [id]) =>
       solicitarOtrasFechas(sesionActual(), body, id),
     'POST /solicitudes/:id/reunion/rechazar-ronda': (body, [id]) => rechazarSegundaRonda(sesionActual(), body, id),
     'PUT /solicitudes/:id/reunion/enlace': (body, [id]) => cargarEnlaceMeet(sesionActual(), body, id),
+    'POST /solicitudes/:id/reunion/fijar-fecha': (body, [id]) => fijarFecha(sesionActual(), body, id),
+    'POST /solicitudes/:id/reunion/no-asistio': (body, [id]) => cerrarReunion(sesionActual(), body, id, false),
+    'POST /solicitudes/:id/reunion/finalizar': (body, [id]) => cerrarReunion(sesionActual(), body, id, true),
+    'POST /solicitudes/:id/inscripcion/aceptar': (body, [id]) => decidirInscripcion(sesionActual(), body, id, true),
+    'POST /solicitudes/:id/inscripcion/rechazar': (body, [id]) => decidirInscripcion(sesionActual(), body, id, false),
+    'GET /solicitudes/:id/chat/mensajes': (_, [id], consulta) => listarMensajes(sesionActual(), id, consulta),
+    'POST /solicitudes/:id/chat/mensajes': (body, [id]) => enviarMensaje(sesionActual(), body, id),
+    'POST /solicitudes/:id/chat/leidos': (body, [id]) => marcarLeidos(sesionActual(), body, id),
   }
 }

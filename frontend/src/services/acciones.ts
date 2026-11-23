@@ -1,14 +1,17 @@
 /**
  * Acciones del trámite (contrato de la API §7). Las que cambian el estado envían el que el usuario tenía en
- * pantalla; tomar el proceso, darse de baja, agregar un faltante y cargar el enlace de Meet no lo cambian.
+ * pantalla; tomar el proceso, darse de baja, agregar un faltante, cargar el enlace de Meet y actualizar el
+ * análisis no lo cambian.
  */
 import { api } from '@/services/api/client'
 import type {
+  Analisis,
   Documento,
   Marca,
   PropuestaAnalisis,
   ReunionInfo,
   SolicitudDetalle,
+  TipoAnalisis,
   TipoDocumento,
 } from '@/types/solicitud'
 
@@ -56,4 +59,23 @@ export const acciones = {
   /** No cambia el estado: devuelve la reunión con el enlace cargado. */
   cargarEnlaceMeet: (id: number, enlaceMeet: string) =>
     api.put<ReunionInfo>(`/solicitudes/${id}/reunion/enlace`, { enlaceMeet }),
+  /** `inicio` es la fecha que pautaron por chat, en ISO 8601. */
+  fijarFecha: (id: number, estadoEsperado: string, inicio: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/reunion/fijar-fecha`, { estadoEsperado, inicio }),
+  marcarNoAsistio: (id: number, estadoEsperado: string, comentario: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/reunion/no-asistio`, { estadoEsperado, comentario }),
+  finalizarReunion: (id: number, estadoEsperado: string, notas: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/reunion/finalizar`, { estadoEsperado, notas }),
+  /** No cambia el estado: la versión nueva reemplaza a la anterior y devuelve los dos documentos vigentes. */
+  actualizarAnalisis: (id: number, tipo: TipoAnalisis, archivo: File | null, notas: string) => {
+    const cuerpo = new FormData()
+    cuerpo.append('tipo', tipo)
+    if (archivo) cuerpo.append('archivo', archivo)
+    if (notas.trim()) cuerpo.append('notas', notas.trim())
+    return api.post<Analisis[]>(`/solicitudes/${id}/analisis`, cuerpo)
+  },
+  aceptarInscripcion: (id: number, estadoEsperado: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/inscripcion/aceptar`, { estadoEsperado }),
+  rechazarInscripcion: (id: number, estadoEsperado: string, comentario: string) =>
+    api.post<SolicitudDetalle>(`/solicitudes/${id}/inscripcion/rechazar`, { estadoEsperado, comentario }),
 }

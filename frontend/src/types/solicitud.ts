@@ -57,7 +57,10 @@ export interface SolicitudDetalle {
   accionesDisponibles: string[]
   ultimaObservacion: { comentario: string; usuario: string; fecha: string } | null
   resumenDocumentos: { ok: number; recargar: number; pendiente: number }
+  /** Hay algún responsable: sin eso el chat todavía no existe (RF-MSG-001). */
   chatHabilitado: boolean
+  /** Quien pregunta es el aspirante o un responsable, y el trámite sigue abierto. */
+  puedeEscribirChat: boolean
   mensajesNoLeidos: number
 }
 
@@ -141,6 +144,8 @@ export interface Reunion {
   origen: 'ELEGIDA_ASPIRANTE' | 'FIJADA_CHAT'
   enlaceMeet: string | null
   resultado: 'PENDIENTE' | 'REALIZADA' | 'NO_ASISTIO'
+  /** Notas del Académico al indicar que la reunión finalizó. Solo llegan para el personal. */
+  notas: string | null
 }
 
 /** Rondas de fechas y reunión vigente de una solicitud (contrato de la API §6.6). */

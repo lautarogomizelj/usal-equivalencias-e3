@@ -4,6 +4,8 @@ export interface Pestania {
   clave: string
   texto: string
   Icono: LucideIcon
+  /** Cantidad de novedades sin ver de la pestaña: se muestra al lado del texto cuando es mayor que cero. */
+  contador?: number
 }
 
 interface PestaniasProps {
@@ -19,7 +21,7 @@ const CLASES_INACTIVA = 'border-transparent text-text-muted hover:bg-secondary'
 export function Pestanias({ pestanias, activa, onCambiar }: PestaniasProps) {
   return (
     <div role="tablist" className="flex overflow-x-auto rounded-t-lg bg-surface-muted">
-      {pestanias.map(({ clave, texto, Icono }) => (
+      {pestanias.map(({ clave, texto, Icono, contador }) => (
         <button
           key={clave}
           type="button"
@@ -31,6 +33,12 @@ export function Pestanias({ pestanias, activa, onCambiar }: PestaniasProps) {
         >
           <Icono aria-hidden className="size-(--size-icon-lg) shrink-0" />
           {texto}
+          {Boolean(contador) && (
+            <span className="rounded-full bg-alert px-2 text-sm font-semibold text-white">
+              {contador}
+              <span className="sr-only"> sin leer</span>
+            </span>
+          )}
         </button>
       ))}
     </div>

@@ -37,9 +37,12 @@ export const BANNER_ASPIRANTE: Record<string, string> = {
   'REU-FEC-ASP-2':
     'Ronda 2 de 2. Tu responsable académico propuso nuevas fechas para la reunión: elegí una. Si tampoco podés, la fecha se coordina por chat.',
   'REU-FEC-ACAD': 'Estamos esperando nuevas fechas del Académico.',
-  'REU-CHAT':
-    'Es necesario coordinar la fecha de la reunión por chat con tu responsable académico. El chat de la solicitud todavía no está disponible.',
+  'REU-CHAT': 'Es necesario coordinar la fecha de la reunión por chat con tu responsable académico.',
   'REU-PEND': 'Reunión pactada, pendiente de realizarse.',
+  'ANAL-POST': 'La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción.',
+  'INSC-ACEP':
+    'Tu inscripción fue aceptada. El paso que sigue es indicar si tus documentos están legalizados: todavía no está disponible.',
+  'INSC-RECH': 'Lamentablemente tu solicitud no pudo ser aprobada.',
   'SOL-CANC': 'Cancelaste esta solicitud antes de enviar la documentación. Si querés retomar el trámite, creá una nueva.',
 }
 
@@ -52,10 +55,14 @@ export const BANNER_PERSONAL: Record<string, string> = {
     'La documentación fue aceptada. Falta cargar la matriz de equivalencias y el posible horario de cursada, y proponer las fechas de la reunión.',
   'REU-FEC-ASP-1': 'Ronda 1 de 2. Esperando que el aspirante elija una fecha.',
   'REU-FEC-ASP-2': 'Ronda 2 de 2. Esperando que el aspirante elija una fecha.',
-  'REU-FEC-ACAD': 'El aspirante pidió otras fechas para la reunión. Falta proponer la 2ª ronda.',
+  'REU-FEC-ACAD': 'Falta proponer nuevas fechas para la reunión con el aspirante.',
   'REU-CHAT':
-    'El aspirante rechazó la 2ª ronda de fechas. La fecha se pauta por el chat de la solicitud, que todavía no está disponible.',
+    'El aspirante rechazó la 2ª ronda de fechas. La fecha se pauta por el chat de la solicitud y la fija el Académico responsable.',
   'REU-PEND': 'Reunión pactada, pendiente de realizarse.',
+  'ANAL-POST':
+    'La reunión se realizó. Falta decidir la inscripción; antes se pueden actualizar la matriz y el horario de cursada.',
+  'INSC-ACEP': 'Esperando que el aspirante indique la legalización de sus documentos.',
+  'INSC-RECH': 'La inscripción fue rechazada: el trámite terminó.',
   'SOL-CANC': 'El aspirante canceló la solicitud antes de enviar la documentación.',
 }
 

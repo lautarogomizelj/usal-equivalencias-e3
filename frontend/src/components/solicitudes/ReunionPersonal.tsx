@@ -6,6 +6,8 @@ import { useAccion } from '@/hooks/useAccion'
 import { useCarga } from '@/hooks/useCarga'
 import { acciones } from '@/services/acciones'
 import { solicitudes } from '@/services/solicitudes'
+import { formatearFecha } from '@/utils/fechas'
+import { ResultadoReunion } from './ResultadoReunion'
 import { SelectorHorarios } from './SelectorHorarios'
 import { TextoHorario } from './TextoHorario'
 import type { VistaSolicitudProps } from './vistas'
@@ -14,10 +16,11 @@ const ENLACE_INVALIDO = `Pegá el enlace de Google Meet (${REUNION.PREFIJO_MEET}
 
 /**
  * Etapa de reunión vista por el personal (frontend-interfaces.md §5.6.5 a §5.6.8): las rondas de fechas, lo que
- * pidió el aspirante y la reunión pactada. El Académico responsable propone la 2ª ronda (`ACAD-REU-FEC-ACAD`) y
- * carga el enlace de Meet (`ACAD-REU-PEND`); para el resto es de solo lectura.
+ * pidió el aspirante y la reunión pactada. El Académico responsable propone la 2ª ronda (`ACAD-REU-FEC-ACAD`),
+ * carga el enlace de Meet e indica el resultado (`ACAD-REU-PEND`); para el resto es de solo lectura.
  */
-export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: VistaSolicitudProps) {
+export function ReunionPersonal(props: VistaSolicitudProps) {
+  const { detalle, onActualizada, onEstadoCambio } = props
   const carga = useCarga((signal) => solicitudes.reunion(detalle.id, signal))
   const [horarios, setHorarios] = useState<string[]>([])
   const [errorHorarios, setErrorHorarios] = useState<string | null>(null)
@@ -32,7 +35,11 @@ export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: Vist
   const puedeProponer = detalle.accionesDisponibles.includes('PROPONER_SEGUNDA_RONDA')
   const puedeCargarEnlace = detalle.accionesDisponibles.includes('CARGAR_ENLACE_MEET')
   const ultimaRonda = info?.rondas.at(-1)
-  const enlaceActual = enlace ?? info?.reunion?.enlaceMeet ?? ''
+  // La última reunión puede ser una anterior a la que el aspirante faltó: pactada es solo la que sigue pendiente.
+  const pactada = info?.reunion?.resultado === 'PENDIENTE' ? info.reunion : null
+  const ausencia =
+    detalle.estado.codigo === 'REU-FEC-ACAD' && info?.reunion?.resultado === 'NO_ASISTIO' ? info.reunion : null
+  const enlaceActual = enlace ?? pactada?.enlaceMeet ?? ''
 
   function revisarRonda() {
     if (!horarios.length) return setErrorHorarios('Agregá al menos un horario para la reunión.')
@@ -78,11 +85,11 @@ export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: Vist
           <span aria-busy className="block h-(--size-tabla-fila) animate-pulse rounded-md bg-surface-muted" />
         ) : (
           <div className="flex flex-col gap-4">
-            {info.reunion && (
+            {pactada && (
               <div className="flex flex-col gap-3 rounded-md bg-secondary p-4">
                 <p className="text-lg font-medium text-primary">Reunión pactada</p>
                 <div className="flex flex-wrap items-center gap-x-8 gap-y-2">
-                  <TextoHorario inicio={info.reunion.inicio} fin={info.reunion.fin} />
+                  <TextoHorario inicio={pactada.inicio} fin={pactada.fin} />
                   <p className="flex items-center gap-2 text-base text-text">
                     <Video aria-hidden className="size-(--size-icon-sm) shrink-0 text-primary" />
                     Google Meet
@@ -121,15 +128,15 @@ export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: Vist
                       </p>
                     )}
                   </div>
-                ) : info.reunion.enlaceMeet ? (
+                ) : pactada.enlaceMeet ? (
                   <a
-                    href={info.reunion.enlaceMeet}
+                    href={pactada.enlaceMeet}
                     target="_blank"
                     rel="noreferrer"
                     className="inline-flex items-center gap-2 self-start text-base text-primary underline"
                   >
                     <Link aria-hidden className="size-(--size-icon-sm) shrink-0" />
-                    {info.reunion.enlaceMeet}
+                    {pactada.enlaceMeet}
                   </a>
                 ) : (
                   <p className="text-base text-text-muted">Todavía no se cargó el enlace de Meet.</p>
@@ -137,7 +144,15 @@ export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: Vist
               </div>
             )}
 
-            {!info.reunion && ultimaRonda?.motivoOtrasFechas && (
+            {ausencia && (
+              <p className="flex items-center gap-2 rounded-md bg-warning-soft p-4 text-base text-text">
+                <CircleAlert aria-hidden className="size-(--size-icon-sm) shrink-0 text-warning" />
+                El aspirante no se presentó a la reunión del {formatearFecha(ausencia.inicio)}. Hay que proponerle
+                nuevas fechas.
+              </p>
+            )}
+
+            {!pactada && !ausencia && ultimaRonda?.motivoOtrasFechas && (
               <dl className="grid gap-3 rounded-md bg-warning-soft p-4 text-base text-text sm:grid-cols-2">
                 <div>
                   <dt className="font-medium text-warning">Por qué no puede en las fechas propuestas</dt>
@@ -177,7 +192,8 @@ export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: Vist
 
             {/* La ronda vigente va primero. */}
             {info.rondas.toReversed().map(({ numero, horarios: propuestos }) => (
-              <div key={numero}>
+              // Si el aspirante faltó a la reunión se vuelve a proponer una 2ª ronda: el número se puede repetir.
+              <div key={propuestos[0]?.id ?? numero}>
                 <p className="text-lg font-medium text-text">
                   Ronda {numero} de {REUNION.RONDAS}
                 </p>
@@ -204,6 +220,8 @@ export function ReunionPersonal({ detalle, onActualizada, onEstadoCambio }: Vist
           </div>
         )}
       </Seccion>
+
+      <ResultadoReunion {...props} />
 
       <ModalConfirmacion
         abierto={confirmando}

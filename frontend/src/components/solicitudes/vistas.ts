@@ -1,8 +1,11 @@
 import type { ComponentType } from 'react'
 import type { SolicitudDetalle } from '@/types/solicitud'
 import { AnalisisPreliminar } from './AnalisisPreliminar'
+import { AvisoInasistencia, CoordinacionPorChat, MotivoDelRechazo } from './AvisosAspirante'
 import { CargaDocumentacion } from './CargaDocumentacion'
+import { DecisionInscripcion } from './DecisionInscripcion'
 import { EleccionFecha } from './EleccionFecha'
+import { FijarFecha } from './FijarFecha'
 import { RecargaDocumentos } from './RecargaDocumentos'
 import { ReunionPactada } from './ReunionPactada'
 import { ReunionPersonal } from './ReunionPersonal'
@@ -41,8 +44,19 @@ export const ACCIONES_EN_BANNER: Record<string, ComponentType<VistaSolicitudProp
   'DOC-RECH': RecargaDocumentos,
   'REU-FEC-ASP-1': EleccionFecha,
   'REU-FEC-ASP-2': EleccionFecha,
+  'REU-FEC-ACAD': AvisoInasistencia,
+  'REU-CHAT': CoordinacionPorChat,
   'REU-PEND': ReunionPactada,
+  'INSC-RECH': MotivoDelRechazo,
 }
+
+/** Lo mismo para el personal: la acción que se ejecuta desde el banner, sin entrar a una pestaña. */
+export const ACCIONES_EN_BANNER_PERSONAL: Record<string, ComponentType<VistaSolicitudProps>> = {
+  'REU-CHAT': FijarFecha,
+}
+
+/** Estados en los que el detalle se abre en la pestaña Chat (frontend-interfaces.md §4.7.2 y §5.6.7). */
+export const ESTADOS_CON_CHAT_ABIERTO = ['REU-CHAT']
 
 /**
  * Panel del personal por código de estado (frontend-interfaces.md §5.6): va arriba de los documentos, en la
@@ -55,4 +69,5 @@ export const VISTAS_PERSONAL: Record<string, ComponentType<VistaSolicitudProps>>
   'REU-FEC-ACAD': ReunionPersonal,
   'REU-CHAT': ReunionPersonal,
   'REU-PEND': ReunionPersonal,
+  'ANAL-POST': DecisionInscripcion,
 }

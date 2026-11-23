@@ -2,11 +2,16 @@ import { FileText, History, Info, Mail, MessageCircle } from 'lucide-react'
 import { useState } from 'react'
 import { useParams } from 'react-router'
 import { EncabezadoPagina } from '@/components/privado/EncabezadoPagina'
+import { Chat } from '@/components/solicitudes/Chat'
 import { PanelDetalles, PanelHistorial } from '@/components/solicitudes/DetalleSolicitud'
 import { DocumentacionAcademica } from '@/components/solicitudes/DocumentacionAcademica'
 import { RevisionDocumentos } from '@/components/solicitudes/RevisionDocumentos'
-import { VISTAS_PERSONAL } from '@/components/solicitudes/vistas'
-import { Aviso, Banner, Button, EstadoBadge, ModalConfirmacion, Pestanias, Seccion, type Pestania } from '@/components/ui'
+import {
+  ACCIONES_EN_BANNER_PERSONAL,
+  ESTADOS_CON_CHAT_ABIERTO,
+  VISTAS_PERSONAL,
+} from '@/components/solicitudes/vistas'
+import { Aviso, Banner, Button, EstadoBadge, ModalConfirmacion, Pestanias, type Pestania } from '@/components/ui'
 import { BANNER_PERSONAL, ESTADOS_DE_ACCION, VARIANTE_POR_ESTADO } from '@/constants/estados'
 import { ROUTES } from '@/constants/routes'
 import { useCarga } from '@/hooks/useCarga'
@@ -16,6 +21,7 @@ import { solicitudes } from '@/services/solicitudes'
 import { useAuth } from '@/store/authContext'
 import type { SolicitudDetalle } from '@/types/solicitud'
 import { mensajeDeError } from '@/utils/errores'
+import { inicialesDeNombre } from '@/utils/personas'
 import { MENSAJES } from '@/validations/messages'
 
 const ORIGEN = { texto: 'Solicitudes de equivalencia', ruta: ROUTES.MIS_SOLICITUDES }
@@ -44,17 +50,13 @@ function Dato({ etiqueta, valor, detalle }: { etiqueta: string; valor: string; d
   )
 }
 
-/** Primera letra del primer nombre y del último apellido: el sistema no tiene fotos de perfil. */
-function iniciales(nombre: string) {
-  const palabras = nombre.trim().split(/\s+/)
-  return `${palabras[0].charAt(0)}${palabras.length > 1 ? palabras[palabras.length - 1].charAt(0) : ''}`.toUpperCase()
-}
-
 function Solicitud({ id }: { id: number }) {
   const { sesion } = useAuth()
   const { datos: detalle, cargando, error, reintentar, setDatos } = useCarga((signal) => solicitudes.obtener(id, signal))
   const [aviso, setAviso] = useState<AvisoPagina | null>(null)
-  const [activa, setActiva] = useState(PESTANIAS[0].clave)
+  /** `null` mientras no se elige una: se abre la que le corresponde al estado. */
+  const [activa, setActiva] = useState<string | null>(null)
+  const [chatLeido, setChatLeido] = useState(false)
   const [modal, setModal] = useState<'tomar' | 'baja' | null>(null)
   const [procesando, setProcesando] = useState(false)
   const [errorModal, setErrorModal] = useState<string | null>(null)
@@ -63,6 +65,8 @@ function Solicitud({ id }: { id: number }) {
   /** El aviso va arriba de todo: se sube la página para que se vea junto con la vista nueva. */
   function actualizar(nuevo: SolicitudDetalle, mensaje: string) {
     setAviso({ tipo: 'exito', mensaje })
+    if (nuevo.estado.codigo !== detalle?.estado.codigo) setActiva(null)
+    setChatLeido(false)
     setDatos(nuevo)
     window.scrollTo(0, 0)
   }
@@ -70,6 +74,7 @@ function Solicitud({ id }: { id: number }) {
   function recargar(mensaje: string = MENSAJES.ESTADO_CAMBIO) {
     setAviso({ tipo: 'error', mensaje })
     setModal(null)
+    setChatLeido(false)
     reintentar()
     window.scrollTo(0, 0)
   }
@@ -106,6 +111,11 @@ function Solicitud({ id }: { id: number }) {
     const puedeDarseDeBaja = accionesDisponibles.includes('DARSE_DE_BAJA')
     const meToca = soyResponsable && Boolean(ESTADOS_DE_ACCION[rol]?.includes(estado.codigo))
     const Panel = VISTAS_PERSONAL[estado.codigo]
+    const AccionEnBanner = ACCIONES_EN_BANNER_PERSONAL[estado.codigo]
+    const pestania = activa ?? (ESTADOS_CON_CHAT_ABIERTO.includes(estado.codigo) ? 'chat' : PESTANIAS[0].clave)
+    const pestanias = PESTANIAS.map((item) =>
+      item.clave === 'chat' ? { ...item, contador: chatLeido ? 0 : detalle.mensajesNoLeidos } : item,
+    )
     // Una revisión con observación previa es una recarga: los documentos nuevos llegan pendientes (§5.6.2).
     const texto =
       rol === 'SECRE' && !estado.esTerminal
@@ -121,7 +131,7 @@ function Solicitud({ id }: { id: number }) {
             aria-hidden
             className="flex size-(--size-privado-indicador) shrink-0 items-center justify-center rounded-full bg-secondary text-2xl font-semibold text-primary"
           >
-            {iniciales(aspirante.nombre)}
+            {inicialesDeNombre(aspirante.nombre)}
           </span>
           <div className="min-w-0">
             <h2 className="text-2xl">{aspirante.nombre}</h2>
@@ -186,17 +196,20 @@ function Solicitud({ id }: { id: number }) {
           {observador && <p>{MENSAJES.SIN_PERMISO_DE_PROCESO} La ves en modo lectura.</p>}
           {puedeTomar && <p>Todavía nadie tomó este proceso: tomalo para poder actuar.</p>}
           {!observador && miResponsable && !soyResponsable && <p>El proceso lo lleva {miResponsable.nombre}.</p>}
+          {AccionEnBanner && (
+            <AccionEnBanner detalle={detalle} onActualizada={actualizar} onEstadoCambio={() => recargar()} />
+          )}
         </Banner>
 
         <div>
-          <Pestanias pestanias={PESTANIAS} activa={activa} onCambiar={setActiva} />
+          <Pestanias pestanias={pestanias} activa={pestania} onCambiar={setActiva} />
           {/* El primer bloque de cada pestaña se une a la barra de pestañas: sin las puntas de arriba redondeadas. */}
           <div
             role="tabpanel"
-            aria-labelledby={`pestania-${activa}`}
+            aria-labelledby={`pestania-${pestania}`}
             className="flex flex-col gap-4 *:first:rounded-t-none"
           >
-            {activa === 'analisis' && (
+            {pestania === 'analisis' && (
               <>
                 {Panel && (
                   <Panel
@@ -212,18 +225,14 @@ function Solicitud({ id }: { id: number }) {
                   onActualizada={actualizar}
                   onEstadoCambio={() => recargar()}
                 />
-                <DocumentacionAcademica key={`academica-${estado.codigo}`} soloSiHay solicitudId={detalle.id} />
+                <DocumentacionAcademica key={`academica-${detalle.fechaUltimaMod}`} soloSiHay solicitudId={detalle.id} />
               </>
             )}
-            {activa === 'detalles' && <PanelDetalles completo detalle={detalle} />}
-            {activa === 'chat' && (
-              <Seccion Icono={MessageCircle} titulo="Chat de la solicitud" className="rounded-t-none">
-                <p className="rounded-md bg-surface-muted px-4 py-6 text-center text-base text-text-muted">
-                  Próximamente: el chat con el aspirante todavía no está disponible.
-                </p>
-              </Seccion>
+            {pestania === 'detalles' && <PanelDetalles completo detalle={detalle} />}
+            {pestania === 'chat' && (
+              <Chat detalle={detalle} onEstadoCambio={() => recargar()} onLeidos={() => setChatLeido(true)} />
             )}
-            {activa === 'historial' && <PanelHistorial key={detalle.fechaUltimaMod} solicitudId={detalle.id} />}
+            {pestania === 'historial' && <PanelHistorial key={detalle.fechaUltimaMod} solicitudId={detalle.id} />}
           </div>
         </div>
 

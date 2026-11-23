@@ -8,8 +8,9 @@ import { catalogos } from '@/services/catalogos'
 import { solicitudes } from '@/services/solicitudes'
 import type { Documento, EventoHistorial, Responsable, SolicitudDetalle } from '@/types/solicitud'
 import { formatearFecha, formatearFechaHora } from '@/utils/fechas'
+import { Chat } from './Chat'
 import { DocumentacionAcademica } from './DocumentacionAcademica'
-import { ACCIONES_EN_BANNER, type VistaSolicitudProps } from './vistas'
+import { ACCIONES_EN_BANNER, ESTADOS_CON_CHAT_ABIERTO, type VistaSolicitudProps } from './vistas'
 
 const PESTANIAS: Pestania[] = [
   { clave: 'documentacion', texto: 'Documentación', Icono: FileText },
@@ -113,7 +114,7 @@ function Fila({ etiqueta, children }: { etiqueta: string; children: ReactNode })
   return (
     <div className="grid grid-cols-5 items-center gap-4 py-3">
       <dt className="col-span-2 text-base text-text-muted">{etiqueta}</dt>
-      <dd className="col-span-3 text-base text-text">{children}</dd>
+      <dd className="col-span-3 text-base wrap-anywhere text-text">{children}</dd>
     </div>
   )
 }
@@ -143,7 +144,7 @@ export function PanelDetalles({ detalle, completo = false }: { detalle: Solicitu
   const { aspirante, datosOrigen, responsableAcademico, responsableAdministrativo } = detalle
 
   return (
-    <div className="grid items-start gap-4 lg:grid-cols-2">
+    <div className="grid grid-cols-1 items-start gap-4 lg:grid-cols-2">
       <Seccion Icono={FileText} titulo="Información general" className="lg:rounded-t-none">
         <dl className="divide-y divide-border">
           <Fila etiqueta="Código de expediente">{detalle.codigoExp}</Fila>
@@ -258,18 +259,24 @@ export function PanelHistorial({ solicitudId }: { solicitudId: number }) {
 
 function turno({ estado, accionesDisponibles }: SolicitudDetalle) {
   if (estado.esTerminal) return 'Trámite cerrado'
-  return accionesDisponibles.length ? 'Te toca a vos' : 'Estamos trabajando en esto'
+  // Coordinar la fecha por chat no es una acción del trámite, pero depende del aspirante.
+  const leToca = accionesDisponibles.length > 0 || ESTADOS_CON_CHAT_ABIERTO.includes(estado.codigo)
+  return leToca ? 'Te toca a vos' : 'Estamos trabajando en esto'
 }
 
 /**
- * Detalle de solo lectura de una solicitud: banner del estado y pestañas
+ * Detalle de una solicitud para el aspirante: banner del estado, con su acción si la hay, y pestañas
  * (frontend-interfaces.md §4.5 a §4.7 y Anexo B, punto 18).
  */
 export function DetalleSolicitud(props: VistaSolicitudProps) {
   const { detalle } = props
-  const [activa, setActiva] = useState(PESTANIAS[0].clave)
+  const [activa, setActiva] = useState(
+    ESTADOS_CON_CHAT_ABIERTO.includes(detalle.estado.codigo) ? 'chat' : PESTANIAS[0].clave,
+  )
+  const [noLeidos, setNoLeidos] = useState(detalle.mensajesNoLeidos)
   const texto = BANNER_ASPIRANTE[detalle.estado.codigo]
   const Accion = ACCIONES_EN_BANNER[detalle.estado.codigo]
+  const pestanias = PESTANIAS.map((pestania) => (pestania.clave === 'chat' ? { ...pestania, contador: noLeidos } : pestania))
 
   return (
     <>
@@ -283,16 +290,12 @@ export function DetalleSolicitud(props: VistaSolicitudProps) {
       </Banner>
 
       <div>
-        <Pestanias pestanias={PESTANIAS} activa={activa} onCambiar={setActiva} />
+        <Pestanias pestanias={pestanias} activa={activa} onCambiar={setActiva} />
         <div role="tabpanel" aria-labelledby={`pestania-${activa}`} className="flex flex-col gap-4">
           {activa === 'documentacion' && <PanelDocumentacion solicitudId={detalle.id} />}
           {activa === 'detalles' && <PanelDetalles detalle={detalle} />}
           {activa === 'chat' && (
-            <Seccion Icono={MessageCircle} titulo="Chat de la solicitud" className="rounded-t-none">
-              <p className="rounded-md bg-surface-muted px-4 py-6 text-center text-base text-text-muted">
-                Próximamente: el chat con tus responsables todavía no está disponible.
-              </p>
-            </Seccion>
+            <Chat detalle={detalle} onEstadoCambio={props.onEstadoCambio} onLeidos={() => setNoLeidos(0)} />
           )}
           {activa === 'historial' && <PanelHistorial solicitudId={detalle.id} />}
         </div>

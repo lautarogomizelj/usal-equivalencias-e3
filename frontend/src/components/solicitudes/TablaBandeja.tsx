@@ -13,6 +13,8 @@ interface TablaBandejaProps {
   /** Código de rol de quien mira: define qué responsable muestra la columna. */
   rol: string
   textoVacio: string
+  /** Sin paginador, para mostrar solo las primeras en un panel de inicio. */
+  sinPaginador?: boolean
   onCambiarPagina: (pagina: number) => void
   onReintentar: () => void
 }
@@ -21,7 +23,16 @@ interface TablaBandejaProps {
  * Bandeja de solicitudes del Académico y de Secretaría (frontend-interfaces.md §5.2 y Anexo B, punto 20).
  * El orden lo resuelve el backend: primero las carreras con permiso y después el resto, alfabético.
  */
-export function TablaBandeja({ pagina, cargando, error, rol, textoVacio, onCambiarPagina, onReintentar }: TablaBandejaProps) {
+export function TablaBandeja({
+  pagina,
+  cargando,
+  error,
+  rol,
+  textoVacio,
+  sinPaginador = false,
+  onCambiarPagina,
+  onReintentar,
+}: TablaBandejaProps) {
   const navigate = useNavigate()
 
   const columnas: ColumnaTabla<SolicitudResumen>[] = [
@@ -106,7 +117,7 @@ export function TablaBandeja({ pagina, cargando, error, rol, textoVacio, onCambi
         textoVacio={textoVacio}
         onReintentar={onReintentar}
       />
-      {pagina && pagina.totalElements > 0 && <Paginador pagina={pagina} onCambiar={onCambiarPagina} />}
+      {!sinPaginador && pagina && pagina.totalElements > 0 && <Paginador pagina={pagina} onCambiar={onCambiarPagina} />}
     </div>
   )
 }

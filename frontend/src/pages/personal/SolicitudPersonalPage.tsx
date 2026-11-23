@@ -1,7 +1,9 @@
-import { FileText, History, Info, Mail, MessageCircle } from 'lucide-react'
+import { Download, FileText, History, Info, Mail, MessageCircle, ScrollText } from 'lucide-react'
 import { useState } from 'react'
-import { useParams } from 'react-router'
+import { useParams, useSearchParams } from 'react-router'
+import { TablaAuditoria } from '@/components/auditoria/TablaAuditoria'
 import { EncabezadoPagina } from '@/components/privado/EncabezadoPagina'
+import { AsignarResponsable } from '@/components/solicitudes/AsignarResponsable'
 import { Chat } from '@/components/solicitudes/Chat'
 import { PanelDetalles, PanelHistorial } from '@/components/solicitudes/DetalleSolicitud'
 import { DocumentacionAcademica } from '@/components/solicitudes/DocumentacionAcademica'
@@ -11,12 +13,15 @@ import {
   ESTADOS_CON_CHAT_ABIERTO,
   VISTAS_PERSONAL,
 } from '@/components/solicitudes/vistas'
-import { Aviso, Banner, Button, EstadoBadge, ModalConfirmacion, Pestanias, type Pestania } from '@/components/ui'
+import { Aviso, Banner, Button, EstadoBadge, ModalConfirmacion, Pestanias, Seccion, type Pestania } from '@/components/ui'
+import { ROLES_CON_PROCESO } from '@/constants/bandeja'
 import { BANNER_PERSONAL, ESTADOS_DE_ACCION, ESTADOS_DE_PAGO, VARIANTE_POR_ESTADO } from '@/constants/estados'
 import { ROUTES } from '@/constants/routes'
 import { useCarga } from '@/hooks/useCarga'
+import { usePagina } from '@/hooks/usePagina'
 import { acciones } from '@/services/acciones'
 import { ApiError } from '@/services/api/ApiError'
+import { auditoria } from '@/services/auditoria'
 import { solicitudes } from '@/services/solicitudes'
 import { useAuth } from '@/store/authContext'
 import type { SolicitudDetalle } from '@/types/solicitud'
@@ -32,6 +37,9 @@ const PESTANIAS: Pestania[] = [
   { clave: 'chat', texto: 'Chat', Icono: MessageCircle },
   { clave: 'historial', texto: 'Historial', Icono: History },
 ]
+
+/** Solo para el Admin y el Revisor (frontend-interfaces.md §8.3). */
+const PESTANIA_AUDITORIA: Pestania = { clave: 'auditoria', texto: 'Auditoría', Icono: ScrollText }
 
 interface AvisoPagina {
   tipo: 'exito' | 'error'
@@ -50,14 +58,35 @@ function Dato({ etiqueta, valor, detalle }: { etiqueta: string; valor: string; d
   )
 }
 
+/** Todo lo registrado sobre la solicitud en la auditoría del sistema, con los estados por código. */
+function PanelAuditoria({ solicitudId }: { solicitudId: number }) {
+  const { pagina, cargando, error, irAPagina, reintentar } = usePagina((page, signal) =>
+    auditoria.deSolicitud(solicitudId, page, signal),
+  )
+  return (
+    <Seccion Icono={ScrollText} titulo="Auditoría de la solicitud" descripcion="Acciones registradas sobre esta solicitud.">
+      <TablaAuditoria
+        interna
+        pagina={pagina}
+        cargando={cargando}
+        error={error}
+        onCambiarPagina={irAPagina}
+        onReintentar={reintentar}
+      />
+    </Seccion>
+  )
+}
+
 function Solicitud({ id }: { id: number }) {
   const { sesion } = useAuth()
+  const [parametros, setParametros] = useSearchParams()
   const { datos: detalle, cargando, error, reintentar, setDatos } = useCarga((signal) => solicitudes.obtener(id, signal))
   const [aviso, setAviso] = useState<AvisoPagina | null>(null)
   /** `null` mientras no se elige una: se abre la que le corresponde al estado. */
   const [activa, setActiva] = useState<string | null>(null)
   const [chatLeido, setChatLeido] = useState(false)
-  const [modal, setModal] = useState<'tomar' | 'baja' | null>(null)
+  /** El panel del Admin llega con `?asignar=1` para abrir directamente la asignación de responsables. */
+  const [modal, setModal] = useState<'tomar' | 'baja' | 'asignar' | null>(parametros.has('asignar') ? 'asignar' : null)
   const [procesando, setProcesando] = useState(false)
   const [errorModal, setErrorModal] = useState<string | null>(null)
   const rol = sesion?.rol ?? ''
@@ -84,6 +113,11 @@ function Solicitud({ id }: { id: number }) {
     setModal(cual)
   }
 
+  function cerrarAsignacion() {
+    setModal(null)
+    if (parametros.has('asignar')) setParametros({}, { replace: true })
+  }
+
   /** Tomar el proceso o darse de baja: el estado no cambia, pero otro pudo haber llegado antes. */
   async function cambiarResponsable(accion: (id: number) => Promise<SolicitudDetalle>, mensaje: string) {
     setProcesando(true)
@@ -104,16 +138,26 @@ function Solicitud({ id }: { id: number }) {
 
   function cuerpo(detalle: SolicitudDetalle) {
     const { aspirante, datosOrigen, estado, accionesDisponibles } = detalle
-    const miResponsable = rol === 'SECRE' ? detalle.responsableAdministrativo : detalle.responsableAcademico
-    const soyResponsable = miResponsable?.id === sesion?.id
-    const observador = detalle.miRelacion === 'OBSERVADOR'
+    const esAdmin = detalle.miRelacion === 'ADMIN'
+    const tomaProcesos = ROLES_CON_PROCESO.includes(rol)
+    const miResponsable = !tomaProcesos
+      ? null
+      : rol === 'SECRE'
+        ? detalle.responsableAdministrativo
+        : detalle.responsableAcademico
+    const soyResponsable = Boolean(miResponsable) && miResponsable?.id === sesion?.id
+    // El Revisor ve todo como un observador: en modo lectura (§8.3).
+    const observador = detalle.miRelacion === 'OBSERVADOR' || detalle.miRelacion === 'REVISOR'
     const puedeTomar = accionesDisponibles.includes('TOMAR_PROCESO')
     const puedeDarseDeBaja = accionesDisponibles.includes('DARSE_DE_BAJA')
-    const meToca = soyResponsable && Boolean(ESTADOS_DE_ACCION[rol]?.includes(estado.codigo))
+    // El Admin actúa sin ser responsable (§7.0): le toca siempre que el estado tenga una acción del personal.
+    const meToca = esAdmin
+      ? accionesDisponibles.length > 0
+      : soyResponsable && Boolean(ESTADOS_DE_ACCION[rol]?.includes(estado.codigo))
     const Panel = VISTAS_PERSONAL[estado.codigo]
     const AccionEnBanner = ACCIONES_EN_BANNER_PERSONAL[estado.codigo]
     const pestania = activa ?? (ESTADOS_CON_CHAT_ABIERTO.includes(estado.codigo) ? 'chat' : PESTANIAS[0].clave)
-    const pestanias = PESTANIAS.map((item) =>
+    const pestanias = [...PESTANIAS, ...(tomaProcesos ? [] : [PESTANIA_AUDITORIA])].map((item) =>
       item.clave === 'chat' ? { ...item, contador: chatLeido ? 0 : detalle.mensajesNoLeidos } : item,
     )
     // Una revisión con observación previa es una recarga: los documentos nuevos llegan pendientes (§5.6.2).
@@ -150,29 +194,47 @@ function Solicitud({ id }: { id: number }) {
               valor={detalle.responsableAdministrativo?.nombre ?? 'Sin asignar'}
             />
           </dl>
-          {soyResponsable ? (
-            <Button
-              variante="outline"
-              tamanio="lg"
-              disabled={!puedeDarseDeBaja}
-              title={puedeDarseDeBaja ? undefined : MENSAJES.UNICO_RESPONSABLE}
-              onClick={() => abrir('baja')}
-            >
-              Darse de baja
-            </Button>
-          ) : (
-            !miResponsable &&
-            !estado.esTerminal && (
-              <Button
-                tamanio="lg"
-                disabled={!puedeTomar}
-                title={puedeTomar ? undefined : MENSAJES.SIN_PERMISO_DE_PROCESO}
-                onClick={() => abrir('tomar')}
-              >
-                Tomar proceso
+          <div className="flex shrink-0 flex-col gap-2">
+            {esAdmin && !estado.esTerminal && (
+              <Button tamanio="lg" onClick={() => setModal('asignar')}>
+                Asignar responsable
               </Button>
-            )
-          )}
+            )}
+            {soyResponsable ? (
+              <Button
+                variante="outline"
+                tamanio="lg"
+                disabled={!puedeDarseDeBaja}
+                title={puedeDarseDeBaja ? undefined : MENSAJES.UNICO_RESPONSABLE}
+                onClick={() => abrir('baja')}
+              >
+                Darse de baja
+              </Button>
+            ) : (
+              tomaProcesos &&
+              !miResponsable &&
+              !estado.esTerminal && (
+                <Button
+                  tamanio="lg"
+                  disabled={!puedeTomar}
+                  title={puedeTomar ? undefined : MENSAJES.SIN_PERMISO_DE_PROCESO}
+                  onClick={() => abrir('tomar')}
+                >
+                  Tomar proceso
+                </Button>
+              )
+            )}
+            {/* RF-PROC-005: el expediente completo en un ZIP. */}
+            <a
+              href={solicitudes.urlExpediente(detalle.id)}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex h-(--size-button-lg) items-center justify-center gap-2 rounded-md border border-primary bg-surface px-6 text-base font-medium whitespace-nowrap text-primary transition-colors hover:bg-secondary"
+            >
+              <Download aria-hidden className="size-(--size-icon-md)" />
+              Descargar expediente
+            </a>
+          </div>
         </section>
 
         <Banner
@@ -193,7 +255,9 @@ function Solicitud({ id }: { id: number }) {
           }
         >
           {texto && <p>{texto}</p>}
-          {observador && <p>{MENSAJES.SIN_PERMISO_DE_PROCESO} La ves en modo lectura.</p>}
+          {detalle.miRelacion === 'OBSERVADOR' && <p>{MENSAJES.SIN_PERMISO_DE_PROCESO} La ves en modo lectura.</p>}
+          {detalle.miRelacion === 'REVISOR' && <p>Tu acceso es de consulta: ves la solicitud en modo lectura.</p>}
+          {esAdmin && meToca && <p>Como Admin podés ejecutar esta acción aunque no seas el responsable.</p>}
           {puedeTomar && <p>Todavía nadie tomó este proceso: tomalo para poder actuar.</p>}
           {!observador && miResponsable && !soyResponsable && <p>El proceso lo lleva {miResponsable.nombre}.</p>}
           {AccionEnBanner && (
@@ -233,6 +297,7 @@ function Solicitud({ id }: { id: number }) {
               <Chat detalle={detalle} onEstadoCambio={() => recargar()} onLeidos={() => setChatLeido(true)} />
             )}
             {pestania === 'historial' && <PanelHistorial key={detalle.fechaUltimaMod} solicitudId={detalle.id} />}
+            {pestania === 'auditoria' && <PanelAuditoria key={detalle.fechaUltimaMod} solicitudId={detalle.id} />}
           </div>
         </div>
 
@@ -259,6 +324,20 @@ function Solicitud({ id }: { id: number }) {
           onConfirmar={() => cambiarResponsable(acciones.darseDeBaja, 'Te diste de baja. El proceso volvió a estar disponible.')}
           onCancelar={() => setModal(null)}
         />
+        {modal === 'asignar' && esAdmin && (
+          <AsignarResponsable
+            detalle={detalle}
+            onAsignado={(nuevo, mensaje) => {
+              cerrarAsignacion()
+              actualizar(nuevo, mensaje)
+            }}
+            onEstadoCambio={() => {
+              cerrarAsignacion()
+              recargar()
+            }}
+            onCerrar={cerrarAsignacion}
+          />
+        )}
       </>
     )
   }
@@ -296,7 +375,10 @@ function Solicitud({ id }: { id: number }) {
   )
 }
 
-/** Detalle de una solicitud para el Académico y Secretaría (frontend-interfaces.md §5.3, §5.4, §5.10 y §6.3). */
+/**
+ * Detalle de una solicitud para el Académico y Secretaría (frontend-interfaces.md §5.3, §5.4, §5.10 y §6.3), y
+ * también para el Admin, que puede actuar y asignar responsables (§7.0 y §7.11), y el Revisor, que solo lee (§8.3).
+ */
 export function SolicitudPersonalPage() {
   const { id } = useParams()
   return <Solicitud key={id} id={Number(id)} />

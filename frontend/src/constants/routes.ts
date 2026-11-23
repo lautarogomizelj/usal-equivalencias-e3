@@ -12,5 +12,8 @@ export const ROUTES = {
   SOLICITUD: '/solicitudes/:id',
   PERFIL: '/perfil',
   AYUDA: '/ayuda',
+  AUDITORIA: '/auditoria',
+  ADMIN_USUARIOS: '/admin/usuarios',
+  ADMIN_CARRERAS: '/admin/carreras',
   DEV_COMPONENTES: '/dev/componentes',
 } as const

@@ -15,15 +15,15 @@ import type {
   SolicitudResumen,
   TipoDocumento,
 } from '@/types/solicitud'
+import { consulta } from '@/utils/consulta'
 
-/** `estado` se repite una vez por código y los filtros vacíos no viajan. */
-function consulta(page: number, filtros: FiltrosBandeja) {
-  const parametros = new URLSearchParams({ page: String(page) })
-  for (const [clave, valor] of Object.entries(filtros)) {
-    if (Array.isArray(valor)) valor.forEach((item) => parametros.append(clave, item))
-    else if (valor !== undefined && valor !== '' && valor !== false) parametros.set(clave, String(valor))
-  }
-  return parametros.toString()
+/** Con mocks no hay ZIP: se baja un archivo de texto de ejemplo. */
+let expedienteDemo: string | undefined
+
+function urlExportacion(ruta: string) {
+  if (!ENV.USAR_MOCKS) return `${ENV.API_URL}${ruta}`
+  expedienteDemo ??= URL.createObjectURL(new Blob(['Expediente de ejemplo de los mocks.'], { type: 'text/plain' }))
+  return expedienteDemo
 }
 
 export const solicitudes = {
@@ -54,4 +54,8 @@ export const solicitudes = {
     api.delete<void>(`/solicitudes/${id}/documentos/${documentoId}`),
   /** Dirección para abrir un archivo. Con mocks, `urlDescarga` ya es una dirección local del navegador. */
   urlArchivo: (urlDescarga: string) => (ENV.USAR_MOCKS ? urlDescarga : `${ENV.API_URL}${urlDescarga}`),
+  /** Expediente completo en ZIP (RF-PROC-005). Solo para el personal. */
+  urlExpediente: (id: number) => urlExportacion(`/solicitudes/${id}/expediente`),
+  /** Los expedientes de la bandeja con esos filtros, en un solo ZIP. */
+  urlExpedientes: (filtros: FiltrosBandeja) => urlExportacion(`/solicitudes/expedientes?${consulta(0, filtros)}`),
 }

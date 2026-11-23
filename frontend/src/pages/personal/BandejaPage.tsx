@@ -1,13 +1,14 @@
-import { Filter, Search } from 'lucide-react'
+import { Download, Filter, Search } from 'lucide-react'
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router'
 import { EncabezadoPagina } from '@/components/privado/EncabezadoPagina'
 import { TablaBandeja } from '@/components/solicitudes/TablaBandeja'
 import { Button, Input, Select } from '@/components/ui'
-import { filtrosDeVista, VISTAS_BANDEJA } from '@/constants/bandeja'
+import { filtrosDeVista, vistasDe } from '@/constants/bandeja'
 import { useCarga } from '@/hooks/useCarga'
 import { useSolicitudes } from '@/hooks/useSolicitudes'
 import { catalogos } from '@/services/catalogos'
+import { solicitudes } from '@/services/solicitudes'
 import { useAuth } from '@/store/authContext'
 
 const DEMORA_BUSQUEDA_MS = 350
@@ -32,13 +33,9 @@ export function BandejaPage() {
   const deVista = filtrosDeVista(vista, rol)
   // Una vista que ya acota los estados ("Requieren mi acción") solo deja elegir entre los suyos.
   const estadoAplicado = !deVista.estado || deVista.estado.includes(estado) ? estado : ''
-  const { pagina, cargando, error, irAPagina, reintentar } = useSolicitudes({
-    ...deVista,
-    ...(estadoAplicado ? { estado: [estadoAplicado] } : {}),
-    q,
-    desde,
-    hasta,
-  })
+  const filtros = { ...deVista, ...(estadoAplicado ? { estado: [estadoAplicado] } : {}), q, desde, hasta }
+  const { pagina, cargando, error, irAPagina, reintentar } = useSolicitudes(filtros)
+  const hayParaExportar = Boolean(pagina?.totalElements)
 
   /** Parte de la dirección del momento y no de la del render: la búsqueda se aplica con demora. */
   function cambiar(cambios: Record<string, string>) {
@@ -88,13 +85,25 @@ export function BandejaPage() {
             <Filter aria-hidden className="size-(--size-icon-sm)" />
             Filtrar
           </Button>
+          {/* RF-PROC-005: baja en un ZIP los expedientes que muestra la bandeja con los filtros aplicados. */}
+          <a
+            href={hayParaExportar ? solicitudes.urlExpedientes(filtros) : undefined}
+            target="_blank"
+            rel="noreferrer"
+            aria-disabled={!hayParaExportar}
+            title={hayParaExportar ? `Descargar ${pagina?.totalElements} expedientes en un ZIP` : 'No hay solicitudes para exportar'}
+            className={`inline-flex h-(--size-button-md) items-center justify-center gap-2 rounded-md border border-primary bg-surface px-4 text-sm font-medium text-primary transition-colors ${hayParaExportar ? 'hover:bg-secondary' : 'cursor-not-allowed opacity-50'}`}
+          >
+            <Download aria-hidden className="size-(--size-icon-sm)" />
+            Exportar
+          </a>
         </div>
 
         {panelAbierto && (
           <div className="grid items-end gap-4 rounded-lg bg-surface p-4 shadow-md md:grid-cols-2 lg:grid-cols-5">
             <Select
               etiqueta="Mostrar"
-              opciones={VISTAS_BANDEJA}
+              opciones={vistasDe(rol)}
               value={vista}
               onChange={(evento) => cambiarVista(evento.target.value)}
             />

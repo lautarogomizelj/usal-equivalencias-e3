@@ -15,8 +15,9 @@
 | 1.8 | 2026-11-20 | jumaluc | Aclaraciones tras la revisión del Sprint 4: `desde` y `hasta` de la bandeja son días de Argentina (§6.2), y en la recarga el borrador anterior se descarta recién cuando el archivo nuevo fue aceptado (§6.5) |
 | 1.9 | 2026-11-20 | jumaluc | De la auditoría del 2026-11-19, lo que depende del Sprint 4: código `NO_RESPONSABLE` y orden de validación con el responsable (§1 y §7), y el Admin ejecuta las acciones del Académico y de Secretaría (§7 y §10.1) (CC-017) |
 | 1.10 | 2026-11-20 | jumaluc | Sprint 5: `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO`, `RECHAZAR_SEGUNDA_RONDA` y `CARGAR_ENLACE_MEET` implementadas; lectura de `Analisis`, que suma `subidoPor`, y de `ReunionInfo`; las fechas se proponen en punto, desde mañana y hasta dentro de 30 días (§2.10 a §2.12, §6.6 y §7; CC-018, CC-019) |
+| 1.11 | 2026-11-22 | jumaluc | Sprint 6: chat de la solicitud implementado, con `lecturas_chat`, `puedeEscribirChat`, `autor.rol` y adjuntos PDF, JPG o PNG (§2.16, §6.4 y §8.1); `FIJAR_FECHA` con cualquier fecha futura, `MARCAR_NO_ASISTIO`, `FINALIZAR_REUNION` con notas solo para el personal, `ACTUALIZAR_ANALISIS`, `ACEPTAR_INSCRIPCION` y `RECHAZAR_INSCRIPCION` (§2.12, §6.6, §7.2 y §7.3; CC-020, CC-021) |
 
-> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos y la bandeja del personal (§6, con el análisis académico y las fechas de reunión; sin informe ni pago) y, del trámite (§7), las acciones del aspirante sobre su documentación, tomar el proceso, darse de baja, la revisión de la documentación inicial, el análisis preliminar con la propuesta de fechas, las rondas de fechas y el enlace de Meet. El resto del documento es el contrato a acordar.
+> El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos y la bandeja del personal (§6, con el análisis académico y las fechas de reunión; sin informe ni pago) y, del trámite (§7), las acciones del aspirante sobre su documentación, tomar el proceso, darse de baja, la revisión de la documentación inicial, el análisis preliminar con la propuesta de fechas, las rondas de fechas, la fecha pautada por chat, el enlace de Meet, el resultado de la reunión, la actualización del análisis y la decisión de inscripción. También el chat de la solicitud (§8.1). El resto del documento es el contrato a acordar.
 
 Este documento fija el contrato entre el frontend (React, `services/api/client.ts`) y el backend (Spring Boot, a implementar) del sistema E3. Se basa en los Requisitos v13.0 (21 estados, 27 transiciones). Donde los requisitos no definen algo, la decisión figura como **Propuesta** y hay que validarla con backend.
 
@@ -302,7 +303,7 @@ Los requisitos definen las rondas como estados (`REU-FEC-ASP-1` y `-2`) pero no 
 | origen | enum | `ELEGIDA_ASPIRANTE`, `FIJADA_CHAT` |
 | horarioPropuestoId | int? | Si la eligió el aspirante |
 | enlaceMeet | string? | Lo carga el Académico en `REU-PEND` |
-| notas | string? | Notas de reunión (RF-ACAD-004) |
+| notas | string? | Notas de reunión (RF-ACAD-004). Solo las recibe el personal |
 | resultado | enum | `PENDIENTE`, `REALIZADA`, `NO_ASISTIO` |
 | fechaResultado | datetime? |  |
 
@@ -355,13 +356,13 @@ RF-ASP-006 pide una tabla estructurada, pero la matriz hoy es archivo o notas (A
 | solicitudId | int | FK. El chat es de la solicitud, no del usuario |
 | autorTipo | enum | `USUARIO`, `ASPIRANTE` |
 | autorId | int |  |
-| contenido | string | Máx. 500 caracteres |
+| contenido | string | Máx. 500 caracteres. Vacío si el mensaje es solo un adjunto |
 | tipoConsulta | enum | `DOCUMENTACION`, `ESTADO`, `CALCULOS`, `FECHAS`, `OTRO` |
-| adjuntoNombre | string? | Máx. 5 MB |
+| adjuntoNombre | string? | PDF, JPG o PNG de hasta 5 MB |
 | adjuntoRuta | string? |  |
 | fechaEnvio | datetime |  |
 
-**Propuesta:** el indicador "visto" se guarda en `lecturas_mensaje` (`mensajeId`, `lectorTipo`, `lectorId`, `fechaLectura`), porque hay hasta tres lectores por chat.
+El indicador "visto" y los mensajes sin leer salen de `lecturas_chat` (`solicitudId`, `lectorTipo`, `lectorId`, `hastaMensajeId`, `fechaLectura`): una fila por lector con el último mensaje que leyó. La propuesta original era `lecturas_mensaje`, con una fila por mensaje y lector; se implementó así porque `POST /chat/leidos` ya recibe "hasta qué mensaje" (migración `V8`, CC-021).
 
 ### 2.17 Permiso por carrera (`user_career_permissions`)
 
@@ -724,13 +725,14 @@ Al crearla se avisa por mail al Académico y a Secretaría con permiso permanent
   "ultimaObservacion": { "comentario": "El analítico no está firmado", "usuario": "María Gómez", "fecha": "2026-10-14T15:30:00-03:00" },
   "resumenDocumentos": { "ok": 2, "recargar": 1, "pendiente": 0 },
   "chatHabilitado": true,
+  "puedeEscribirChat": true,
   "mensajesNoLeidos": 3
 }
 ```
 
 `miRelacion` vale `ASPIRANTE`, `PARTICIPANTE`, `OBSERVADOR`, `ADMIN` o `REVISOR`, y resuelve el modo de las interfaces (acción o solo lectura). `accionesDisponibles` usa los códigos de las secciones 7.1 y 7.2 y solo incluye las acciones ya implementadas. `DARSE_DE_BAJA` aparece solo si hay otra persona de su rol con acceso a la carrera: si el responsable no la recibe, es el único.
 
-`ultimaObservacion` es el último comentario que dejó el personal en un cambio de estado, o `null`. `resumenDocumentos` cuenta los documentos vigentes que ve quien pregunta. `chatHabilitado` es `true` cuando hay algún responsable, y `mensajesNoLeidos` vale 0 hasta que exista el chat (Sprint 6).
+`ultimaObservacion` es el último comentario que dejó el personal en un cambio de estado, o `null`. `resumenDocumentos` cuenta los documentos vigentes que ve quien pregunta. `chatHabilitado` es `true` cuando hay algún responsable. `puedeEscribirChat` es `true` para el aspirante dueño y para los responsables, mientras haya algún responsable y la solicitud no esté finalizada (CC-021). `mensajesNoLeidos` cuenta los mensajes de otros que quien pregunta todavía no marcó como leídos; para quien no participa del chat vale 0.
 
 **`EventoHistorial`**
 
@@ -829,7 +831,7 @@ Un requerido faltante (`esRequeridoFaltante`) todavía no tiene archivo: `nombre
 }
 ```
 
-`reunion`, cuando existe: `{ inicio, fin, origen, enlaceMeet, resultado }`. `rondaActual` es `null` hasta que el Académico propone la primera ronda, y los horarios de cada ronda llegan del más cercano al más lejano.
+`reunion`, cuando existe: `{ inicio, fin, origen, enlaceMeet, resultado, notas }`. Es la última de la solicitud: después de una inasistencia sigue siendo la que quedó en `NO_ASISTIO`, hasta que se pacta otra. `notas` son las que escribió el Académico al indicar que la reunión finalizó y llegan solo para el personal: al aspirante le llegan en `null` (CC-021). `rondaActual` es `null` hasta que el Académico propone la primera ronda, y los horarios de cada ronda llegan del más cercano al más lejano.
 
 **`Informe`**
 
@@ -859,7 +861,7 @@ Un requerido faltante (`esRequeridoFaltante`) todavía no tiene archivo: `nombre
 
 Cada transición de RF-ESTADO-001 es un `POST` propio bajo `/solicitudes/{id}`. Todas reciben `estadoEsperado` y devuelven 200 `SolicitudDetalle` con el estado nuevo. El backend valida rol, permiso de participante, responsable y estado; si algo no cumple responde 403 `NO_PARTICIPANTE`, 403 `NO_RESPONSABLE` o 409 `TRANSICION_INVALIDA`.
 
-El motor valida en este orden (CC-009 y CC-017): el rol (403 `ACCESO_DENEGADO`), la participación (403 `NO_PARTICIPANTE`; para el aspirante, que la solicitud sea suya), el responsable (403 `NO_RESPONSABLE`, solo para el personal) y el estado (409 `TRANSICION_INVALIDA`, también si `estadoEsperado` no coincide). La solicitud se bloquea durante la acción, así que de dos pedidos simultáneos solo uno parte del estado esperado. Cada cambio deja una fila en `estados_solicitud` y otra en auditoría, incluida la creación (`estadoAnterior` nulo). Hoy están implementadas `ENVIAR_DOCUMENTACION` (desde `SOL-INI` y `DOC-RECH`), `CANCELAR_SOLICITUD`, `ACEPTAR_DOCUMENTACION`, `RECHAZAR_DOCUMENTACION`, `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO` y `RECHAZAR_SEGUNDA_RONDA`.
+El motor valida en este orden (CC-009 y CC-017): el rol (403 `ACCESO_DENEGADO`), la participación (403 `NO_PARTICIPANTE`; para el aspirante, que la solicitud sea suya), el responsable (403 `NO_RESPONSABLE`, solo para el personal) y el estado (409 `TRANSICION_INVALIDA`, también si `estadoEsperado` no coincide). La solicitud se bloquea durante la acción, así que de dos pedidos simultáneos solo uno parte del estado esperado. Cada cambio deja una fila en `estados_solicitud` y otra en auditoría, incluida la creación (`estadoAnterior` nulo). Hoy están implementadas `ENVIAR_DOCUMENTACION` (desde `SOL-INI` y `DOC-RECH`), `CANCELAR_SOLICITUD`, `ACEPTAR_DOCUMENTACION`, `RECHAZAR_DOCUMENTACION`, `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO`, `RECHAZAR_SEGUNDA_RONDA`, `FIJAR_FECHA`, `MARCAR_NO_ASISTIO`, `FINALIZAR_REUNION`, `ACEPTAR_INSCRIPCION` y `RECHAZAR_INSCRIPCION`: las transiciones 1 a 15 y la 27.
 
 Para el personal, participar no alcanza: tiene que ser además el responsable de su rol en esa solicitud. Un participante que no es el responsable recibe 403 `NO_RESPONSABLE` y, si todavía no hay responsable, su única acción es `TOMAR_PROCESO` (CC-013 y CC-017). Un responsable al que le revocaron el permiso recibe 403 `NO_PARTICIPANTE`, porque la participación se valida antes.
 
@@ -911,7 +913,7 @@ Las 27 transiciones quedan en 23 acciones: el reenvío de documentación (4) y d
 
 `TOMAR_PROCESO` asigna `responsableAcademico` o `responsableAdministrativo` según el rol de quien llama y devuelve el detalle. Errores: 409 `PROCESO_YA_TOMADO` (otro lo tomó primero), 409 `UNICO_RESPONSABLE` (baja).
 
-Implementado hoy (CC-013): `TOMAR_PROCESO`, `DARSE_DE_BAJA`, `GUARDAR_MARCAS` y `AGREGAR_FALTANTE`, las dos últimas solo en `DOC-REV`. Del Sprint 5 (CC-019), `CARGAR_ENLACE_MEET`.
+Implementado hoy (CC-013): `TOMAR_PROCESO`, `DARSE_DE_BAJA`, `GUARDAR_MARCAS` y `AGREGAR_FALTANTE`, las dos últimas solo en `DOC-REV`. Del Sprint 5 (CC-019), `CARGAR_ENLACE_MEET`. Del Sprint 6 (CC-021), `ACTUALIZAR_ANALISIS`.
 
 - `TOMAR_PROCESO` y `DARSE_DE_BAJA` no llevan body y devuelven 200 `SolicitudDetalle`. Una solicitud finalizada no se toma (409 `TRANSICION_INVALIDA`); quien no es participante recibe 403 `NO_PARTICIPANTE`, y quien se da de baja sin ser el responsable, 403 `ACCESO_DENEGADO`.
 - La baja se permite cuando hay otra persona activa del mismo rol con permiso permanente sobre la carrera.
@@ -919,6 +921,7 @@ Implementado hoy (CC-013): `TOMAR_PROCESO`, `DARSE_DE_BAJA`, `GUARDAR_MARCAS` y 
 - `GUARDAR_MARCAS` devuelve 200 `Documento[]` con los vigentes. Cada cambio de marca deja una fila de auditoría (`marca_documento`, con la marca anterior y la nueva).
 - `AGREGAR_FALTANTE` exige `tipo` del catálogo y `descripcion`, y devuelve 201 `Documento` marcado `RECARGAR` y sin archivo.
 - `CARGAR_ENLACE_MEET` la ejecuta el Académico responsable, o el Admin, solo en `REU-PEND`: en otro estado responde 409 `TRANSICION_INVALIDA`. El enlace tiene que empezar con `https://meet.google.com/` y no llevar espacios (400 `VALIDACION` con `errors.enlaceMeet`). Devuelve 200 `ReunionInfo`, avisa al aspirante por mail, deja una fila de auditoría (`enlace_meet`) y se puede repetir para corregirlo.
+- `ACTUALIZAR_ANALISIS` la ejecuta el Académico responsable, o el Admin, solo en `ANAL-POST`: en otro estado responde 409 `TRANSICION_INVALIDA`. No lleva `estadoEsperado`. `tipo` es `MATRIZ_EQUIVALENCIAS` o `HORARIO_CURSADA` (400 `VALIDACION` con `errors.tipo`) y hace falta el archivo, las notas o las dos cosas (400 con `errors.notas`), con las mismas reglas que en `PROPONER_FECHAS`. Crea una versión nueva, que reemplaza entera a la anterior: si la nueva no trae archivo, el anterior deja de exponerse. Devuelve 200 `Analisis[]` con los dos documentos vigentes, avisa al aspirante por mail y deja una fila de auditoría (`actualizar_analisis`, con el tipo y la versión).
 
 ### 7.3 Bodies
 
@@ -967,7 +970,25 @@ La parte `datos` viaja con `Content-Type: application/json`. Cada archivo es PDF
 { "estadoEsperado": "REU-CHAT", "inicio": "2026-11-04T15:00:00-03:00" }
 ```
 
-En `SOLICITAR_OTRAS_FECHAS`, `motivo` y `disponibilidad` son obligatorios y admiten hasta 500 caracteres (400 `VALIDACION` con `errors.motivo` o `errors.disponibilidad`); quedan en la ronda y en el historial, sin contar como `ultimaObservacion`. En `RECHAZAR_SEGUNDA_RONDA`, `motivo` es opcional. En `ELEGIR_HORARIO`, `horarioId` tiene que ser un horario de la ronda vigente que todavía no pasó (400 `VALIDACION` con `errors.horarioId`). `FIJAR_FECHA` llega con el Sprint 6.
+En `SOLICITAR_OTRAS_FECHAS`, `motivo` y `disponibilidad` son obligatorios y admiten hasta 500 caracteres (400 `VALIDACION` con `errors.motivo` o `errors.disponibilidad`); quedan en la ronda y en el historial, sin contar como `ultimaObservacion`. En `RECHAZAR_SEGUNDA_RONDA`, `motivo` es opcional. En `ELEGIR_HORARIO`, `horarioId` tiene que ser un horario de la ronda vigente que todavía no pasó (400 `VALIDACION` con `errors.horarioId`).
+
+En `FIJAR_FECHA`, `inicio` es obligatorio y tiene que ser a futuro (400 `VALIDACION` con `errors.inicio`). No sigue las reglas de `horarios`: la fecha la pautaron por chat, así que vale cualquier día y hora, y la reunión dura 1 hora (CC-020). No manda mail: el aspirante se entera de la fecha cuando el Académico carga el enlace de Meet.
+
+**Resultado de la reunión e inscripción**
+
+```json
+{ "estadoEsperado": "REU-PEND", "notas": "Se acordó reconocer 6 materias" }
+```
+
+```json
+{ "estadoEsperado": "REU-PEND", "comentario": "Esperé 20 minutos" }
+```
+
+```json
+{ "estadoEsperado": "ANAL-POST", "comentario": "El plan de origen no es compatible" }
+```
+
+En `FINALIZAR_REUNION`, `notas` es opcional y admite hasta 2000 caracteres (400 `VALIDACION` con `errors.notas`): queda en la reunión y no va al historial. En `MARCAR_NO_ASISTIO`, `comentario` es opcional, admite hasta 500 caracteres y queda en el historial como observación para el aspirante; después el Académico vuelve a proponer fechas con `PROPONER_SEGUNDA_RONDA`, también si la 2ª ronda ya se había usado (interfaces, Anexo A #7). Ninguna de las dos exige que la hora de la reunión ya haya pasado. En `RECHAZAR_INSCRIPCION`, `comentario` es obligatorio y admite hasta 500 caracteres (400 con `errors.comentario`); `ACEPTAR_INSCRIPCION` lleva solo `estadoEsperado` (CC-021).
 
 **Legalización**
 
@@ -999,7 +1020,7 @@ Partes del `POST`: `contenido` (máx. 500 caracteres), `tipoConsulta` (`DOCUMENT
 ```json
 {
   "id": 812,
-  "autor": { "tipo": "USUARIO", "id": 7, "nombre": "María", "avatar": "mujer-03" },
+  "autor": { "tipo": "USUARIO", "id": 7, "nombre": "María Gómez", "rol": "ACAD", "avatar": "mujer-03" },
   "contenido": "¿Podés subir el programa de Física I firmado?",
   "tipoConsulta": "DOCUMENTACION",
   "adjunto": null,
@@ -1009,7 +1030,16 @@ Partes del `POST`: `contenido` (máx. 500 caracteres), `tipoConsulta` (`DOCUMENT
 }
 ```
 
-**Propuesta de actualización en vivo:** polling cada 15 s a `?despuesDe=` mientras el chat está abierto, y refresco de `GET /solicitudes/{id}` al volver a la pestaña para detectar cambios de estado (interfaces §0.16.4). WebSocket queda para más adelante.
+Implementado hoy (CC-021):
+
+- `GET` devuelve los mensajes del más viejo al más nuevo, con `page`, `size` (20 por defecto y 100 como máximo) y `despuesDe`. El frontend pide tandas de 100 con `despuesDe` hasta que una llega incompleta.
+- `autor.nombre` es el nombre completo y `autor.rol`, el código del rol de quien escribió (`ASPIRANTE`, `ACAD` o `SECRE`): sirve para rotularlo aunque ya no sea el responsable.
+- El mensaje lleva `contenido`, `adjunto` o las dos cosas (400 `VALIDACION` con `errors.contenido` si faltan los dos); `tipoConsulta` es obligatorio (400 con `errors.tipoConsulta`). El adjunto es PDF, JPG o PNG, reconocido por su contenido (400 `ARCHIVO_INVALIDO`), de hasta 5 MB (413 `LIMITE_TAMANO`).
+- Escriben el aspirante dueño y los responsables académico y administrativo. Un participante que no es el responsable recibe 403 `NO_RESPONSABLE`; el Admin y el Revisor, 403 `ACCESO_DENEGADO`. Con la solicitud finalizada nadie escribe: 409 `TRANSICION_INVALIDA`.
+- `visto` es `true` cuando lo leyó alguien que no es quien lo escribió. Solo cuentan las lecturas de quienes participan del chat: `POST /chat/leidos` responde 403 a los demás, 400 `VALIDACION` con `errors.hastaMensajeId` si el mensaje no es de esa solicitud, y nunca retrocede.
+- No se manda mail por cada mensaje: el aviso es el contador `mensajesNoLeidos` del detalle.
+
+**Actualización en vivo:** el frontend pide `?despuesDe=` cada 15 s mientras el chat está abierto. El refresco de `GET /solicitudes/{id}` al volver a la pestaña para detectar cambios de estado (interfaces §0.16.4) y WebSocket quedan para más adelante.
 
 ### 8.2 Notificaciones (campana) — Propuesta
 

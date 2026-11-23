@@ -29,6 +29,7 @@ Los diseños visuales están en la carpeta compartida de Google Drive **Interfac
 | 3.10 | 2026-11-20 | jumaluc | Sprint 4: panel de inicio, bandeja y detalle del Académico y de Secretaría, revisión por documento y recarga del aspirante en `DOC-RECH` (§4.6.3, §5.1, §5.2, §5.4, §5.7 y Anexo B, puntos 18, 20 y 21; CC-013) |
 | 3.11 | 2026-11-20 | jumaluc | Revisión del Sprint 4: en la bandeja, una vista que acota los estados limita el filtro "Estado" a esos (§5.2); aceptar con documentos marcados ❌ avisa en el modal (§5.6.2); banner del personal en `ANAL-PEND` (§5.6.4) |
 | 3.12 | 2026-11-20 | jumaluc | Sprint 5: análisis preliminar del Académico, panel de reunión del personal, elección de fecha del aspirante, reunión pactada con el enlace de Meet y documentación académica en el detalle (§4.6.5 a §4.6.9, §5.4, §5.6.4 a §5.6.8 y Anexo B, puntos 19 y 22); las fechas se proponen desde mañana y hasta dentro de 30 días (CC-018, CC-019) |
+| 3.13 | 2026-11-22 | jumaluc | Sprint 6: chat de la solicitud, coordinación de la fecha por chat y "Fijar fecha", resultado de la reunión, actualización del análisis y decisión de inscripción (§2.5, §4.5, §4.6.7 a §4.6.13, §4.7.2, §5.4, §5.6.6 a §5.6.9, Anexo A, puntos 7 y 16, y Anexo B, punto 23; CC-020, CC-021) |
 
 ---
 
@@ -782,6 +783,8 @@ Incluye:
 
 Modo lectura para observadores.
 
+El componente construido (`components/solicitudes/Chat.tsx`) lo usan el aspirante y el personal: los mensajes van separados por día, con las iniciales, el nombre y el rol de quien escribió, el tipo de consulta junto a la hora y la marca de visto en los propios. Abajo, el botón para adjuntar, el tipo de consulta, el campo del mensaje y el botón de enviar. Mientras está abierto pide los mensajes nuevos cada 15 segundos.
+
 ---
 
 ## 2.6 Modal de Confirmación
@@ -1246,7 +1249,7 @@ Columnas:
 
 Es el marco que se repite en **todos** los estados. Lo único que cambia entre estados es el contenido de la pestaña "Mi trámite" (Panel de Acción, 4.6).
 
-La pantalla construida sigue el diseño: título con el código y el badge, banner del estado y las pestañas Documentación, Detalles, Chat e Historial; `SOL-INI` se muestra como una pantalla propia de carga, sin pestañas (Anexo B, punto 18). El stepper de etapas (2.9), que el diseño no trae, va entre el título y el banner en todos los estados, también en `SOL-INI`. El Chat muestra un aviso de "Próximamente" hasta el Sprint 6. Lo que sigue es lo que piden los requisitos.
+La pantalla construida sigue el diseño: título con el código y el badge, banner del estado y las pestañas Documentación, Detalles, Chat e Historial; `SOL-INI` se muestra como una pantalla propia de carga, sin pestañas (Anexo B, punto 18). El stepper de etapas (2.9), que el diseño no trae, va entre el título y el banner en todos los estados, también en `SOL-INI`. La pestaña Chat muestra la cantidad de mensajes sin leer y, en `REU-CHAT`, es la que se abre al entrar. Lo que sigue es lo que piden los requisitos.
 
 ### 4.5.1 Estructura
 
@@ -1401,6 +1404,8 @@ Igual que 4.6.5 con el indicador "Ronda 2 de 2". En vez de solicitar otras fecha
 
 **Banner:** "Estamos esperando nuevas fechas del Académico." Si viene de una inasistencia: "No registramos tu asistencia a la reunión. El Académico va a proponer nuevas fechas."
 
+La pantalla construida muestra el aviso de la inasistencia debajo del primer texto, cuando la última reunión quedó en "no se presentó".
+
 **Acciones:** ninguna de trámite.
 
 ---
@@ -1413,7 +1418,7 @@ Igual que 4.6.5 con el indicador "Ronda 2 de 2". En vez de solicitar otras fecha
 
 **Contenido:** el detalle se abre en la pestaña **Chat**, por defecto. La fecha la fija el Académico; el aspirante no cambia el estado.
 
-Hasta que exista el chat (Sprint 6), el banner avisa que todavía no está disponible y el detalle se abre en Documentación.
+La pantalla construida sigue el diseño: el banner muestra al responsable académico y la indicación de usar el chat, y el detalle se abre en la pestaña Chat.
 
 ---
 
@@ -1447,6 +1452,8 @@ La pantalla construida lo muestra dentro del banner. Mientras no hay enlace, avi
 
 **Contenido:** pregunta con dos opciones, sin carga de archivos: **"Sí, están legalizados"** (→ `LEG-REV`) y **"No, todavía no"** (→ `LEG-PEND`). Modal de confirmación simple.
 
+La pregunta llega con el Sprint 7: hasta entonces el banner avisa que la inscripción fue aceptada y que ese paso todavía no está disponible.
+
 ---
 
 ### 4.6.12 `ASP-LEG-PEND` – Legalización pendiente
@@ -1466,6 +1473,8 @@ La pantalla construida lo muestra dentro del banner. Mientras no hay enlace, avi
 **Banner (variante cierre negativo):** "Lamentablemente tu solicitud no pudo ser aprobada."
 
 **Contenido:** motivo, fecha, quién resolvió e historial. **Acciones:** ninguna. Chat en solo lectura.
+
+La pantalla construida muestra el motivo, quién resolvió y la fecha dentro del banner.
 
 ---
 
@@ -1581,6 +1590,8 @@ Componente 2.5. Participantes: aspirante, Académico responsable y Administrativ
 | `INSC-RECH`, `SOL-CANC` | Solo lectura |
 
 Reglas del mensaje (RF-MSG-002): avatar, nombre, texto de hasta 500 caracteres, adjunto opcional de hasta 5 MB, tipo de consulta, fecha y hora, indicador de visto. Si cambia el responsable, el historial se conserva.
+
+La pantalla construida sigue el diseño `Detalle de Solicitud - Chat- 4.4.jpg`, con el tipo de consulta que el diseño no trae (Anexo B, punto 23). El mensaje lleva texto, adjunto (PDF, JPG o PNG) o las dos cosas. Qué puede hacer cada uno lo dicen `chatHabilitado` y `puedeEscribirChat` del detalle.
 
 ### 4.7.3 Pestaña Historial
 
@@ -1728,7 +1739,7 @@ Se repite en todos los estados.
 
 Regla: las pestañas Documentación, Análisis y Reunión son de **consulta**. Si el estado permite una acción sobre lo que muestran, incluyen un botón "Ir a la acción" que lleva a "Acción actual". Así cada acción vive en un solo lugar.
 
-La pantalla construida sigue el diseño (Anexo B, punto 21): tarjeta del aspirante con las carreras, los dos responsables y el botón "Tomar proceso" o "Darse de baja"; banner de estado; y las pestañas Análisis de solicitud (la acción actual), Detalles, Chat e Historial. El banner dice quién tiene que actuar: "Te toca a vos", "Sin responsable", "En espera", "Solo lectura" (observador) o "Trámite cerrado". Desde el Sprint 5, la pestaña Análisis de solicitud muestra primero el panel del estado (5.6), después los documentos del aspirante y, cuando el Académico ya la cargó, la documentación académica.
+La pantalla construida sigue el diseño (Anexo B, punto 21): tarjeta del aspirante con las carreras, los dos responsables y el botón "Tomar proceso" o "Darse de baja"; banner de estado; y las pestañas Análisis de solicitud (la acción actual), Detalles, Chat e Historial. El banner dice quién tiene que actuar: "Te toca a vos", "Sin responsable", "En espera", "Solo lectura" (observador) o "Trámite cerrado". Desde el Sprint 5, la pestaña Análisis de solicitud muestra primero el panel del estado (5.6), después los documentos del aspirante y, cuando el Académico ya la cargó, la documentación académica. Desde el Sprint 6, la pestaña Chat es el chat de la solicitud (2.5), con la cantidad de mensajes sin leer, y en `REU-CHAT` es la que se abre al entrar.
 
 ---
 
@@ -1802,6 +1813,8 @@ Motivo y disponibilidad del aspirante, o aviso de inasistencia. Calendario de pr
 
 **Acción:** **Sugerir 2ª ronda de fechas** → `REU-FEC-ASP-2`. Si la 2ª ronda ya se usó y el aspirante no se presentó, el comportamiento queda pendiente (Anexo A #7).
 
+Construido en el Sprint 6: el aviso de la inasistencia, con la fecha de la reunión a la que el aspirante faltó. Con la 2ª ronda ya usada, se vuelve a proponer una 2ª ronda.
+
 ---
 
 ### 5.6.7 `ACAD-REU-CHAT` – Fijar fecha por chat (A)
@@ -1810,7 +1823,7 @@ Motivo y disponibilidad del aspirante, o aviso de inasistencia. Calendario de pr
 
 Se abre el chat por defecto. **Fijar fecha** abre un modal con la fecha pautada → `REU-PEND`.
 
-Hasta el Sprint 6 (chat y "Fijar fecha"), el panel muestra las rondas en solo lectura y el banner avisa que el chat todavía no está disponible.
+La pantalla construida: el detalle se abre en la pestaña Chat y "Fijar fecha" está en el banner. El modal pide el día y la hora de inicio, en hora de Argentina; vale cualquier fecha futura y la reunión dura 1 hora (CC-020). El panel de la pestaña Análisis de solicitud muestra las rondas en solo lectura.
 
 ---
 
@@ -1823,7 +1836,9 @@ Hasta el Sprint 6 (chat y "Fijar fecha"), el panel muestra las rondas en solo le
 - **Indicar que la reunión finalizó** (doble verificación) → `ANAL-POST`.
 - **Indicar que el aspirante no se presentó** (doble verificación) → `REU-FEC-ACAD`.
 
-Construido en el Sprint 5: la reunión pactada y el enlace de Meet, que tiene que empezar con `https://meet.google.com/` y se puede corregir. Las notas, "Indicar que la reunión finalizó" e "Indicar que el aspirante no se presentó" llegan con el Sprint 6.
+Construido en el Sprint 5: la reunión pactada y el enlace de Meet, que tiene que empezar con `https://meet.google.com/` y se puede corregir. 
+
+Construido en el Sprint 6, con la composición del diseño `Cuestionamiento Reunion.png` (Anexo B, punto 23): la pregunta "¿La reunión finalizó?", con las opciones "Sí, la reunión finalizó" (con notas opcionales, que ve solo el personal) y "No, el aspirante no se presentó" (con un comentario opcional para el aspirante), y el botón "Continuar proceso", que abre la doble verificación.
 
 ---
 
@@ -1834,6 +1849,8 @@ Construido en el Sprint 5: la reunión pactada y el enlace de Meet, que tiene qu
 - **Actualizar matriz de equivalencias** y **Actualizar horario de cursada**: crean una versión nueva; solo la vigente es visible. Se avisa al aspirante y el estado no cambia.
 - Decisión (radio): **Aceptar** / **Rechazar** (comentario obligatorio).
 - **Guardar decisión** → modal `ACAD-ANAL-POST-M1` (doble verificación) → `INSC-ACEP` o `INSC-RECH`.
+
+La pantalla construida: la reunión realizada con las notas del Académico; un botón por documento para actualizarlo, que abre un modal con archivo, notas o las dos cosas (la versión nueva reemplaza entera a la anterior); y la decisión, con las dos opciones y el motivo cuando se rechaza.
 
 ---
 
@@ -2445,7 +2462,7 @@ Cosas que los requisitos v12 no terminan de definir y que el equipo de frontend 
 | 4 | **Archivos como borrador:** si el aspirante sube archivos y sale sin enviar, ¿se conservan? | Sí: cada archivo se sube al elegirlo y queda como borrador, visible solo para el aspirante, hasta enviar (CC-009) |
 | 5 | **Límite de 50 MB en la recarga** (`DOC-RECH`) | Se aplica a los archivos que se envían en esa recarga |
 | 6 | **Cambiar la fecha elegida:** al seleccionar fecha el estado pasa directo a `REU-PEND` | No se puede cambiar desde la interfaz; se resuelve por chat |
-| 7 | **Reprogramación tras la 2ª ronda:** si el aspirante no se presenta y ya se usó la 2ª ronda, `REU-FEC-ACAD` solo tiene la transición hacia `REU-FEC-ASP-2` | Se reutiliza la 2ª ronda hasta que negocio defina otra cosa |
+| 7 | **Reprogramación tras la 2ª ronda:** si el aspirante no se presenta y ya se usó la 2ª ronda, `REU-FEC-ACAD` solo tiene la transición hacia `REU-FEC-ASP-2` | Se reutiliza la 2ª ronda hasta que negocio defina otra cosa. Implementado así en el Sprint 6: después de cada inasistencia el Académico propone otra 2ª ronda (CC-021) |
 | 8 | **Estructura del informe de materias:** RF-ACAD-001 dice que la matriz es un archivo o notas libres, pero `ASP-CUPON-SOL` muestra una tabla (materia, carga horaria, correlativas, monto) | Se asume que el backend expone estos datos estructurados. Falta definir cómo los carga el Académico |
 | 9 | **Monto reportado por el aspirante:** RF-SEC-002 menciona "Monto reportado", pero RF-ASP-007 no pide que el aspirante lo ingrese | El aspirante solo sube el comprobante |
 | 10 | **`INSC-RECH`:** ¿el aspirante puede iniciar una nueva solicitud? ¿el chat queda en solo lectura? | Chat en solo lectura. "Nueva solicitud" sigue disponible en el menú |
@@ -2454,7 +2471,7 @@ Cosas que los requisitos v12 no terminan de definir y que el equipo de frontend 
 | 13 | **Desbloqueo de cuenta:** RF-AUTH-006 lo lista como acción con doble verificación, pero RF-AUTH-002 y RF-ADMIN-007 dicen que se hace sin doble verificación | Se implementa **sin** doble verificación hasta que negocio decida |
 | 14 | **Monto del cupón:** ¿Secretaría puede modificar el monto prellenado? | Solo lectura por defecto |
 | 15 | **Comprobantes rechazados:** ¿se archivan como versión anterior, como los documentos? | Se muestra el anterior en `ASP-PAG-REENV`. Confirmar conservación con backend |
-| 16 | **Adjuntos de chat:** formatos permitidos (solo se define el límite de 5 MB) | Mismos formatos que documentación más imágenes |
+| 16 | **Adjuntos de chat:** formatos permitidos (solo se define el límite de 5 MB) | PDF, JPG y PNG (implementado en el Sprint 6, CC-021) |
 
 ---
 
@@ -2486,6 +2503,7 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 | 20 | Panel y bandeja del personal | Indicadores "Solicitudes aprobadas en el último mes" y "Con observaciones"; buscador y "Filtrar"; columnas Estudiante con LU, Carrera de origen y Fecha de creación; menú con "Solicitudes de equivalencia", "Mis tareas", "Calendario" y "Ayuda" | Widgets Mis solicitudes, Sin responsable, Pendientes y Reuniones próximas (5.1); columnas Aspirante, Universidad origen, Carrera destino, Estado, Responsable y Última actualización, con filtros por estado, fecha, búsqueda y "Mis asignadas" (5.2) | Diseño para la composición; requisitos para las columnas y los filtros. Los indicadores son activas, requieren tu acción, sin responsable y con observaciones. "Aprobadas en el último mes" y "Reuniones próximas" quedan pendientes. El ítem del menú dice "Solicitudes" porque el texto del diseño no entra en el ancho del menú. "Tomar proceso" está en el detalle |
 | 21 | Detalle del personal | Tarjeta del estudiante con LU, carreras y fechas; pestañas Análisis de solicitud, Detalles, Chat e Historial; sin banner ni responsables; botones "Guardar borrador" y "Enviar evaluación" | Encabezado, bloque de responsables con "Tomar proceso" y "Darse de baja", banner de estado y ocho pestañas (5.4) | Diseño para la composición, con la segunda opción de `Documentacion Inicial`. La tarjeta muestra el DNI en lugar del LU y los dos responsables en lugar de las fechas, que están en Detalles. Se suma el banner de estado. Las acciones son las de los requisitos (punto 11). Las pestañas Documentación, Análisis, Reunión y Auditoría llegan con sus sprints |
 | 22 | Análisis preliminar y reunión | El Académico elige entre "Usar mis horarios de reunión del perfil" e "Ingresar horarios personalizados", sube archivos PDF, JPG o PNG y envía con "Enviar a estudiante"; el aspirante elige una o más fechas y, si no puede, escribe solo el motivo; la tabla de Documentación académica trae una columna Estado y un menú de acciones; la reunión confirmada promete un recordatorio el día anterior | Hasta 7 horarios de 1 hora cargados para esa solicitud; matriz y horario de cursada como archivo o notas; "Guardar propuesta"; una sola fecha; motivo y disponibilidad obligatorios; no hay recordatorios (RF-ACAD-002 y 003, RF-ASP-005) | Diseño para la composición. Los horarios se cargan solo a mano, porque la disponibilidad del perfil no existe (punto 10). Cada documento admite archivo PDF o JPG y notas. El botón dice "Enviar al aspirante". Se elige una sola fecha (punto 8) y, al no poder, se piden el motivo y cuándo puede. La tabla de Documentación académica muestra Fecha de envío, Responsable, Archivo y Notas, sin columna Estado, porque esos documentos no se revisan. No se promete el recordatorio |
+| 23 | Chat, fecha por chat y resultado de la reunión | El chat no trae "Tipo de consulta"; la coordinación por chat suma un encabezado con la foto del responsable; "¿La reunión finalizó?" ofrece "Sí, la reunión finalizó" y "No, todavía no se realizó la reunión", con el botón "Continuar proceso"; los estados se llaman "Pendiente de coordinación por chat" y "En evaluación"; no hay diseño de "Fijar fecha", de la actualización del análisis ni de la decisión de inscripción | Mensaje con tipo de consulta (RF-MSG-002); notas opcionales y dos acciones con doble verificación: la reunión finalizó o el aspirante no se presentó (RF-ACAD-004); nombres del catálogo de estados | Diseño para la composición. El tipo de consulta es un desplegable chico junto al campo del mensaje, con "Otro" por defecto, y se muestra al lado de la hora. El avatar son las iniciales (punto 10). La segunda opción de la reunión pasa a ser "No, el aspirante no se presentó", porque "todavía no se realizó" no cambia nada; cada opción suma su texto opcional. "Fijar fecha" es un botón en el banner con un modal, y la actualización del análisis y la decisión usan los componentes existentes |
 
 ---
 

@@ -22,6 +22,7 @@
 | 13.2 | 2026-11-20 | jumaluc | RF-AUTH-003: mientras el sistema no esté publicado con Google, Académico, Secretaría y Revisor entran con usuario y contraseña (provisorio, CC-016) |
 | 13.3 | 2026-11-20 | jumaluc | RF-PROC-002: para actuar, el personal tiene que ser participante y además el responsable del rol de la etapa; el Admin General no necesita ninguna de las dos cosas (auditoría del 2026-11-19, CC-017) |
 | 13.4 | 2026-11-20 | jumaluc | RF-ACAD-002: las fechas de reunión se proponen desde el día siguiente y hasta dentro de 30 días, en lugar de "próximos 14-30 días" (CC-018) |
+| 13.5 | 2026-11-22 | jumaluc | RF-ACAD-003: la fecha pautada por chat admite cualquier día y hora futuros (CC-020). RF-ACAD-004: las notas de la reunión las ve solo el personal. RF-MSG-002 y 003: el mensaje lleva el nombre completo y el rol de quien escribe, texto, adjunto (PDF, JPG o PNG) o las dos cosas, y el chat queda en solo lectura con la solicitud finalizada (CC-021) |
 
 ---
 
@@ -716,6 +717,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - **Fecha por chat** (desde **"Resolución fecha por chat"**, `REU-CHAT`):
   - Se abre por defecto el chat para el Académico y el aspirante (RF-MSG-001)
   - Una vez pautada la fecha, el Académico toca "Fijar fecha": se abre un modal que pregunta la fecha pautada para la reunión
+  - La fecha pautada no sigue las franjas de las rondas: puede ser cualquier día y hora futuros, y la reunión dura 1 hora (CC-020)
   - Estado → **"Reunión pendiente de realización"** (`REU-PEND`)
 - **Enlace de Meet** (desde **"Reunión pendiente de realización"**, `REU-PEND`):
   - Tanto si el aspirante seleccionó la fecha (RF-ASP-005) como si el Académico la fijó por chat, el Académico incluye el enlace de Meet
@@ -726,7 +728,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - **Acciona:** Desde estado **"Reunión pendiente de realización"** (`REU-PEND`), después de realizar el Meet
 - Académico entra a solicitud
 - Sección "Resultado de reunión":
-  - Notas de reunión (textarea, opcional)
+  - Notas de reunión (textarea, opcional): las ve solo el personal, no el aspirante
   - Botón: "Indicar que la reunión finalizó" (doble verificación)
   - Sistema: Estado → **"Análisis pos reunión"** (`ANAL-POST`)
   - Mail al aspirante
@@ -870,8 +872,8 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 #### RF-MSG-002: Estructura de Mensajes
 - Cada mensaje tiene:
   - **Avatar:** Icono personalizable del usuario (hombre/mujer)
-  - **Nombre:** Solo nombre del usuario
-  - **Contenido:** Texto + archivo opcional (máx 5 MB)
+  - **Nombre:** Nombre y apellido de quien escribe, con su rol en la solicitud (aspirante, responsable académico o responsable administrativo)
+  - **Contenido:** Texto, archivo (PDF, JPG o PNG de hasta 5 MB) o las dos cosas
   - **Timestamp:** Fecha y hora exacta
   - **Visto:** Indicador si fue leído
 - Máximo 500 caracteres por mensaje
@@ -882,6 +884,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - **Académico responsable:** Puede escribir, ve mensajes de aspirante y administrativo
 - **Administrativo responsable:** Igual que académico
 - **Otros usuarios:** NO pueden escribir (botón deshabilitado), pueden VER (auditoría)
+- Con la solicitud finalizada (`INSC-RECH`, `SOL-CANC`) el chat queda en solo lectura para todos
 
 #### RF-MSG-004: Historial de Chat
 - Todos los mensajes quedan archivados en BD

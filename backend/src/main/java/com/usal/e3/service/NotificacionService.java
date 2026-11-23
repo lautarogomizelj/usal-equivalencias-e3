@@ -111,8 +111,32 @@ public class NotificacionService {
                 alAcademico(solicitud, asunto, texto);
                 mail.enviarAviso(aspirante, asunto, texto);
             }
+            case Estado.REU_PEND + ">" + Estado.ANAL_POST -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": la reunión se realizó",
+                    "La reunión se realizó. Tu solicitud está siendo analizada para definir tu inscripción.");
+            case Estado.REU_PEND + ">" + Estado.REU_FEC_ACAD -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": no registramos tu asistencia a la reunión",
+                    "No registramos tu asistencia a la reunión. El Académico va a proponer nuevas fechas. ID: " + exp);
+            case Estado.ANAL_POST + ">" + Estado.INSC_ACEP -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": tu inscripción fue aceptada",
+                    "Tu inscripción fue aceptada. Ingresá a tu cuenta e indicá si tus documentos están legalizados.");
+            case Estado.ANAL_POST + ">" + Estado.INSC_RECH -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": tu solicitud no pudo ser aprobada",
+                    "Lamentablemente tu solicitud no pudo ser aprobada. Motivo: " + comentario);
             default -> {}
         }
+    }
+
+    /** No es una transición: en `ANAL-POST` el Académico actualizó la matriz o el horario (RF-ACAD-004). */
+    public void analisisActualizado(Solicitud solicitud, String documento) {
+        mail.enviarAviso(
+                solicitud.getAspirante().getEmail(),
+                "E3 " + solicitud.getCodigoExp() + ": se actualizó el análisis de tu solicitud",
+                "El Académico actualizó " + documento + " de tu solicitud. ID: " + solicitud.getCodigoExp());
     }
 
     /** No es una transición: el Académico cargó o corrigió el enlace en `REU-PEND` (RF-ACAD-003). */

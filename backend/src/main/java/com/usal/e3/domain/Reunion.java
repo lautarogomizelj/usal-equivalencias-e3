@@ -38,11 +38,22 @@ public class Reunion {
 
     private Integer horarioPropuestoId;
     private String enlaceMeet;
+    private String notas;
 
     @Enumerated(EnumType.STRING)
     private Resultado resultado = Resultado.PENDIENTE;
 
+    private OffsetDateTime fechaResultado;
+
     protected Reunion() {}
+
+    /** El Académico fijó la fecha que pautaron por chat (RF-ACAD-003). Dura 1 hora, como las propuestas. */
+    public Reunion(Integer solicitudId, OffsetDateTime inicio) {
+        this.solicitudId = solicitudId;
+        this.inicio = inicio;
+        this.fin = inicio.plusHours(1);
+        this.origen = Origen.FIJADA_CHAT;
+    }
 
     /** El aspirante eligió uno de los horarios propuestos (RF-ASP-005). */
     public Reunion(Integer solicitudId, HorarioPropuesto horario) {
@@ -55,6 +66,13 @@ public class Reunion {
 
     public void cargarEnlace(String enlaceMeet) {
         this.enlaceMeet = enlaceMeet;
+    }
+
+    /** RF-ACAD-004: la reunión se hizo, con notas opcionales del Académico, o el aspirante no se presentó. */
+    public void cerrar(Resultado resultado, String notas, OffsetDateTime fecha) {
+        this.resultado = resultado;
+        this.notas = notas;
+        this.fechaResultado = fecha;
     }
 
     public OffsetDateTime getInicio() {
@@ -71,6 +89,10 @@ public class Reunion {
 
     public String getEnlaceMeet() {
         return enlaceMeet;
+    }
+
+    public String getNotas() {
+        return notas;
     }
 
     public Resultado getResultado() {

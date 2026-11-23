@@ -29,10 +29,11 @@ public record ReunionInfoResponse(Integer rondaActual, List<RondaResponse> ronda
         }
     }
 
+    /** `notas` llega solo para el personal: son las que el Académico escribió al indicar que la reunión finalizó. */
     public record ReunionResponse(
-            OffsetDateTime inicio, OffsetDateTime fin, String origen, String enlaceMeet, String resultado) {
+            OffsetDateTime inicio, OffsetDateTime fin, String origen, String enlaceMeet, String resultado, String notas) {
 
-        static ReunionResponse de(Reunion reunion) {
+        static ReunionResponse de(Reunion reunion, String notas) {
             return reunion == null
                     ? null
                     : new ReunionResponse(
@@ -40,7 +41,8 @@ public record ReunionInfoResponse(Integer rondaActual, List<RondaResponse> ronda
                             reunion.getFin(),
                             reunion.getOrigen().name(),
                             reunion.getEnlaceMeet(),
-                            reunion.getResultado().name());
+                            reunion.getResultado().name(),
+                            notas);
         }
     }
 
@@ -50,6 +52,6 @@ public record ReunionInfoResponse(Integer rondaActual, List<RondaResponse> ronda
         return new ReunionInfoResponse(
                 rondas.isEmpty() ? null : rondas.get(rondas.size() - 1).numero(),
                 rondas,
-                ReunionResponse.de(info.reunion()));
+                ReunionResponse.de(info.reunion(), info.notas()));
     }
 }

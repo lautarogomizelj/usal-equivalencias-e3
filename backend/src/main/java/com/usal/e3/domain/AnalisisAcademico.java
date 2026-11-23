@@ -1,5 +1,6 @@
 package com.usal.e3.domain;
 
+import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
@@ -34,6 +35,10 @@ public class AnalisisAcademico {
     private Tipo tipo;
 
     private int version = 1;
+
+    @Column(name = "reemplaza_a_id")
+    private Integer reemplazaAId;
+
     private String nombreArchivo;
     private String rutaArchivo;
     private String notas;
@@ -60,6 +65,16 @@ public class AnalisisAcademico {
         this.notas = notas;
         this.subidoPor = subidoPor;
         this.fechaCarga = fechaCarga;
+    }
+
+    /** La versión que reemplaza a esta (RF-ACAD-004). Esta queda en la base y deja de salir por la API. */
+    public AnalisisAcademico nuevaVersion(
+            String nombreArchivo, String rutaArchivo, String notas, Usuario subidoPor, OffsetDateTime fechaCarga) {
+        AnalisisAcademico nueva =
+                new AnalisisAcademico(solicitudId, tipo, nombreArchivo, rutaArchivo, notas, subidoPor, fechaCarga);
+        nueva.version = version + 1;
+        nueva.reemplazaAId = id;
+        return nueva;
     }
 
     public Integer getId() {

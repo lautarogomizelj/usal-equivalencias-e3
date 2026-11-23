@@ -45,6 +45,7 @@ public class SolicitudService {
     private final TransicionService transiciones;
     private final DocumentoService documentos;
     private final CatalogoService catalogo;
+    private final ChatService chat;
 
     public SolicitudService(
             SolicitudRepository solicitudes,
@@ -56,7 +57,8 @@ public class SolicitudService {
             PermisosService permisos,
             TransicionService transiciones,
             DocumentoService documentos,
-            CatalogoService catalogo) {
+            CatalogoService catalogo,
+            ChatService chat) {
         this.solicitudes = solicitudes;
         this.aspirantes = aspirantes;
         this.carreras = carreras;
@@ -67,6 +69,7 @@ public class SolicitudService {
         this.transiciones = transiciones;
         this.documentos = documentos;
         this.catalogo = catalogo;
+        this.chat = chat;
     }
 
     /** Nace en `SOL-INI`, sin responsable. El motor avisa por mail a quienes tienen acceso a la carrera. */
@@ -183,7 +186,9 @@ public class SolicitudService {
                 relacion(cuenta, solicitud),
                 acciones,
                 ultimaObservacion,
-                documentos.visibles(cuenta, solicitud, false));
+                documentos.visibles(cuenta, solicitud, false),
+                chat.puedeEscribir(cuenta, solicitud, estado),
+                chat.noLeidos(cuenta, solicitud));
     }
 
     /** Contrato §7.2. Sin responsable de su rol, al participante solo le queda tomar el proceso. */
@@ -200,6 +205,9 @@ public class SolicitudService {
         }
         if (actuaComoAcademico && Estado.REU_PEND.equals(estado.getCodigo())) {
             acciones.add(ReunionService.CARGAR_ENLACE_MEET);
+        }
+        if (actuaComoAcademico && Estado.ANAL_POST.equals(estado.getCodigo())) {
+            acciones.add(AnalisisService.ACTUALIZAR_ANALISIS);
         }
         if (solicitud.tieneComoResponsable(cuenta)) {
             if (!permisos.otrosConAcceso(cuenta, solicitud).isEmpty()) {

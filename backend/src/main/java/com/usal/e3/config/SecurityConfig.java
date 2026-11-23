@@ -80,8 +80,17 @@ public class SecurityConfig {
                                 "/solicitudes/*/documentacion/aceptar",
                                 "/solicitudes/*/documentacion/rechazar",
                                 "/solicitudes/*/analisis/propuesta",
-                                "/solicitudes/*/reunion/segunda-ronda")
+                                "/solicitudes/*/analisis",
+                                "/solicitudes/*/reunion/segunda-ronda",
+                                "/solicitudes/*/reunion/fijar-fecha",
+                                "/solicitudes/*/reunion/no-asistio",
+                                "/solicitudes/*/reunion/finalizar",
+                                "/solicitudes/*/inscripcion/aceptar",
+                                "/solicitudes/*/inscripcion/rechazar")
                         .hasAnyRole(Rol.ACADEMICO, Rol.ADMIN)
+                        .requestMatchers(
+                                HttpMethod.POST, "/solicitudes/*/chat/mensajes", "/solicitudes/*/chat/leidos")
+                        .hasAnyRole(Rol.ASPIRANTE, Rol.ACADEMICO, Rol.SECRETARIA)
                         .requestMatchers(
                                 HttpMethod.PUT, "/solicitudes/*/documentos/marcas", "/solicitudes/*/reunion/enlace")
                         .hasAnyRole(Rol.ACADEMICO, Rol.ADMIN)

@@ -1,14 +1,17 @@
 package com.usal.e3.api.solicitudes;
 
+import com.usal.e3.api.auth.Validaciones;
 import com.usal.e3.domain.DatosOrigen;
 import com.usal.e3.domain.TitularTipo;
 import com.usal.e3.security.SesionActual;
+import com.usal.e3.service.AnalisisService;
 import com.usal.e3.service.FiltroBandeja;
 import com.usal.e3.service.ProcesoService;
 import com.usal.e3.service.RevisionService;
 import com.usal.e3.service.SolicitudService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import java.net.URI;
 import java.time.LocalDate;
 import java.util.List;
@@ -31,14 +34,20 @@ public class SolicitudesController {
 
     private static final int MAX_TAMANO_PAGINA = 100;
 
+    /** Sin `@NotBlank` en el comentario: el servicio responde con un mensaje propio. */
+    record RechazoRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, String comentario) {}
+
     private final SolicitudService solicitudes;
     private final ProcesoService proceso;
     private final RevisionService revision;
+    private final AnalisisService analisis;
 
-    public SolicitudesController(SolicitudService solicitudes, ProcesoService proceso, RevisionService revision) {
+    public SolicitudesController(
+            SolicitudService solicitudes, ProcesoService proceso, RevisionService revision, AnalisisService analisis) {
         this.solicitudes = solicitudes;
         this.proceso = proceso;
         this.revision = revision;
+        this.analisis = analisis;
     }
 
     /** El aspirante ve las suyas, con `estado` y `finalizadas`; el personal, la bandeja con todos los filtros. */
@@ -122,6 +131,26 @@ public class SolicitudesController {
             HttpServletRequest request) {
         return SolicitudDetalleResponse.de(revision.rechazar(
                 actual, id, body.estadoEsperado(), body.comentario(), body.aMarcas(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/{id}/inscripcion/aceptar")
+    SolicitudDetalleResponse aceptarInscripcion(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody AccionRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(
+                analisis.aceptarInscripcion(actual, id, body.estadoEsperado(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/{id}/inscripcion/rechazar")
+    SolicitudDetalleResponse rechazarInscripcion(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody RechazoRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(analisis.rechazarInscripcion(
+                actual, id, body.estadoEsperado(), body.comentario(), request.getRemoteAddr()));
     }
 
     @PostMapping("/{id}/responsables/tomar")

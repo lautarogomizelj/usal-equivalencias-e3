@@ -31,6 +31,7 @@ public record SolicitudDetalleResponse(
         Observacion ultimaObservacion,
         ResumenDocumentos resumenDocumentos,
         boolean chatHabilitado,
+        boolean puedeEscribirChat,
         int mensajesNoLeidos) {
 
     public record AspiranteDatos(Integer id, String nombre, String email, String telefono, String dni) {}
@@ -82,9 +83,10 @@ public record SolicitudDetalleResponse(
                         contar(documentos, EstadoRevision.OK),
                         contar(documentos, EstadoRevision.RECARGAR),
                         contar(documentos, EstadoRevision.PENDIENTE)),
-                // RF-MSG-001: el chat se habilita cuando alguien toma el proceso. Los mensajes llegan en el Sprint 6.
+                // RF-MSG-001: el chat se habilita cuando alguien toma el proceso.
                 s.getResponsableAcademico() != null || s.getResponsableAdministrativo() != null,
-                0);
+                detalle.puedeEscribirChat(),
+                detalle.mensajesNoLeidos());
     }
 
     private static long contar(List<DocumentoSolicitud> documentos, EstadoRevision estado) {

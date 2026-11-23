@@ -6,6 +6,7 @@ import com.usal.e3.domain.HorarioPropuesto;
 import com.usal.e3.domain.Reunion;
 import com.usal.e3.domain.RondaReunion;
 import com.usal.e3.domain.Solicitud;
+import com.usal.e3.domain.TitularTipo;
 import com.usal.e3.exception.ApiException;
 import com.usal.e3.exception.ErrorCode;
 import com.usal.e3.repository.HorarioPropuestoRepository;
@@ -23,8 +24,8 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Fechas de la reunión (RF-ASP-005 y RF-ACAD-003): las dos rondas que propone el Académico, la elección del
- * aspirante y el enlace de Meet. Fijar la fecha por chat y el resultado de la reunión llegan con su sprint.
+ * La reunión (RF-ASP-005, RF-ACAD-003 y RF-ACAD-004): las dos rondas que propone el Académico, la elección del
+ * aspirante, la fecha pautada por chat, el enlace de Meet y el resultado.
  */
 @Service
 public class ReunionService {
@@ -36,13 +37,14 @@ public class ReunionService {
     private static final int ULTIMA_HORA = 17;
     private static final int DIAS_HACIA_ADELANTE = 30;
     private static final int MAX_TEXTO = 500;
+    private static final int MAX_NOTAS = 2000;
     private static final String PREFIJO_MEET = "https://meet.google.com/";
 
     /** Una ronda con sus horarios, del más cercano al más lejano. */
     public record Ronda(RondaReunion ronda, List<HorarioPropuesto> horarios) {}
 
-    /** Lo que necesita `ReunionInfo` (contrato §6.6). */
-    public record Info(List<Ronda> rondas, Reunion reunion) {}
+    /** Lo que necesita `ReunionInfo` (contrato §6.6). `notas` son las de la reunión y solo las recibe el personal. */
+    public record Info(List<Ronda> rondas, Reunion reunion, String notas) {}
 
     private final SolicitudRepository solicitudes;
     private final RondaReunionRepository rondas;
@@ -81,7 +83,7 @@ public class ReunionService {
         Solicitud solicitud = solicitudes.findById(id)
                 .filter(s -> s.visiblePara(cuenta))
                 .orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
-        return info(solicitud);
+        return info(cuenta, solicitud);
     }
 
     /** Transición 7: `REU-FEC-ASP-1` → `REU-FEC-ACAD`. El motivo y la disponibilidad quedan en la ronda. */
@@ -165,12 +167,60 @@ public class ReunionService {
             throw ApiException.enCampo(
                     ErrorCode.VALIDACION, "enlaceMeet", "Pegá el enlace de Google Meet (" + PREFIJO_MEET + "…).");
         }
-        Reunion reunion = reuniones.findFirstBySolicitudIdOrderByIdDesc(solicitud.getId()).orElseThrow();
+        Reunion reunion = reunionVigente(solicitud);
         reunion.cargarEnlace(enlace);
         solicitud.modificada(OffsetDateTime.now());
         auditoria.registrarEn(cuenta, "enlace_meet", "solicitud", solicitud.getId(), Map.of("enlaceMeet", enlace), ip);
         notificaciones.enlaceDeMeet(solicitud, reunion);
-        return info(solicitud);
+        return info(cuenta, solicitud);
+    }
+
+    /** Transición 11: `REU-CHAT` → `REU-PEND`. La fecha la pautaron por chat, así que no sigue las franjas de las rondas. */
+    @Transactional
+    public DetalleSolicitud fijarFecha(
+            SesionActual actual, Integer id, String estadoEsperado, OffsetDateTime inicio, String ip) {
+        Cuenta cuenta = cuentas.de(actual);
+        Solicitud solicitud = paraActualizar(cuenta, id);
+        Transicion transicion = transiciones.validar(solicitud, TransicionService.FIJAR_FECHA, estadoEsperado, cuenta);
+        if (inicio == null) {
+            throw ApiException.enCampo(ErrorCode.VALIDACION, "inicio", "Indicá el día y la hora que pautaron.");
+        }
+        if (!inicio.isAfter(OffsetDateTime.now())) {
+            throw ApiException.enCampo(ErrorCode.VALIDACION, "inicio", "La reunión tiene que ser a futuro.");
+        }
+        reuniones.save(new Reunion(solicitud.getId(), inicio));
+        transiciones.aplicar(solicitud, transicion, cuenta, ip);
+        return detalles.detalle(cuenta, solicitud);
+    }
+
+    /** Transición 12: `REU-PEND` → `REU-FEC-ACAD`. El Académico vuelve a proponer fechas (interfaces, Anexo A #7). */
+    @Transactional
+    public DetalleSolicitud marcarNoAsistio(
+            SesionActual actual, Integer id, String estadoEsperado, String comentario, String ip) {
+        Cuenta cuenta = cuentas.de(actual);
+        Solicitud solicitud = paraActualizar(cuenta, id);
+        Transicion transicion =
+                transiciones.validar(solicitud, TransicionService.MARCAR_NO_ASISTIO, estadoEsperado, cuenta);
+        String comentarioLimpio = texto(comentario, "comentario");
+        reunionVigente(solicitud).cerrar(Reunion.Resultado.NO_ASISTIO, null, OffsetDateTime.now());
+        transiciones.aplicar(solicitud, transicion, cuenta, comentarioLimpio, ip);
+        return detalles.detalle(cuenta, solicitud);
+    }
+
+    /** Transición 13: `REU-PEND` → `ANAL-POST`. Las notas son del Académico: no van al historial que ve el aspirante. */
+    @Transactional
+    public DetalleSolicitud finalizar(SesionActual actual, Integer id, String estadoEsperado, String notas, String ip) {
+        Cuenta cuenta = cuentas.de(actual);
+        Solicitud solicitud = paraActualizar(cuenta, id);
+        Transicion transicion =
+                transiciones.validar(solicitud, TransicionService.FINALIZAR_REUNION, estadoEsperado, cuenta);
+        String notasLimpias = notas == null || notas.isBlank() ? null : notas.strip();
+        if (notasLimpias != null && notasLimpias.length() > MAX_NOTAS) {
+            throw ApiException.enCampo(ErrorCode.VALIDACION, "notas", "Máximo " + MAX_NOTAS + " caracteres.");
+        }
+        reunionVigente(solicitud).cerrar(Reunion.Resultado.REALIZADA, notasLimpias, OffsetDateTime.now());
+        transiciones.aplicar(solicitud, transicion, cuenta, ip);
+        return detalles.detalle(cuenta, solicitud);
     }
 
     /** Hasta 7 franjas de 1 hora, de 10:00 a 18:00, desde mañana y dentro de los próximos 30 días (RF-ACAD-002). */
@@ -199,7 +249,7 @@ public class ReunionService {
         inicios.forEach(inicio -> horarios.save(new HorarioPropuesto(ronda.getId(), inicio)));
     }
 
-    private Info info(Solicitud solicitud) {
+    private Info info(Cuenta cuenta, Solicitud solicitud) {
         List<RondaReunion> deLaSolicitud = rondas.findBySolicitudIdOrderByIdAsc(solicitud.getId());
         List<HorarioPropuesto> propuestos = horarios.findByRondaIdInOrderByInicioAsc(
                 deLaSolicitud.stream().map(RondaReunion::getId).toList());
@@ -210,9 +260,13 @@ public class ReunionService {
                                 .filter(horario -> horario.getRondaId().equals(ronda.getId()))
                                 .toList()))
                 .toList();
-        return new Info(
-                conHorarios,
-                reuniones.findFirstBySolicitudIdOrderByIdDesc(solicitud.getId()).orElse(null));
+        Reunion reunion = reuniones.findFirstBySolicitudIdOrderByIdDesc(solicitud.getId()).orElse(null);
+        boolean conNotas = reunion != null && cuenta.tipo() == TitularTipo.USUARIO;
+        return new Info(conHorarios, reunion, conNotas ? reunion.getNotas() : null);
+    }
+
+    private Reunion reunionVigente(Solicitud solicitud) {
+        return reuniones.findFirstBySolicitudIdOrderByIdDesc(solicitud.getId()).orElseThrow();
     }
 
     private RondaReunion rondaVigente(Solicitud solicitud) {

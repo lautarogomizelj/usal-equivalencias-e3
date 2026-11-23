@@ -7,6 +7,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import java.time.OffsetDateTime;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -16,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Fechas de la reunión y enlace de Meet (contrato §6.6, §7.1 y §7.2). */
+/** Fechas de la reunión, enlace de Meet y resultado (contrato §6.6, §7.1 y §7.2). */
 @RestController
 @RequestMapping("/solicitudes/{id}/reunion")
 public class ReunionController {
@@ -32,6 +33,13 @@ public class ReunionController {
     record RechazarRondaRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, String motivo) {}
 
     record EnlaceMeetRequest(@NotBlank(message = Validaciones.REQUERIDO) String enlaceMeet) {}
+
+    /** Sin `@NotNull` en `inicio`: el servicio responde con un mensaje propio. */
+    record FijarFechaRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, OffsetDateTime inicio) {}
+
+    record NoAsistioRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, String comentario) {}
+
+    record FinalizarRequest(@NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado, String notas) {}
 
     private final ReunionService reuniones;
 
@@ -82,6 +90,36 @@ public class ReunionController {
             HttpServletRequest request) {
         return SolicitudDetalleResponse.de(
                 reuniones.rechazarRonda(actual, id, body.estadoEsperado(), body.motivo(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/fijar-fecha")
+    SolicitudDetalleResponse fijarFecha(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody FijarFechaRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(
+                reuniones.fijarFecha(actual, id, body.estadoEsperado(), body.inicio(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/no-asistio")
+    SolicitudDetalleResponse marcarNoAsistio(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody NoAsistioRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(reuniones.marcarNoAsistio(
+                actual, id, body.estadoEsperado(), body.comentario(), request.getRemoteAddr()));
+    }
+
+    @PostMapping("/finalizar")
+    SolicitudDetalleResponse finalizar(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @Valid @RequestBody FinalizarRequest body,
+            HttpServletRequest request) {
+        return SolicitudDetalleResponse.de(
+                reuniones.finalizar(actual, id, body.estadoEsperado(), body.notas(), request.getRemoteAddr()));
     }
 
     /** `CARGAR_ENLACE_MEET`: no cambia el estado y devuelve la reunión con el enlace. */

@@ -105,7 +105,7 @@ public class DocumentosController {
     }
 
     /** Descarga binaria con el nombre original del archivo (contrato §1). */
-    static ResponseEntity<Resource> descarga(ArchivoDescarga descarga) {
+    public static ResponseEntity<Resource> descarga(ArchivoDescarga descarga) {
         return ResponseEntity.ok()
                 .contentType(MediaType.parseMediaType(descarga.contentType()))
                 .header(

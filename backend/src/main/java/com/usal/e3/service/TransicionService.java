@@ -31,6 +31,11 @@ public class TransicionService {
     public static final String PROPONER_SEGUNDA_RONDA = "PROPONER_SEGUNDA_RONDA";
     public static final String ELEGIR_HORARIO = "ELEGIR_HORARIO";
     public static final String RECHAZAR_SEGUNDA_RONDA = "RECHAZAR_SEGUNDA_RONDA";
+    public static final String FIJAR_FECHA = "FIJAR_FECHA";
+    public static final String MARCAR_NO_ASISTIO = "MARCAR_NO_ASISTIO";
+    public static final String FINALIZAR_REUNION = "FINALIZAR_REUNION";
+    public static final String ACEPTAR_INSCRIPCION = "ACEPTAR_INSCRIPCION";
+    public static final String RECHAZAR_INSCRIPCION = "RECHAZAR_INSCRIPCION";
 
     /** Las transiciones ya implementadas: cada sprint suma las suyas. De acá salen las `accionesDisponibles`. */
     static final List<Transicion> TABLA = List.of(
@@ -44,7 +49,12 @@ public class TransicionService {
             new Transicion(PROPONER_SEGUNDA_RONDA, Rol.ACADEMICO, Estado.REU_FEC_ACAD, Estado.REU_FEC_ASP_2),
             new Transicion(ELEGIR_HORARIO, Rol.ASPIRANTE, Estado.REU_FEC_ASP_1, Estado.REU_PEND),
             new Transicion(ELEGIR_HORARIO, Rol.ASPIRANTE, Estado.REU_FEC_ASP_2, Estado.REU_PEND),
-            new Transicion(RECHAZAR_SEGUNDA_RONDA, Rol.ASPIRANTE, Estado.REU_FEC_ASP_2, Estado.REU_CHAT));
+            new Transicion(RECHAZAR_SEGUNDA_RONDA, Rol.ASPIRANTE, Estado.REU_FEC_ASP_2, Estado.REU_CHAT),
+            new Transicion(FIJAR_FECHA, Rol.ACADEMICO, Estado.REU_CHAT, Estado.REU_PEND),
+            new Transicion(MARCAR_NO_ASISTIO, Rol.ACADEMICO, Estado.REU_PEND, Estado.REU_FEC_ACAD),
+            new Transicion(FINALIZAR_REUNION, Rol.ACADEMICO, Estado.REU_PEND, Estado.ANAL_POST),
+            new Transicion(ACEPTAR_INSCRIPCION, Rol.ACADEMICO, Estado.ANAL_POST, Estado.INSC_ACEP),
+            new Transicion(RECHAZAR_INSCRIPCION, Rol.ACADEMICO, Estado.ANAL_POST, Estado.INSC_RECH));
 
     private final HistorialEstadoRepository historial;
     private final PermisosService permisos;

@@ -66,6 +66,21 @@ public class AnalisisController {
                 request.getRemoteAddr()));
     }
 
+    /** `ACTUALIZAR_ANALISIS`: en `ANAL-POST`, versión nueva de la matriz o del horario. No cambia el estado. */
+    @PostMapping(consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    List<AnalisisResponse> actualizar(
+            @AuthenticationPrincipal SesionActual actual,
+            @PathVariable Integer id,
+            @RequestParam(required = false) String tipo,
+            @RequestPart(required = false) MultipartFile archivo,
+            @RequestParam(required = false) String notas,
+            HttpServletRequest request)
+            throws IOException {
+        return analisis.actualizar(actual, id, tipo, adjunto(archivo), notas, request.getRemoteAddr()).stream()
+                .map(AnalisisResponse::de)
+                .toList();
+    }
+
     private static Adjunto adjunto(MultipartFile archivo) throws IOException {
         return archivo == null || archivo.isEmpty()
                 ? null

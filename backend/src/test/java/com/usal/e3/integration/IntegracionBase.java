@@ -100,7 +100,7 @@ abstract class IntegracionBase {
         jdbc.execute("""
                 TRUNCATE sesiones, codigos_verificacion, user_career_permissions, auditoria_sistema,
                          user_solicitud_permissions, documentos_solicitud, estados_solicitud, analisis_academico,
-                         reuniones, horarios_propuestos, rondas_reunion, solicitudes,
+                         reuniones, horarios_propuestos, rondas_reunion, mensajes_chat, lecturas_chat, solicitudes,
                          aspirantes, usuarios RESTART IDENTITY CASCADE
                 """);
     }

@@ -22,6 +22,9 @@ public class Estado {
     public static final String REU_FEC_ACAD = "REU-FEC-ACAD";
     public static final String REU_CHAT = "REU-CHAT";
     public static final String REU_PEND = "REU-PEND";
+    public static final String ANAL_POST = "ANAL-POST";
+    public static final String INSC_ACEP = "INSC-ACEP";
+    public static final String INSC_RECH = "INSC-RECH";
 
     /** Estados de tipo A para el Académico (interfaces §5.1). */
     public static final Set<String> ESPERAN_AL_ACADEMICO =

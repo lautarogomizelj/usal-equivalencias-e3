@@ -13,4 +13,6 @@ public record DetalleSolicitud(
         String miRelacion,
         List<String> accionesDisponibles,
         HistorialEstado ultimaObservacion,
-        List<DocumentoSolicitud> documentos) {}
+        List<DocumentoSolicitud> documentos,
+        boolean puedeEscribirChat,
+        int mensajesNoLeidos) {}

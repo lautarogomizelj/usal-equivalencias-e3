@@ -16,6 +16,7 @@
 | 1.9 | 2026-11-20 | jumaluc | De la auditoría del 2026-11-19, lo que depende del Sprint 4: código `NO_RESPONSABLE` y orden de validación con el responsable (§1 y §7), y el Admin ejecuta las acciones del Académico y de Secretaría (§7 y §10.1) (CC-017) |
 | 1.10 | 2026-11-20 | jumaluc | Sprint 5: `PROPONER_FECHAS`, `SOLICITAR_OTRAS_FECHAS`, `PROPONER_SEGUNDA_RONDA`, `ELEGIR_HORARIO`, `RECHAZAR_SEGUNDA_RONDA` y `CARGAR_ENLACE_MEET` implementadas; lectura de `Analisis`, que suma `subidoPor`, y de `ReunionInfo`; las fechas se proponen en punto, desde mañana y hasta dentro de 30 días (§2.10 a §2.12, §6.6 y §7; CC-018, CC-019) |
 | 1.12 | 2026-11-22 | jumaluc | Sprint 7: legalización, informe de materias, cupón y comprobantes implementados (§2.13 a §2.15, §6.5, §6.6 y §7). El informe pasa a ser `materiasReconocidas`, `observaciones` y `montoAPagar`, y se carga con `ACEPTAR_LEGALIZADOS` (se quita `CARGAR_INFORME`); `ENVIAR_CUPON` recibe `monto`; `Pago` suma datos del archivo de cada comprobante; se quita `documentosLegalizados` (CC-022, CC-023) |
+| 1.13 | 2026-11-22 | jumaluc | Sprint 8: notificaciones (§2.21 y §8.2, sin `tipo`), auditoría (§8.3, con filtro `usuario` por email y `GET /auditoria/opciones`), administración (§9: contraseña en el alta y en la edición, `PROCESO_ACTIVO` con los expedientes en el mensaje, la asignación de carreras devuelve la cuenta), carreras del Admin (§5) y exportación de expedientes (§7.2) implementadas. `GET /roles` no se implementa (CC-024, CC-025) |
 | 1.11 | 2026-11-22 | jumaluc | Sprint 6: chat de la solicitud implementado, con `lecturas_chat`, `puedeEscribirChat`, `autor.rol` y adjuntos PDF, JPG o PNG (§2.16, §6.4 y §8.1); `FIJAR_FECHA` con cualquier fecha futura, `MARCAR_NO_ASISTIO`, `FINALIZAR_REUNION` con notas solo para el personal, `ACTUALIZAR_ANALISIS`, `ACEPTAR_INSCRIPCION` y `RECHAZAR_INSCRIPCION` (§2.12, §6.6, §7.2 y §7.3; CC-020, CC-021) |
 
 > El stack, los puertos y las convenciones de git están en el [README de la raíz](../README.md). El backend implementa por ahora la autenticación y el perfil (§4), la lectura de catálogos (§5), la creación y lectura de solicitudes con sus documentos y la bandeja del personal (§6, con el análisis académico, las fechas de reunión, el informe de materias y el pago) y todas las acciones del trámite (§7), de la creación de la solicitud a `E3-INI`. También el chat de la solicitud (§8.1). El resto del documento es el contrato a acordar.
@@ -416,7 +417,7 @@ Alimenta "Historial de accesos" y "Sesiones activas" de Mi perfil (RF-AUTH-007).
 | expiraEn | datetime | 30 días con "recuérdame"; 1 día en el resto de los casos |
 | cerradaEn | datetime? |  |
 
-### 2.21 Notificación (`notificaciones`) — Propuesta
+### 2.21 Notificación (`notificaciones`)
 
 La campana de la barra superior replica los mails (interfaces §4.9).
 
@@ -426,7 +427,6 @@ La campana de la barra superior replica los mails (interfaces §4.9).
 | destinatarioTipo | enum | `USUARIO`, `ASPIRANTE` |
 | destinatarioId | int |  |
 | solicitudId | int? | Destino del link |
-| tipo | string | ej. `CAMBIO_ESTADO`, `PROCESO_TOMADO`, `PERMISO_ASIGNADO` |
 | titulo | string |  |
 | mensaje | string |  |
 | leida | boolean |  |
@@ -594,7 +594,7 @@ Los catálogos los carga el backend; el frontend nunca los hardcodea (interfaces
 | PUT | `/carreras/{id}` | Admin | Modifica datos | 200 `Carrera` | RF-ADMIN-002 |
 | PATCH | `/carreras/{id}/activo` | Admin | `{ "activo": false }` (baja lógica) | 200 `Carrera` | RF-ADMIN-002 |
 | GET | `/estados` | Autenticado | Catálogo de los 21 estados | 200 `Estado[]` | RF-ESTADO-003 |
-| GET | `/roles` | Admin | Roles asignables a personal @usal | 200 `Rol[]` | RF-ADMIN-001 |
+| GET | `/roles` | Admin | **No se implementa:** los tres roles asignables (`ACAD`, `SECRE`, `REVISOR`) son fijos y el frontend los toma de `constants/roles.ts` | — | RF-ADMIN-001 |
 
 **`Carrera`**
 
@@ -906,8 +906,10 @@ Las 27 transiciones quedan en 23 acciones: el reenvío de documentación (4) y d
 | `AGREGAR_FALTANTE` | `POST /solicitudes/{id}/documentos/faltantes` | Académico participante | `DOC-REV`, `LEG-REV` | `{ tipo, descripcion }` | RF-ACAD-009 |
 | `CARGAR_ENLACE_MEET` | `PUT /solicitudes/{id}/reunion/enlace` | Académico | `REU-PEND` | `{ enlaceMeet }` | RF-ACAD-003 |
 | `ACTUALIZAR_ANALISIS` | `POST /solicitudes/{id}/analisis` (multipart) | Académico | `ANAL-POST` | `tipo`, `archivo?`, `notas?` | RF-ACAD-004 |
-| `DESCARGAR_EXPEDIENTE` | `GET /solicitudes/{id}/expediente` | Personal (aspirante a definir) | Siempre | — → ZIP | RF-PROC-005 |
-| `EXPORTAR_EXPEDIENTES` | `GET /solicitudes/expedientes?estado=…&desde=…` | Personal | Siempre | — → ZIP | RF-PROC-005 |
+| `DESCARGAR_EXPEDIENTE` | `GET /solicitudes/{id}/expediente` | Académico, Secretaría, Admin y Revisor (aspirante a definir) | Siempre | — → `Expediente_EXP-2026-001.zip` | RF-PROC-005 |
+| `EXPORTAR_EXPEDIENTES` | `GET /solicitudes/expedientes?estado=…&desde=…` | Académico, Secretaría, Admin y Revisor | Siempre. Mismos filtros que la bandeja, sin paginar; sin resultados responde 404 | — → `Expedientes_2026_[fecha].zip`, con una carpeta por expediente | RF-PROC-005 |
+
+Las dos exportaciones no figuran en `accionesDisponibles` y quedan en auditoría (`descarga_expediente` y `descarga_expedientes`). Cada expediente trae `resumen.pdf`, `documentos/` (los vigentes), `analisis/`, y `pago/` con el cupón y los comprobantes.
 
 `TOMAR_PROCESO` asigna `responsableAcademico` o `responsableAdministrativo` según el rol de quien llama y devuelve el detalle. Errores: 409 `PROCESO_YA_TOMADO` (otro lo tomó primero), 409 `UNICO_RESPONSABLE` (baja).
 
@@ -1039,7 +1041,7 @@ Implementado hoy (CC-021):
 
 **Actualización en vivo:** el frontend pide `?despuesDe=` cada 15 s mientras el chat está abierto. El refresco de `GET /solicitudes/{id}` al volver a la pestaña para detectar cambios de estado (interfaces §0.16.4) y WebSocket quedan para más adelante.
 
-### 8.2 Notificaciones (campana) — Propuesta
+### 8.2 Notificaciones (campana)
 
 | Método | Ruta | Quién | Qué hace | Respuesta |
 | --- | --- | --- | --- | --- |
@@ -1051,7 +1053,6 @@ Implementado hoy (CC-021):
 ```json
 {
   "id": 1203,
-  "tipo": "CAMBIO_ESTADO",
   "titulo": "Observaciones en tu documentación",
   "mensaje": "Documentos a recargar: Analítico",
   "solicitudId": 42,
@@ -1060,13 +1061,14 @@ Implementado hoy (CC-021):
 }
 ```
 
-Los mails los manda el backend en cada transición (RF-ESTADO-002); el front no los dispara.
+Los mails los manda el backend en cada transición (RF-ESTADO-002); el front no los dispara. Cada aviso que sale por mail queda además como notificación de quien lo recibe, con el asunto como `titulo` y el texto como `mensaje`; `solicitudId` es nulo en los que no son sobre un trámite (permiso asignado). `GET /notificaciones` trae las más nuevas primero, con `page` y `size` (10 por defecto). Cada uno lee y marca solo las suyas: marcar una ajena responde 404. El frontend pide el contador cada minuto.
 
 ### 8.3 Auditoría (RF-AUDIT-001 a 003, RF-REVISOR-001)
 
 | Método | Ruta | Quién | Qué hace | Respuesta |
 | --- | --- | --- | --- | --- |
-| GET | `/auditoria` | Admin, Revisor | Filtros `usuarioId`, `accion`, `entidad`, `entidadId`, `desde`, `hasta` | 200 `Page<EventoAuditoria>` |
+| GET | `/auditoria` | Admin, Revisor | Filtros `usuario` (parte del email), `accion`, `entidad`, `entidadId`, `desde`, `hasta` (días de Argentina). Lo más nuevo primero | 200 `Page<EventoAuditoria>` |
+| GET | `/auditoria/opciones` | Admin, Revisor | Acciones y entidades que ya tienen eventos, para armar los filtros | 200 `{ acciones: string[], entidades: string[] }` |
 | GET | `/auditoria/{id}` | Admin, Revisor | Detalle completo | 200 `EventoAuditoria` |
 | GET | `/solicitudes/{id}/auditoria` | Admin, Revisor | Pestaña Auditoría del detalle | 200 `Page<EventoAuditoria>` |
 
@@ -1093,10 +1095,10 @@ Todo lo de esta sección es solo para Admin General y vive bajo `/admin`.
 | Método | Ruta | Qué hace | Respuesta | Requisito |
 | --- | --- | --- | --- | --- |
 | GET | `/admin/usuarios` | Lista personal @usal; filtros `rol`, `activo`, `q` | 200 `Page<UsuarioAdmin>` | RF-ADMIN-001 |
-| POST | `/admin/usuarios` | Registra cuenta @usal con acceso básico | 201 `UsuarioAdmin` | RF-ADMIN-001 |
+| POST | `/admin/usuarios` | Registra cuenta @usal con acceso básico y su contraseña inicial | 201 `UsuarioAdmin` | RF-ADMIN-001 |
 | GET | `/admin/usuarios/{id}` | Detalle con permisos | 200 `UsuarioAdmin` | — |
-| PATCH | `/admin/usuarios/{id}` | `{ nombre?, rolCodigo?, activo? }` | 200 `UsuarioAdmin` | — |
-| POST | `/admin/usuarios/{id}/permisos/carreras` | `{ "carreraIds": [1, 3] }` | 201 `PermisoCarrera[]` | RF-ADMIN-003 |
+| PATCH | `/admin/usuarios/{id}` | `{ nombre?, apellido?, rolCodigo?, activo?, password? }`. Con procesos activos, cambiar el rol o desactivar responde 409 `PROCESO_ACTIVO` | 200 `UsuarioAdmin` | — |
+| POST | `/admin/usuarios/{id}/permisos/carreras` | `{ "carreraIds": [1, 3] }`. Saltea las que ya tiene, avisa al usuario por cada carrera nueva y devuelve la cuenta con todos sus permisos activos. Solo para Académico y Secretaría | 201 `UsuarioAdmin` | RF-ADMIN-003 |
 | POST | `/admin/permisos/carreras/{permisoId}/revocar` | `{ forzar, comentario }` | 204 | RF-ADMIN-004 |
 | POST | `/admin/permisos/solicitudes/{permisoId}/revocar` | `{ comentario }` | 204 | RF-ADMIN-004 |
 | POST | `/admin/solicitudes/{id}/responsables` | Asigna o reasigna responsables | 200 `SolicitudDetalle` | RF-ADMIN-005 |
@@ -1104,7 +1106,7 @@ Todo lo de esta sección es solo para Admin General y vive bajo `/admin`.
 | POST | `/admin/cuentas/{tipo}/{id}/desbloquear` | `tipo` = `aspirante` o `usuario`; resetea intentos a 0 | 204 | RF-AUTH-002 |
 | POST | `/admin/solicitudes/{id}/reabrir` | **A implementar**: depende de estados posteriores a `E3-INI` | — | RF-ADMIN-006 |
 
-**`POST /admin/usuarios`** — request `{ "email": "l.diaz@usal.edu.ar", "nombre": "Laura", "apellido": "Díaz", "rolCodigo": "SECRE" }`. Dominio distinto → 400 `VALIDACION`; email existente → 409 `DUPLICADO`. No se envía mail: la persona entra directo con Google.
+**`POST /admin/usuarios`** — request `{ "email": "l.diaz@usal.edu.ar", "nombre": "Laura", "apellido": "Díaz", "rolCodigo": "SECRE", "password": "…" }`. Dominio distinto, rol que no sea `ACAD`, `SECRE` o `REVISOR`, o contraseña que no cumple las reglas del registro → 400 `VALIDACION` con `errors.email`, `errors.rolCodigo` o `errors.password`; email existente → 409 `DUPLICADO`. No se envía mail. La contraseña es provisoria, hasta que el personal entre con Google (CC-016 y CC-024). El listado no incluye al Admin.
 
 **`UsuarioAdmin`**
 
@@ -1129,7 +1131,7 @@ Todo lo de esta sección es solo para Admin General y vive bajo `/admin`.
 
 Solo se listan permisos activos (`revokedAt` nulo y, en los temporales, sin vencer).
 
-**Revocar permiso de carrera** — con procesos activos y `forzar: false` responde 409 `PROCESO_ACTIVO` con `{ "solicitudes": ["EXP-2026-001"] }`. El front muestra la segunda confirmación y reenvía con `forzar: true`.
+**Revocar permiso de carrera** — con procesos activos y `forzar: false` responde 409 `PROCESO_ACTIVO`, y el `message` nombra los expedientes ("Proceso activo en EXP-2026-001. Para revocar…"). El front lo muestra, pide la segunda confirmación y reenvía con `forzar: true`: el usuario pierde el acceso, esos procesos quedan sin responsable y se avisa a los demás del rol con acceso a la carrera o, si no hay nadie, al Admin. Un proceso sobre el que el usuario conserva un permiso temporal no se toca. Volver a asignar una carrera revocada reactiva el mismo permiso. La revocación de un permiso temporal no pide confirmación: si el usuario era el responsable y no tiene permiso sobre la carrera, el proceso se libera igual.
 
 **`POST /admin/solicitudes/{id}/responsables`**
 
@@ -1143,7 +1145,7 @@ Solo se listan permisos activos (`revokedAt` nulo y, en los temporales, sin venc
 }
 ```
 
-`comentario` es obligatorio. Si el usuario elegido no tiene permiso sobre la carrera y `crearPermisoTemporal` es `false`, responde 409 `SIN_PERMISO_CARRERA`.
+`comentario` es obligatorio (400 con `errors.comentario`) y hace falta al menos un id (`errors.academicoId`). Un id nulo deja ese responsable como está. Cada elegido tiene que ser una cuenta activa del rol que corresponde (`errors.academicoId` o `errors.administrativoId`). Si no tiene permiso sobre la carrera y `crearPermisoTemporal` es `false`, responde 409 `SIN_PERMISO_CARRERA`. Con la solicitud finalizada responde 409 `TRANSICION_INVALIDA`. Avisa al nuevo responsable, al anterior y al aspirante, y el cambio aparece en el historial de la solicitud.
 
 **`Alertas`**
 

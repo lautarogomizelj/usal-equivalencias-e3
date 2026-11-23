@@ -24,6 +24,7 @@
 | 13.4 | 2026-11-20 | jumaluc | RF-ACAD-002: las fechas de reunión se proponen desde el día siguiente y hasta dentro de 30 días, en lugar de "próximos 14-30 días" (CC-018) |
 | 13.5 | 2026-11-22 | jumaluc | RF-ACAD-003: la fecha pautada por chat admite cualquier día y hora futuros (CC-020). RF-ACAD-004: las notas de la reunión las ve solo el personal. RF-MSG-002 y 003: el mensaje lleva el nombre completo y el rol de quien escribe, texto, adjunto (PDF, JPG o PNG) o las dos cosas, y el chat queda en solo lectura con la solicitud finalizada (CC-021) |
 | 13.6 | 2026-11-22 | jumaluc | RF-ASP-006: el informe de materias es la cantidad de materias reconocidas, las observaciones del Académico y el monto del cupón, sin tabla por materia. RF-ACAD-005: al aceptar los legalizados el Académico informa esa cantidad. RF-SEC-001: el monto del cupón lo ingresa Secretaría. Transición 18: el aspirante avisa que legalizó, sin recargar archivos (CC-022) |
+| 13.7 | 2026-11-22 | jumaluc | RF-ADMIN-001: mientras el personal entre con usuario y contraseña (CC-016), el Admin escribe la contraseña inicial de la cuenta y puede cambiarla. RF-ADMIN-004: con procesos activos tampoco se desactiva la cuenta ni se le cambia el rol. RF-PROC-005: contenido del ZIP y quién exporta (CC-024) |
 
 ---
 
@@ -659,6 +660,7 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   - Descargar múltiples (filtro por estado, fecha, etc.)
   - Exportación consolidada: `Expedientes_2024_[fecha].zip`
 - Cada descarga registra en auditoría (usuario, timestamp, qué descargó)
+- **Implementado (CC-024):** exportan Académico, Secretaría, Admin y Revisor; el aspirante no (RF-ASP-008 sigue pendiente). La exportación múltiple baja las solicitudes que muestra la bandeja con los filtros aplicados, cada una en su carpeta. Cada expediente trae un resumen en PDF (datos, responsables e historial de estados), los documentos vigentes, la matriz y el horario, el cupón y los comprobantes
 
 #### 4.4.2 Etapa Académica
 
@@ -907,6 +909,8 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   - Rol: Académico, Administrativo, Revisor Logs
   - Cuenta se crea con **acceso básico** (NO se asignan carreras)
   - Sistema NO envía mail de confirmación (usuario entra directamente con Google, RF-AUTH-003)
+  - **Provisorio (CC-016 y CC-024):** mientras el personal entre con usuario y contraseña, el Admin escribe la contraseña inicial de la cuenta (mismas reglas que la del aspirante) y se la pasa a la persona; también puede cambiarla al editar la cuenta
+  - El Admin puede editar nombre, apellido y rol, y activar o desactivar la cuenta. Con procesos activos no se cambia el rol ni se desactiva: primero hay que reasignar esas solicitudes
 
 #### RF-ADMIN-002: Gestión de Carreras
 - Tabla `carreras` (catálogo precargado en BD):

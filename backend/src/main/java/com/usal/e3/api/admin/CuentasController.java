@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-/** Desbloqueo de cuentas (RF-AUTH-002, contrato §9). El resto de `/admin` llega en el Sprint 8. */
+/** Desbloqueo de cuentas (RF-AUTH-002, contrato §9). El resto de `/admin` está en `AdminController`. */
 @RestController
 @RequestMapping("/admin/cuentas")
 public class CuentasController {

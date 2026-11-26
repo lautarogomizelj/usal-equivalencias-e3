@@ -1,4 +1,14 @@
-import { CircleHelp, FileText, House, SquarePlus, User, type LucideIcon } from 'lucide-react'
+import {
+  CircleHelp,
+  FileText,
+  GraduationCap,
+  House,
+  ScrollText,
+  SquarePlus,
+  User,
+  Users,
+  type LucideIcon,
+} from 'lucide-react'
 import { ROUTES } from './routes'
 
 export interface ItemMenu {
@@ -32,10 +42,20 @@ for (const rol of ['ACAD', 'SECRE']) {
   ]
 }
 
-/** Revisor y Admin todavía no tienen pantallas propias: por ahora ven el inicio y su perfil. */
-for (const rol of ['REVISOR', 'ADMIN']) {
-  MENU_POR_ROL[rol] = [
-    { texto: 'Inicio', ruta: ROUTES.DASHBOARD, Icono: House },
-    { texto: 'Mi perfil', ruta: ROUTES.PERFIL, Icono: User },
-  ]
-}
+/** El Revisor consulta las solicitudes y la auditoría, sin acciones (frontend-interfaces.md §8). */
+MENU_POR_ROL.REVISOR = [
+  { texto: 'Inicio', ruta: ROUTES.DASHBOARD, Icono: House },
+  { texto: 'Solicitudes', ruta: ROUTES.MIS_SOLICITUDES, Icono: FileText, conSubrutas: true },
+  { texto: 'Auditoría', ruta: ROUTES.AUDITORIA, Icono: ScrollText },
+  { texto: 'Mi perfil', ruta: ROUTES.PERFIL, Icono: User },
+]
+
+/** El Admin suma la gestión de usuarios y de carreras (frontend-interfaces.md §7). */
+MENU_POR_ROL.ADMIN = [
+  { texto: 'Inicio', ruta: ROUTES.DASHBOARD, Icono: House },
+  { texto: 'Solicitudes', ruta: ROUTES.MIS_SOLICITUDES, Icono: FileText, conSubrutas: true },
+  { texto: 'Usuarios', ruta: ROUTES.ADMIN_USUARIOS, Icono: Users },
+  { texto: 'Carreras', ruta: ROUTES.ADMIN_CARRERAS, Icono: GraduationCap },
+  { texto: 'Auditoría', ruta: ROUTES.AUDITORIA, Icono: ScrollText },
+  { texto: 'Mi perfil', ruta: ROUTES.PERFIL, Icono: User },
+]

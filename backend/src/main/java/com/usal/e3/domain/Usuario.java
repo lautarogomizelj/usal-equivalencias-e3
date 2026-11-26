@@ -115,6 +115,14 @@ public class Usuario implements Cuenta {
         this.activo = activo;
     }
 
+    public void setRol(Rol rol) {
+        this.rol = rol;
+    }
+
+    public OffsetDateTime getFechaUltimoLogin() {
+        return fechaUltimoLogin;
+    }
+
     @Override
     public int getIntentosLoginFallidos() {
         return intentosLoginFallidos;

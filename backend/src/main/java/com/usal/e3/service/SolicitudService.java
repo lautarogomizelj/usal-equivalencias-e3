@@ -33,7 +33,8 @@ import org.springframework.transaction.annotation.Transactional;
 @Service
 public class SolicitudService {
 
-    private static final List<String> CAMBIOS_DE_RESPONSABLE = List.of("tomar_proceso", "baja_responsable");
+    private static final List<String> CAMBIOS_DE_RESPONSABLE = List.of(
+            "tomar_proceso", "baja_responsable", "asignar_responsable", "quitar_responsable");
 
     private final SolicitudRepository solicitudes;
     private final AspiranteRepository aspirantes;

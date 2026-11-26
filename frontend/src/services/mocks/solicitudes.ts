@@ -24,7 +24,18 @@ import type {
 } from '@/types/solicitud'
 import { hoyEnArgentina, sumarDias } from '@/utils/fechas'
 import { nombreCompleto } from '@/utils/personas'
-import { CARRERAS, ESTADOS, PERFIL, responsable, SESION_ASPIRANTE, SESIONES_USAL, SOLICITUDES } from './datos'
+import { asignarResponsables } from './admin'
+import { registrarAuditoria } from './auditoria'
+import {
+  CARRERAS,
+  ESTADOS,
+  PERFIL,
+  responsable,
+  SESION_ASPIRANTE,
+  SESIONES_USAL,
+  SOLICITUDES,
+  TEMPORALES,
+} from './datos'
 
 const DIA_MS = 24 * 60 * 60 * 1000
 const TIPOS_OBLIGATORIOS: TipoDocumento[] = ['ANALITICO', 'PLAN', 'PROGRAMA']
@@ -151,10 +162,12 @@ function visible(sesion: Sesion, id: number) {
   return solicitud
 }
 
+/** Por permiso sobre la carrera o por uno temporal sobre la solicitud (RF-AUTH-005). */
 function esParticipante(sesion: Sesion, solicitud: SolicitudResumen) {
   return (
     ROLES_CON_PROCESO.includes(sesion.rol) &&
-    Boolean(sesion.carrerasConPermiso?.some(({ id }) => id === solicitud.carreraDestino.id))
+    (Boolean(sesion.carrerasConPermiso?.some(({ id }) => id === solicitud.carreraDestino.id)) ||
+      TEMPORALES.some((permiso) => permiso.userId === sesion.id && permiso.solicitudId === solicitud.id))
   )
 }
 
@@ -174,6 +187,8 @@ function hayOtrosConAcceso(sesion: Sesion, solicitud: SolicitudResumen) {
 function accionesDe(sesion: Sesion, solicitud: SolicitudResumen) {
   const codigo = solicitud.estado.codigo
   if (sesion.tipo === 'ASPIRANTE') return ACCIONES_ASPIRANTE[codigo] ?? []
+  // El Admin ejecuta las acciones del Académico y de Secretaría sin ser responsable (interfaces §7.0).
+  if (sesion.rol === 'ADMIN') return [...(ACCIONES_ACADEMICO[codigo] ?? []), ...(ACCIONES_SECRETARIA[codigo] ?? [])]
   if (!esParticipante(sesion, solicitud)) return []
   if (!esResponsable(sesion, solicitud)) {
     return responsableDe(solicitud, sesion.rol) || solicitud.estado.esTerminal ? [] : ['TOMAR_PROCESO']
@@ -479,6 +494,11 @@ function cambiarEstado(sesion: Sesion, solicitud: SolicitudResumen, nuevo: strin
   historialDe(solicitud.id).unshift(cambioEstado(ahora, solicitud.estado.codigo, nuevo, usuario, comentario))
   // Lo que escribe el aspirante queda en el historial, pero no es una observación del personal.
   if (comentario && sesion.tipo === 'USUARIO') observaciones.set(solicitud.id, { comentario, usuario, fecha: ahora })
+  registrarAuditoria(sesion, 'cambio_estado', 'solicitud', solicitud.id, {
+    estadoCodigoAnterior: solicitud.estado.codigo,
+    estadoCodigoNuevo: nuevo,
+    comentarios: comentario,
+  })
   solicitud.estado = estado(nuevo)
   solicitud.fechaUltimaMod = ahora
 }
@@ -538,6 +558,23 @@ function cambiarResponsable(sesion: Sesion, id: number, tomar: boolean) {
     usuario: nombreCompleto(sesion),
     comentario: tomar ? `Tomó el proceso como ${papel}.` : `Se dio de baja como ${papel}.`,
   })
+  return detalle(sesion, id)
+}
+
+/** RF-ADMIN-005: el Admin asigna o reemplaza responsables; queda en el historial, como en el backend. */
+function asignarComoAdmin(sesion: Sesion, body: unknown, id: number) {
+  if (sesion.rol !== 'ADMIN') throw error(403, 'ACCESO_DENEGADO')
+  const ahora = new Date().toISOString()
+  for (const { papel, nombre } of asignarResponsables(sesion, buscar(id), body)) {
+    historialDe(id).unshift({
+      fecha: ahora,
+      tipo: 'CAMBIO_RESPONSABLE',
+      estadoAnterior: null,
+      estadoNuevo: null,
+      usuario: nombreCompleto(sesion),
+      comentario: `Asignó a ${nombre} como ${papel}.`,
+    })
+  }
   return detalle(sesion, id)
 }
 
@@ -1136,6 +1173,7 @@ export function rutasSolicitudes(sesionActual: () => Sesion): Record<string, Man
     'POST /solicitudes/:id/cancelar': (body, [id]) => cancelar(sesionActual(), body, id),
     'POST /solicitudes/:id/responsables/tomar': (_, [id]) => cambiarResponsable(sesionActual(), id, true),
     'POST /solicitudes/:id/responsables/baja': (_, [id]) => cambiarResponsable(sesionActual(), id, false),
+    'POST /admin/solicitudes/:id/responsables': (body, [id]) => asignarComoAdmin(sesionActual(), body, id),
     'GET /solicitudes/:id/analisis': (_, [id]) => [...analisisDe(visible(sesionActual(), id).id)],
     'POST /solicitudes/:id/analisis/propuesta': (body, [id]) => proponerFechas(sesionActual(), body, id),
     'POST /solicitudes/:id/analisis': (body, [id]) => actualizarAnalisis(sesionActual(), body, id),

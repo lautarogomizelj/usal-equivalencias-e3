@@ -200,7 +200,7 @@ public class AnalisisService {
         return solicitudes.buscarParaActualizar(id).orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
     }
 
-    private List<AnalisisAcademico> vigentes(Solicitud solicitud) {
+    List<AnalisisAcademico> vigentes(Solicitud solicitud) {
         Map<Tipo, AnalisisAcademico> porTipo = new EnumMap<>(Tipo.class);
         analisis.findBySolicitudIdOrderByVersionDescIdAsc(solicitud.getId())
                 .forEach(documento -> porTipo.putIfAbsent(documento.getTipo(), documento));

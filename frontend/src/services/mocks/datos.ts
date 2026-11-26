@@ -87,6 +87,12 @@ export const SESIONES_USAL: Sesion[] = CUENTAS_USAL.map(([nombre, apellido, emai
   expiraEn: SESION_ASPIRANTE.expiraEn,
 }))
 
+/** Cuentas que el Admin desactivó: no pueden ingresar. */
+export const INACTIVAS = new Set<number>()
+
+/** Permisos temporales sobre una solicitud, que crea el Admin al asignar un responsable sin acceso a la carrera. */
+export const TEMPORALES: { id: number; userId: number; solicitudId: number; assignedAt: string; expiresAt: string | null }[] = []
+
 export const PERFIL: Perfil = {
   nombre: SESION_ASPIRANTE.nombre,
   apellido: SESION_ASPIRANTE.apellido,

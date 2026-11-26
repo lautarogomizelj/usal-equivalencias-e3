@@ -5,7 +5,10 @@
  */
 import { ApiError } from '@/services/api/ApiError'
 import type { Sesion } from '@/types/sesion'
-import { CARRERAS, ESTADOS, PASSWORD_VALIDA, SESION_ASPIRANTE, SESIONES_USAL } from './datos'
+import { rutasAdmin } from './admin'
+import { rutasAuditoria } from './auditoria'
+import { CARRERAS, ESTADOS, INACTIVAS, PASSWORD_VALIDA, SESION_ASPIRANTE, SESIONES_USAL } from './datos'
+import { rutasNotificaciones } from './notificaciones'
 import { rutasPerfil } from './perfil'
 import { rutasSolicitudes } from './solicitudes'
 
@@ -51,7 +54,7 @@ function iniciarSesionUsuario(deAdmin: boolean) {
   return (body: unknown) => {
     const { usuario, password } = body as { usuario: string; password: string }
     const sesion = SESIONES_USAL.find(({ email, rol }) => (rol === 'ADMIN') === deAdmin && email === usuario)
-    if (!sesion || password !== PASSWORD_VALIDA) throw credencialesInvalidas()
+    if (!sesion || INACTIVAS.has(sesion.id) || password !== PASSWORD_VALIDA) throw credencialesInvalidas()
     return abrirSesion(sesion)
   }
 }
@@ -65,7 +68,9 @@ function sesionActual() {
 
 /** Los números de la ruta se escriben `:id` y llegan en `ids`, en orden; `consulta` trae lo que sigue al `?`. */
 const RUTAS: Record<string, (body: unknown, ids: number[], consulta: URLSearchParams) => unknown> = {
-  'GET /carreras': () => CARRERAS,
+  /** Las inactivas solo las ve el Admin, con `?activo=todas`. */
+  'GET /carreras': (_, __, consulta) =>
+    CARRERAS.filter(({ activo }) => activo || consulta.get('activo') === 'todas').map((carrera) => ({ ...carrera })),
   'GET /estados': () => ESTADOS,
   'POST /auth/registro': (body) => {
     reiniciarIntentos()
@@ -82,6 +87,9 @@ const RUTAS: Record<string, (body: unknown, ids: number[], consulta: URLSearchPa
   'GET /auth/me': () => ({ ...sesionActual() }),
   ...rutasPerfil(sesionActual, abrirSesion),
   ...rutasSolicitudes(sesionActual),
+  ...rutasNotificaciones(sesionActual),
+  ...rutasAuditoria(sesionActual),
+  ...rutasAdmin(sesionActual),
 }
 
 export async function resolverMock<T>(metodo: string, ruta: string, body?: unknown): Promise<T> {

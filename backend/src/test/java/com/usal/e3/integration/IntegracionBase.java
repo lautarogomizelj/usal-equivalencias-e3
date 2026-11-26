@@ -101,7 +101,7 @@ abstract class IntegracionBase {
                 TRUNCATE sesiones, codigos_verificacion, user_career_permissions, auditoria_sistema,
                          user_solicitud_permissions, documentos_solicitud, estados_solicitud, analisis_academico,
                          reuniones, horarios_propuestos, rondas_reunion, mensajes_chat, lecturas_chat,
-                         comprobantes_pago, cupones_pago, informes_materias, solicitudes,
+                         comprobantes_pago, cupones_pago, informes_materias, notificaciones, solicitudes,
                          aspirantes, usuarios RESTART IDENTITY CASCADE
                 """);
     }

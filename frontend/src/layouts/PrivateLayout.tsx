@@ -1,6 +1,7 @@
 import { LogOut } from 'lucide-react'
 import { NavLink, Outlet, ScrollRestoration } from 'react-router'
 import logoUsal from '@/assets/logo-usal-lema.webp'
+import { Campana } from '@/components/privado/Campana'
 import { OlaMenu } from '@/components/privado/OlaMenu'
 import { MENU_POR_ROL } from '@/constants/navegacion'
 import { NOMBRE_ROL } from '@/constants/roles'
@@ -55,6 +56,7 @@ export function PrivateLayout() {
       <ScrollRestoration />
 
       <div className="absolute top-0 right-0 flex h-(--size-privado-barra) items-center gap-3 rounded-l-full bg-surface/60 pr-6 pl-4 backdrop-blur-sm lg:min-w-(--size-privado-tarjeta)">
+        <Campana />
         <span
           aria-hidden
           className="flex size-(--size-privado-avatar) shrink-0 items-center justify-center rounded-full bg-secondary text-lg font-semibold text-primary"

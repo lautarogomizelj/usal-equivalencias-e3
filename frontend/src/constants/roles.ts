@@ -16,3 +16,6 @@ export const NOMBRE_ROL: Record<string, string> = {
   ADMIN: 'Admin',
   REVISOR: 'Revisor',
 }
+
+/** Roles que el Admin puede darle a una cuenta del personal (RF-ADMIN-001). */
+export const ROLES_DEL_PERSONAL = ['ACAD', 'SECRE', 'REVISOR']

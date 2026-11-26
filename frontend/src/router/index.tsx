@@ -4,9 +4,12 @@ import { ROUTES } from '@/constants/routes'
 import { PublicLayout } from '@/layouts/PublicLayout'
 import { ComponentesPage } from '@/pages/dev/ComponentesPage'
 import { PrivateLayout } from '@/layouts/PrivateLayout'
+import { CarrerasPage } from '@/pages/admin/CarrerasPage'
+import { UsuariosPage } from '@/pages/admin/UsuariosPage'
 import { NuevaSolicitudPage } from '@/pages/aspirante/NuevaSolicitudPage'
 import { EnConstruccionPage } from '@/pages/errors/EnConstruccionPage'
 import { NotFoundPage } from '@/pages/errors/NotFoundPage'
+import { AuditoriaPage } from '@/pages/privado/AuditoriaPage'
 import { PerfilPage } from '@/pages/privado/PerfilPage'
 import { HomePage } from '@/pages/public/HomePage'
 import { LoginAdminPage } from '@/pages/public/LoginAdminPage'
@@ -40,6 +43,17 @@ export const router = createBrowserRouter([
             children: [
               { path: ROUTES.MIS_SOLICITUDES, element: <SolicitudesPorRol /> },
               { path: ROUTES.SOLICITUD, element: <SolicitudPorRol /> },
+            ],
+          },
+          {
+            element: <RutaProtegida roles={['ADMIN', 'REVISOR']} />,
+            children: [{ path: ROUTES.AUDITORIA, element: <AuditoriaPage /> }],
+          },
+          {
+            element: <RutaProtegida roles={['ADMIN']} />,
+            children: [
+              { path: ROUTES.ADMIN_USUARIOS, element: <UsuariosPage /> },
+              { path: ROUTES.ADMIN_CARRERAS, element: <CarrerasPage /> },
             ],
           },
           {

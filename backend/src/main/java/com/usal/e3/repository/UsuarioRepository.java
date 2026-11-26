@@ -2,6 +2,7 @@ package com.usal.e3.repository;
 
 import com.usal.e3.domain.Usuario;
 import jakarta.persistence.LockModeType;
+import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,6 +14,9 @@ public interface UsuarioRepository extends JpaRepository<Usuario, Integer> {
     Optional<Usuario> findByEmail(String email);
 
     boolean existsByEmail(String email);
+
+    /** Cuentas con el bloqueo todavía vigente (RF-ADMIN-007). */
+    List<Usuario> findByBloqueadoHastaAfter(OffsetDateTime ahora);
 
     /** Con bloqueo de fila: dos logins simultáneos no pueden perder un intento fallido. */
     @Lock(LockModeType.PESSIMISTIC_WRITE)

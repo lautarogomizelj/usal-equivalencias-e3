@@ -137,7 +137,10 @@ public class SolicitudService {
                 enviados);
     }
 
-    /** Transiciones 2 y 4: `SOL-INI` → `DOC-REV` (RF-ASP-002) y `DOC-RECH` → `DOC-REV` (RF-ASP-004). */
+    /**
+     * Transiciones 2, 4 y 20: `SOL-INI` → `DOC-REV` (RF-ASP-002), `DOC-RECH` → `DOC-REV` (RF-ASP-004) y
+     * `LEG-RECH` → `LEG-REV` (RF-ASP-009).
+     */
     @Transactional
     public DetalleSolicitud enviarDocumentacion(SesionActual actual, Integer id, String estadoEsperado, String ip) {
         Cuenta cuenta = cuentas.de(actual);
@@ -146,11 +149,51 @@ public class SolicitudService {
                 .orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
         Transicion transicion =
                 transiciones.validar(solicitud, TransicionService.ENVIAR_DOCUMENTACION, estadoEsperado, cuenta);
-        if (Estado.DOC_RECH.equals(transicion.origen())) {
-            documentos.enviarRecarga(solicitud);
-        } else {
+        if (Estado.SOL_INI.equals(transicion.origen())) {
             documentos.enviarBorradores(solicitud);
+        } else {
+            documentos.enviarRecarga(solicitud);
         }
+        transiciones.aplicar(solicitud, transicion, cuenta, ip);
+        return detalle(cuenta, solicitud);
+    }
+
+    /**
+     * Transiciones 16 y 17 (RF-ASP-009): en `INSC-ACEP` el aspirante responde si sus documentos están
+     * legalizados. Con "sí" pasa a `LEG-REV`; con "no", a `LEG-PEND`. No carga archivos.
+     */
+    @Transactional
+    public DetalleSolicitud indicarLegalizacion(
+            SesionActual actual, Integer id, String estadoEsperado, Boolean legalizados, String ip) {
+        Cuenta cuenta = cuentas.de(actual);
+        Solicitud solicitud = solicitudes.buscarParaActualizar(id)
+                .filter(s -> s.visiblePara(cuenta))
+                .orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
+        Transicion transicion =
+                transiciones.validar(solicitud, TransicionService.INDICAR_LEGALIZACION, estadoEsperado, cuenta);
+        if (legalizados == null) {
+            throw ApiException.enCampo(
+                    ErrorCode.VALIDACION, "legalizados", "Indicá si tus documentos están legalizados.");
+        }
+        if (legalizados) {
+            documentos.iniciarLegalizacion(solicitud);
+        } else {
+            transicion = new Transicion(transicion.accion(), transicion.rolActor(), transicion.origen(), Estado.LEG_PEND);
+        }
+        transiciones.aplicar(solicitud, transicion, cuenta, ip);
+        return detalle(cuenta, solicitud);
+    }
+
+    /** Transición 18 (RF-ASP-009): `LEG-PEND` → `LEG-REV`, cuando el aspirante avisa que ya legalizó. */
+    @Transactional
+    public DetalleSolicitud avisarLegalizado(SesionActual actual, Integer id, String estadoEsperado, String ip) {
+        Cuenta cuenta = cuentas.de(actual);
+        Solicitud solicitud = solicitudes.buscarParaActualizar(id)
+                .filter(s -> s.visiblePara(cuenta))
+                .orElseThrow(() -> new ApiException(ErrorCode.NO_ENCONTRADO));
+        Transicion transicion =
+                transiciones.validar(solicitud, TransicionService.AVISAR_LEGALIZADO, estadoEsperado, cuenta);
+        documentos.iniciarLegalizacion(solicitud);
         transiciones.aplicar(solicitud, transicion, cuenta, ip);
         return detalle(cuenta, solicitud);
     }
@@ -199,7 +242,8 @@ public class SolicitudService {
         }
         boolean actuaComoAcademico = (Rol.ACADEMICO.equals(cuenta.rolCodigo()) || Rol.ADMIN.equals(cuenta.rolCodigo()))
                 && transiciones.puedeActuar(cuenta, solicitud);
-        if (actuaComoAcademico && Estado.DOC_REV.equals(estado.getCodigo())) {
+        if (actuaComoAcademico
+                && (Estado.DOC_REV.equals(estado.getCodigo()) || Estado.LEG_REV.equals(estado.getCodigo()))) {
             acciones.add(RevisionService.GUARDAR_MARCAS);
             acciones.add(RevisionService.AGREGAR_FALTANTE);
         }

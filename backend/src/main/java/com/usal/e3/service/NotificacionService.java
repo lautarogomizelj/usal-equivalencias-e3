@@ -5,6 +5,7 @@ import com.usal.e3.domain.DocumentoSolicitud;
 import com.usal.e3.domain.DocumentoSolicitud.EstadoRevision;
 import com.usal.e3.domain.Estado;
 import com.usal.e3.domain.HorarioPropuesto;
+import com.usal.e3.domain.InformeMaterias;
 import com.usal.e3.domain.Reunion;
 import com.usal.e3.domain.Rol;
 import com.usal.e3.domain.RondaReunion;
@@ -12,6 +13,7 @@ import com.usal.e3.domain.Solicitud;
 import com.usal.e3.domain.Usuario;
 import com.usal.e3.repository.DocumentoRepository;
 import com.usal.e3.repository.HorarioPropuestoRepository;
+import com.usal.e3.repository.InformeMateriasRepository;
 import com.usal.e3.repository.ReunionRepository;
 import com.usal.e3.repository.RondaReunionRepository;
 import java.time.format.DateTimeFormatter;
@@ -40,6 +42,7 @@ public class NotificacionService {
     private final RondaReunionRepository rondas;
     private final HorarioPropuestoRepository horarios;
     private final ReunionRepository reuniones;
+    private final InformeMateriasRepository informes;
 
     public NotificacionService(
             MailService mail,
@@ -47,7 +50,9 @@ public class NotificacionService {
             DocumentoRepository documentos,
             RondaReunionRepository rondas,
             HorarioPropuestoRepository horarios,
-            ReunionRepository reuniones) {
+            ReunionRepository reuniones,
+            InformeMateriasRepository informes) {
+        this.informes = informes;
         this.mail = mail;
         this.permisos = permisos;
         this.documentos = documentos;
@@ -127,6 +132,53 @@ public class NotificacionService {
                     aspirante,
                     "E3 " + exp + ": tu solicitud no pudo ser aprobada",
                     "Lamentablemente tu solicitud no pudo ser aprobada. Motivo: " + comentario);
+            case Estado.INSC_ACEP + ">" + Estado.LEG_PEND -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": legalizá tus documentos",
+                    "Indicaste que tus documentos no están legalizados. Legalizalos y avisá desde tu solicitud"
+                            + " cuando estén listos para que el Académico los analice.");
+            case Estado.INSC_ACEP + ">" + Estado.LEG_REV, Estado.LEG_PEND + ">" + Estado.LEG_REV -> alAcademico(
+                    solicitud,
+                    "E3 " + exp + ": documentos legalizados para analizar",
+                    "El aspirante indicó que sus documentos están legalizados. ID: " + exp);
+            case Estado.LEG_REV + ">" + Estado.LEG_RECH -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": observaciones en tus documentos legalizados",
+                    "Observaciones en tus documentos legalizados. Motivo: " + comentario
+                            + ". Documentos a recargar: " + aRecargar(solicitud) + ".");
+            case Estado.LEG_RECH + ">" + Estado.LEG_REV -> alAcademico(
+                    solicitud,
+                    "E3 " + exp + ": documentos legalizados recargados",
+                    "El aspirante recargó sus documentos legalizados. ID: " + exp);
+            case Estado.LEG_REV + ">" + Estado.CUPON_SOL -> {
+                aSecretaria(
+                        solicitud,
+                        "E3 " + exp + ": solicitud lista para gestión de pago",
+                        "Solicitud lista para gestión de pago. Generá y enviá el cupón. ID: " + exp);
+                int materias = informes.findBySolicitudId(solicitud.getId())
+                        .map(InformeMaterias::getMateriasReconocidas)
+                        .orElseThrow();
+                mail.enviarAviso(
+                        aspirante,
+                        "E3 " + exp + ": tus documentos legalizados fueron aceptados",
+                        "Tus documentos legalizados fueron aceptados. Materias reconocidas: " + materias
+                                + ". El detalle de equivalencias está en tu solicitud. Secretaría te va a enviar el"
+                                + " cupón de pago.");
+            }
+            case Estado.CUPON_SOL + ">" + Estado.CUPON_PAG -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": tu cupón de pago está listo",
+                    "Tu cupón está listo. Descargalo desde tu solicitud, hacé el pago y cargá el comprobante.");
+            case Estado.CUPON_PAG + ">" + Estado.PAG_CTRL, Estado.PAG_REENV + ">" + Estado.PAG_CTRL -> aSecretaria(
+                    solicitud,
+                    "E3 " + exp + ": comprobante de pago para verificar",
+                    "El aspirante cargó el comprobante de pago. ID: " + exp);
+            case Estado.PAG_CTRL + ">" + Estado.PAG_REENV -> mail.enviarAviso(
+                    aspirante,
+                    "E3 " + exp + ": hay un problema con tu comprobante",
+                    "Hay un problema con tu comprobante. " + comentario + " Cargá uno nuevo desde tu solicitud.");
+            case Estado.PAG_CTRL + ">" + Estado.E3_INI -> mail.enviarAviso(
+                    aspirante, "E3 " + exp + ": tu pago fue verificado", "Tu pago fue verificado.");
             default -> {}
         }
     }
@@ -165,9 +217,17 @@ public class NotificacionService {
 
     /** Al responsable académico; si todavía nadie tomó el proceso, a los Académicos con acceso a la carrera. */
     private void alAcademico(Solicitud solicitud, String asunto, String texto) {
-        Usuario responsable = solicitud.getResponsableAcademico();
-        List<Usuario> destinatarios =
-                responsable != null ? List.of(responsable) : permisos.conAcceso(solicitud, Rol.ACADEMICO);
+        alResponsable(solicitud, Rol.ACADEMICO, asunto, texto);
+    }
+
+    /** Lo mismo para Secretaría, que puede no haber tomado el proceso todavía cuando llega la etapa de pago. */
+    private void aSecretaria(Solicitud solicitud, String asunto, String texto) {
+        alResponsable(solicitud, Rol.SECRETARIA, asunto, texto);
+    }
+
+    private void alResponsable(Solicitud solicitud, String rol, String asunto, String texto) {
+        Usuario responsable = solicitud.responsableDe(rol);
+        List<Usuario> destinatarios = responsable != null ? List.of(responsable) : permisos.conAcceso(solicitud, rol);
         destinatarios.forEach(usuario -> mail.enviarAviso(usuario.getEmail(), asunto, texto));
     }
 

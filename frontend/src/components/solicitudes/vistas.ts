@@ -6,6 +6,9 @@ import { CargaDocumentacion } from './CargaDocumentacion'
 import { DecisionInscripcion } from './DecisionInscripcion'
 import { EleccionFecha } from './EleccionFecha'
 import { FijarFecha } from './FijarFecha'
+import { GestionPago } from './GestionPago'
+import { AvisarLegalizado, IndicarLegalizacion } from './Legalizacion'
+import { PagoAspirante } from './PagoAspirante'
 import { RecargaDocumentos } from './RecargaDocumentos'
 import { ReunionPactada } from './ReunionPactada'
 import { ReunionPersonal } from './ReunionPersonal'
@@ -48,6 +51,14 @@ export const ACCIONES_EN_BANNER: Record<string, ComponentType<VistaSolicitudProp
   'REU-CHAT': CoordinacionPorChat,
   'REU-PEND': ReunionPactada,
   'INSC-RECH': MotivoDelRechazo,
+  'INSC-ACEP': IndicarLegalizacion,
+  'LEG-PEND': AvisarLegalizado,
+  'LEG-RECH': RecargaDocumentos,
+  'CUPON-SOL': PagoAspirante,
+  'CUPON-PAG': PagoAspirante,
+  'PAG-CTRL': PagoAspirante,
+  'PAG-REENV': PagoAspirante,
+  'E3-INI': PagoAspirante,
 }
 
 /** Lo mismo para el personal: la acción que se ejecuta desde el banner, sin entrar a una pestaña. */
@@ -70,4 +81,9 @@ export const VISTAS_PERSONAL: Record<string, ComponentType<VistaSolicitudProps>>
   'REU-CHAT': ReunionPersonal,
   'REU-PEND': ReunionPersonal,
   'ANAL-POST': DecisionInscripcion,
+  'CUPON-SOL': GestionPago,
+  'CUPON-PAG': GestionPago,
+  'PAG-CTRL': GestionPago,
+  'PAG-REENV': GestionPago,
+  'E3-INI': GestionPago,
 }

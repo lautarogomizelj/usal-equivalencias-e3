@@ -3,26 +3,31 @@ package com.usal.e3.service;
 import com.usal.e3.domain.Cuenta;
 import com.usal.e3.domain.DocumentoSolicitud;
 import com.usal.e3.domain.DocumentoSolicitud.EstadoRevision;
+import com.usal.e3.domain.DocumentoSolicitud.EtapaRevision;
 import com.usal.e3.domain.Estado;
+import com.usal.e3.domain.InformeMaterias;
 import com.usal.e3.domain.Solicitud;
 import com.usal.e3.domain.Usuario;
 import com.usal.e3.exception.ApiException;
 import com.usal.e3.exception.ErrorCode;
 import com.usal.e3.repository.DocumentoRepository;
+import com.usal.e3.repository.InformeMateriasRepository;
 import com.usal.e3.repository.SolicitudRepository;
 import com.usal.e3.security.SesionActual;
 import java.time.OffsetDateTime;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * Revisión de la documentación inicial (RF-ACAD-001) con marcas por documento (RF-ACAD-009). Solo actúan el
- * Académico responsable y el Admin, y solo en `DOC-REV`; la revisión de legalizados llega con su sprint.
+ * Revisión de la documentación inicial (RF-ACAD-001, en `DOC-REV`) y de los documentos legalizados
+ * (RF-ACAD-005, en `LEG-REV`), con marcas por documento (RF-ACAD-009). Solo actúan el Académico responsable y
+ * el Admin.
  */
 @Service
 public class RevisionService {
@@ -31,6 +36,9 @@ public class RevisionService {
     public static final String AGREGAR_FALTANTE = "AGREGAR_FALTANTE";
 
     private static final int MAX_COMENTARIO = 500;
+    private static final int MAX_OBSERVACIONES = 2000;
+    private static final int MAX_MATERIAS = 200;
+    private static final Set<String> EN_REVISION = Set.of(Estado.DOC_REV, Estado.LEG_REV);
 
     /** Marca que llega del frontend para un documento vigente. */
     public record Marca(Integer documentoId, EstadoRevision estado, String comentario) {}
@@ -41,6 +49,7 @@ public class RevisionService {
     private final TransicionService transiciones;
     private final AuditoriaService auditoria;
     private final SolicitudService detalles;
+    private final InformeMateriasRepository informes;
 
     public RevisionService(
             SolicitudRepository solicitudes,
@@ -48,7 +57,9 @@ public class RevisionService {
             CuentaService cuentas,
             TransicionService transiciones,
             AuditoriaService auditoria,
-            SolicitudService detalles) {
+            SolicitudService detalles,
+            InformeMateriasRepository informes) {
+        this.informes = informes;
         this.solicitudes = solicitudes;
         this.documentos = documentos;
         this.cuentas = cuentas;
@@ -72,14 +83,17 @@ public class RevisionService {
     public DocumentoSolicitud agregarFaltante(
             SesionActual actual, Integer id, String tipo, String descripcion, String ip) {
         Cuenta cuenta = cuentas.de(actual);
-        Solicitud solicitud = enRevision(cuenta, id, Estado.DOC_REV);
+        Solicitud solicitud = enRevision(cuenta, id, null);
         String descripcionLimpia = DocumentoService.descripcion(descripcion);
         if (descripcionLimpia == null) {
             throw ApiException.enCampo(ErrorCode.VALIDACION, "descripcion", "Indicá qué documento falta.");
         }
         OffsetDateTime ahora = OffsetDateTime.now();
+        EtapaRevision etapa = Estado.LEG_REV.equals(solicitud.getEstadoCodigo())
+                ? EtapaRevision.LEGALIZACION
+                : EtapaRevision.DOCUMENTACION;
         DocumentoSolicitud faltante = documentos.save(DocumentoSolicitud.faltante(
-                solicitud.getId(), DocumentoService.tipo(tipo), descripcionLimpia, (Usuario) cuenta, ahora));
+                solicitud.getId(), DocumentoService.tipo(tipo), descripcionLimpia, etapa, (Usuario) cuenta, ahora));
         solicitud.modificada(ahora);
         auditoria.registrarEn(
                 cuenta, "agregar_faltante", "documento", faltante.getId(), Map.of("solicitudId", solicitud.getId()), ip);
@@ -103,10 +117,64 @@ public class RevisionService {
     @Transactional
     public DetalleSolicitud rechazar(
             SesionActual actual, Integer id, String estadoEsperado, String comentario, List<Marca> marcas, String ip) {
+        return rechazar(actual, id, TransicionService.RECHAZAR_DOCUMENTACION, estadoEsperado, comentario, marcas, ip);
+    }
+
+    /** Transición 19 (RF-ACAD-005): `LEG-REV` → `LEG-RECH`, con las mismas reglas que el rechazo inicial. */
+    @Transactional
+    public DetalleSolicitud rechazarLegalizados(
+            SesionActual actual, Integer id, String estadoEsperado, String comentario, List<Marca> marcas, String ip) {
+        return rechazar(actual, id, TransicionService.RECHAZAR_LEGALIZADOS, estadoEsperado, comentario, marcas, ip);
+    }
+
+    /**
+     * Transición 21 (RF-ACAD-005): `LEG-REV` → `CUPON-SOL`. No puede quedar ningún documento a recargar, y el
+     * Académico informa la cantidad de materias reconocidas, que el aspirante ve en su informe (RF-ASP-006).
+     */
+    @Transactional
+    public DetalleSolicitud aceptarLegalizados(
+            SesionActual actual,
+            Integer id,
+            String estadoEsperado,
+            List<Marca> marcas,
+            Integer materiasReconocidas,
+            String observaciones,
+            String ip) {
         Cuenta cuenta = cuentas.de(actual);
         Solicitud solicitud = paraActualizar(id);
         Transicion transicion =
-                transiciones.validar(solicitud, TransicionService.RECHAZAR_DOCUMENTACION, estadoEsperado, cuenta);
+                transiciones.validar(solicitud, TransicionService.ACEPTAR_LEGALIZADOS, estadoEsperado, cuenta);
+        if (materiasReconocidas == null || materiasReconocidas < 0 || materiasReconocidas > MAX_MATERIAS) {
+            throw ApiException.enCampo(
+                    ErrorCode.VALIDACION, "materiasReconocidas", "Indicá la cantidad de materias reconocidas.");
+        }
+        String notas = observaciones == null || observaciones.isBlank() ? null : observaciones.strip();
+        if (notas != null && notas.length() > MAX_OBSERVACIONES) {
+            throw ApiException.enCampo(
+                    ErrorCode.VALIDACION, "observaciones", "Máximo " + MAX_OBSERVACIONES + " caracteres.");
+        }
+        marcar(cuenta, solicitud, marcas, ip);
+        if (vigentes(solicitud).stream().anyMatch(d -> d.getEstadoRevision() == EstadoRevision.RECARGAR)) {
+            throw ApiException.enCampo(
+                    ErrorCode.VALIDACION, "marcas", "No se puede aceptar con documentos marcados para recargar.");
+        }
+        informes.save(new InformeMaterias(
+                solicitud.getId(), materiasReconocidas, notas, (Usuario) cuenta, OffsetDateTime.now()));
+        transiciones.aplicar(solicitud, transicion, cuenta, ip);
+        return detalles.detalle(cuenta, solicitud);
+    }
+
+    private DetalleSolicitud rechazar(
+            SesionActual actual,
+            Integer id,
+            String accion,
+            String estadoEsperado,
+            String comentario,
+            List<Marca> marcas,
+            String ip) {
+        Cuenta cuenta = cuentas.de(actual);
+        Solicitud solicitud = paraActualizar(id);
+        Transicion transicion = transiciones.validar(solicitud, accion, estadoEsperado, cuenta);
         String motivo = comentario(comentario, "comentario");
         if (motivo == null) {
             throw ApiException.enCampo(ErrorCode.VALIDACION, "comentario", "Indicá el motivo del rechazo.");
@@ -122,10 +190,12 @@ public class RevisionService {
         return detalles.detalle(cuenta, solicitud);
     }
 
+    /** En `DOC-REV` o `LEG-REV`. Sin `estadoEsperado` (agregar un faltante) alcanza con el estado actual. */
     private Solicitud enRevision(Cuenta cuenta, Integer id, String estadoEsperado) {
         Solicitud solicitud = paraActualizar(id);
         transiciones.exigirQuePuedaActuar(cuenta, solicitud);
-        if (!Estado.DOC_REV.equals(solicitud.getEstadoCodigo()) || !Estado.DOC_REV.equals(estadoEsperado)) {
+        String actual = solicitud.getEstadoCodigo();
+        if (!EN_REVISION.contains(actual) || (estadoEsperado != null && !actual.equals(estadoEsperado))) {
             throw new ApiException(ErrorCode.TRANSICION_INVALIDA);
         }
         return solicitud;

@@ -29,6 +29,7 @@ Los diseños visuales están en la carpeta compartida de Google Drive **Interfac
 | 3.10 | 2026-11-20 | jumaluc | Sprint 4: panel de inicio, bandeja y detalle del Académico y de Secretaría, revisión por documento y recarga del aspirante en `DOC-RECH` (§4.6.3, §5.1, §5.2, §5.4, §5.7 y Anexo B, puntos 18, 20 y 21; CC-013) |
 | 3.11 | 2026-11-20 | jumaluc | Revisión del Sprint 4: en la bandeja, una vista que acota los estados limita el filtro "Estado" a esos (§5.2); aceptar con documentos marcados ❌ avisa en el modal (§5.6.2); banner del personal en `ANAL-PEND` (§5.6.4) |
 | 3.12 | 2026-11-20 | jumaluc | Sprint 5: análisis preliminar del Académico, panel de reunión del personal, elección de fecha del aspirante, reunión pactada con el enlace de Meet y documentación académica en el detalle (§4.6.5 a §4.6.9, §5.4, §5.6.4 a §5.6.8 y Anexo B, puntos 19 y 22); las fechas se proponen desde mañana y hasta dentro de 30 días (CC-018, CC-019) |
+| 3.14 | 2026-11-22 | jumaluc | Sprint 7: pregunta de legalidad y aviso de legalizados dentro del banner, recarga de legalizados, revisión de legalizados con el informe de materias al aceptar, informe y pago del aspirante dentro del banner, y gestión de pago de Secretaría con el monto ingresado a mano (§6.4, Anexo A #8, #9, #14 y #15, Anexo B #9 y #24; CC-022, CC-023) |
 | 3.13 | 2026-11-22 | jumaluc | Sprint 6: chat de la solicitud, coordinación de la fecha por chat y "Fijar fecha", resultado de la reunión, actualización del análisis y decisión de inscripción (§2.5, §4.5, §4.6.7 a §4.6.13, §4.7.2, §5.4, §5.6.6 a §5.6.9, Anexo A, puntos 7 y 16, y Anexo B, punto 23; CC-020, CC-021) |
 
 ---
@@ -2025,9 +2026,9 @@ Banner con el estado actual y "En etapa académica". Datos de la solicitud y bot
 
 **Requisito:** RF-SEC-001.
 
-Banner: "Solicitud lista para gestión de pago." ID de la solicitud, datos del aspirante, monto prellenado e Informe de materias en solo lectura.
+Banner: "Los documentos legalizados fueron aceptados. Secretaría tiene que generar y enviar el cupón de pago." Sección "Gestión de pago" con el informe de materias en solo lectura, los datos de la solicitud y el campo **Monto en pesos**, que ingresa Secretaría (CC-022).
 
-**Acción:** **Generar y enviar cupón** → vista previa del PDF (`SEC-CUPON-SOL-M1`) → confirmar (doble verificación) → `CUPON-PAG`.
+**Acción:** **Generar y enviar cupón** → modal `SEC-CUPON-SOL-M1` con el monto y los datos del cupón (doble verificación; el PDF se genera al confirmar, sin vista previa) → `CUPON-PAG`.
 
 ---
 
@@ -2043,7 +2044,7 @@ Banner: "Cupón generado. Esperando el comprobante del aspirante."
 
 Banner: "El aspirante cargó su comprobante." Si viene de un reenvío: "El aspirante reenvió el comprobante."
 
-Visor del comprobante, monto del cupón, comentarios (obligatorios si el pago es incorrecto) y decisión (radio): **Pago correcto** / **Pago incorrecto / monto no coincide**.
+Cupón con su monto y enlace de descarga, tabla de comprobantes (envío, archivo descargable, fecha, estado y comentario; no hay visor incrustado), comentario (obligatorio si el pago es incorrecto) y decisión (radio): **Pago correcto** / **Pago incorrecto o el monto no coincide**.
 
 **Acción:** **Guardar verificación** → modal `SEC-PAG-CTRL-M1` (doble verificación) → `E3-INI` o `PAG-REENV`.
 
@@ -2463,14 +2464,14 @@ Cosas que los requisitos v12 no terminan de definir y que el equipo de frontend 
 | 5 | **Límite de 50 MB en la recarga** (`DOC-RECH`) | Se aplica a los archivos que se envían en esa recarga |
 | 6 | **Cambiar la fecha elegida:** al seleccionar fecha el estado pasa directo a `REU-PEND` | No se puede cambiar desde la interfaz; se resuelve por chat |
 | 7 | **Reprogramación tras la 2ª ronda:** si el aspirante no se presenta y ya se usó la 2ª ronda, `REU-FEC-ACAD` solo tiene la transición hacia `REU-FEC-ASP-2` | Se reutiliza la 2ª ronda hasta que negocio defina otra cosa. Implementado así en el Sprint 6: después de cada inasistencia el Académico propone otra 2ª ronda (CC-021) |
-| 8 | **Estructura del informe de materias:** RF-ACAD-001 dice que la matriz es un archivo o notas libres, pero `ASP-CUPON-SOL` muestra una tabla (materia, carga horaria, correlativas, monto) | Se asume que el backend expone estos datos estructurados. Falta definir cómo los carga el Académico |
-| 9 | **Monto reportado por el aspirante:** RF-SEC-002 menciona "Monto reportado", pero RF-ASP-007 no pide que el aspirante lo ingrese | El aspirante solo sube el comprobante |
+| 8 | **Estructura del informe de materias:** RF-ACAD-001 dice que la matriz es un archivo o notas libres, pero `ASP-CUPON-SOL` muestra una tabla (materia, carga horaria, correlativas, monto) | **Resuelto** (CC-022): versión simple. El Académico informa la cantidad de materias reconocidas y observaciones al aceptar los legalizados; el detalle por materia queda en la matriz de equivalencias |
+| 9 | **Monto reportado por el aspirante:** RF-SEC-002 menciona "Monto reportado", pero RF-ASP-007 no pide que el aspirante lo ingrese | El aspirante solo sube el comprobante (implementado así en el Sprint 7) |
 | 10 | **`INSC-RECH`:** ¿el aspirante puede iniciar una nueva solicitud? ¿el chat queda en solo lectura? | Chat en solo lectura. "Nueva solicitud" sigue disponible en el menú |
 | 11 | **Varias solicitudes por aspirante:** ¿puede tener más de una activa? | Sí (el dashboard agrupa varias) |
 | 12 | **Editar el formulario inicial** después de crear la solicitud | No editable. Los cambios se resuelven por chat |
 | 13 | **Desbloqueo de cuenta:** RF-AUTH-006 lo lista como acción con doble verificación, pero RF-AUTH-002 y RF-ADMIN-007 dicen que se hace sin doble verificación | Se implementa **sin** doble verificación hasta que negocio decida |
-| 14 | **Monto del cupón:** ¿Secretaría puede modificar el monto prellenado? | Solo lectura por defecto |
-| 15 | **Comprobantes rechazados:** ¿se archivan como versión anterior, como los documentos? | Se muestra el anterior en `ASP-PAG-REENV`. Confirmar conservación con backend |
+| 14 | **Monto del cupón:** ¿Secretaría puede modificar el monto prellenado? | **Resuelto** (CC-022): no hay monto prellenado; lo ingresa Secretaría al generar el cupón y después no se cambia |
+| 15 | **Comprobantes rechazados:** ¿se archivan como versión anterior, como los documentos? | Se conservan: cada reenvío es una versión nueva (`comprobantes_pago.version`) y Secretaría ve todos, con su estado y su comentario (Sprint 7) |
 | 16 | **Adjuntos de chat:** formatos permitidos (solo se define el límite de 5 MB) | PDF, JPG y PNG (implementado en el Sprint 6, CC-021) |
 
 ---
@@ -2489,7 +2490,7 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 | 6 | Código de expediente | `EQ-2024-001` | `EXP-2026-001` | Requisitos |
 | 7 | Formulario inicial | Dirección y listas desplegables de origen | Sin dirección; origen en texto libre | Requisitos |
 | 8 | Elección de fecha | Selección múltiple | Una sola fecha | Requisitos |
-| 9 | Legalización | Carga de Plan de estudios y Cronograma de materias | RF-ASP-009 solo pide responder y avisar; la transición 18 habla de recargar | Requisitos, con la contradicción pendiente |
+| 9 | Legalización | Carga de Plan de estudios y Cronograma de materias | RF-ASP-009 solo pide responder y avisar | Requisitos: el aspirante solo responde y avisa, y recarga archivos únicamente en `LEG-RECH` (CC-022; la transición 18 se corrigió) |
 | 10 | Menú y perfil del Académico | Mis tareas, Calendario, disponibilidad en Mi perfil, Ayuda y LU del estudiante | No están definidos | Se implementan cuando se aprueben |
 | 11 | Revisión del Académico | Estado por documento, "Guardar borrador" y "Enviar evaluación" | "Guardar marcas", aceptar y rechazar | Requisitos para las acciones; diseño para la tabla |
 | 12 | Nombres de estados | "Con observaciones", "En evaluación", "Error en documentación" | Nombres del catálogo de 21 estados | Requisitos |
@@ -2504,6 +2505,7 @@ Mientras no se decidan (CC-006 en `GESTION_CAMBIOS.md`), manda el documento indi
 | 21 | Detalle del personal | Tarjeta del estudiante con LU, carreras y fechas; pestañas Análisis de solicitud, Detalles, Chat e Historial; sin banner ni responsables; botones "Guardar borrador" y "Enviar evaluación" | Encabezado, bloque de responsables con "Tomar proceso" y "Darse de baja", banner de estado y ocho pestañas (5.4) | Diseño para la composición, con la segunda opción de `Documentacion Inicial`. La tarjeta muestra el DNI en lugar del LU y los dos responsables en lugar de las fechas, que están en Detalles. Se suma el banner de estado. Las acciones son las de los requisitos (punto 11). Las pestañas Documentación, Análisis, Reunión y Auditoría llegan con sus sprints |
 | 22 | Análisis preliminar y reunión | El Académico elige entre "Usar mis horarios de reunión del perfil" e "Ingresar horarios personalizados", sube archivos PDF, JPG o PNG y envía con "Enviar a estudiante"; el aspirante elige una o más fechas y, si no puede, escribe solo el motivo; la tabla de Documentación académica trae una columna Estado y un menú de acciones; la reunión confirmada promete un recordatorio el día anterior | Hasta 7 horarios de 1 hora cargados para esa solicitud; matriz y horario de cursada como archivo o notas; "Guardar propuesta"; una sola fecha; motivo y disponibilidad obligatorios; no hay recordatorios (RF-ACAD-002 y 003, RF-ASP-005) | Diseño para la composición. Los horarios se cargan solo a mano, porque la disponibilidad del perfil no existe (punto 10). Cada documento admite archivo PDF o JPG y notas. El botón dice "Enviar al aspirante". Se elige una sola fecha (punto 8) y, al no poder, se piden el motivo y cuándo puede. La tabla de Documentación académica muestra Fecha de envío, Responsable, Archivo y Notas, sin columna Estado, porque esos documentos no se revisan. No se promete el recordatorio |
 | 23 | Chat, fecha por chat y resultado de la reunión | El chat no trae "Tipo de consulta"; la coordinación por chat suma un encabezado con la foto del responsable; "¿La reunión finalizó?" ofrece "Sí, la reunión finalizó" y "No, todavía no se realizó la reunión", con el botón "Continuar proceso"; los estados se llaman "Pendiente de coordinación por chat" y "En evaluación"; no hay diseño de "Fijar fecha", de la actualización del análisis ni de la decisión de inscripción | Mensaje con tipo de consulta (RF-MSG-002); notas opcionales y dos acciones con doble verificación: la reunión finalizó o el aspirante no se presentó (RF-ACAD-004); nombres del catálogo de estados | Diseño para la composición. El tipo de consulta es un desplegable chico junto al campo del mensaje, con "Otro" por defecto, y se muestra al lado de la hora. El avatar son las iniciales (punto 10). La segunda opción de la reunión pasa a ser "No, el aspirante no se presentó", porque "todavía no se realizó" no cambia nada; cada opción suma su texto opcional. "Fijar fecha" es un botón en el banner con un modal, y la actualización del análisis y la decisión usan los componentes existentes |
+| 24 | Legalización, informe y pago | El informe de materias es una pestaña con una tabla por materia; la legalización pide cargar archivos; el cupón trae el monto prellenado y una vista previa del PDF; el comprobante se ve en un visor | Informe con cantidad de materias, observaciones y monto; pregunta de legalidad sin archivos; monto ingresado por Secretaría | Requisitos (CC-022). La pregunta de legalidad, el aviso, el informe, el cupón y la carga del comprobante van dentro del banner del aspirante; el comprobante se abre en otra pestaña, sin visor |
 
 ---
 

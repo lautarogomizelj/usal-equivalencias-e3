@@ -8,11 +8,16 @@ import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import java.util.List;
 
-/** Body de "Guardar marcas" y de aceptar o rechazar la documentación (contrato §7.3). */
+/**
+ * Body de "Guardar marcas" y de aceptar o rechazar la documentación o los legalizados (contrato §7.3).
+ * `materiasReconocidas` y `observaciones` solo se usan al aceptar los legalizados.
+ */
 public record MarcasRequest(
         @NotBlank(message = Validaciones.REQUERIDO) String estadoEsperado,
         String comentario,
-        @Valid List<MarcaRequest> marcas) {
+        @Valid List<MarcaRequest> marcas,
+        Integer materiasReconocidas,
+        String observaciones) {
 
     public record MarcaRequest(
             @NotNull(message = Validaciones.REQUERIDO) Integer documentoId,

@@ -23,6 +23,7 @@
 | 13.3 | 2026-11-20 | jumaluc | RF-PROC-002: para actuar, el personal tiene que ser participante y además el responsable del rol de la etapa; el Admin General no necesita ninguna de las dos cosas (auditoría del 2026-11-19, CC-017) |
 | 13.4 | 2026-11-20 | jumaluc | RF-ACAD-002: las fechas de reunión se proponen desde el día siguiente y hasta dentro de 30 días, en lugar de "próximos 14-30 días" (CC-018) |
 | 13.5 | 2026-11-22 | jumaluc | RF-ACAD-003: la fecha pautada por chat admite cualquier día y hora futuros (CC-020). RF-ACAD-004: las notas de la reunión las ve solo el personal. RF-MSG-002 y 003: el mensaje lleva el nombre completo y el rol de quien escribe, texto, adjunto (PDF, JPG o PNG) o las dos cosas, y el chat queda en solo lectura con la solicitud finalizada (CC-021) |
+| 13.6 | 2026-11-22 | jumaluc | RF-ASP-006: el informe de materias es la cantidad de materias reconocidas, las observaciones del Académico y el monto del cupón, sin tabla por materia. RF-ACAD-005: al aceptar los legalizados el Académico informa esa cantidad. RF-SEC-001: el monto del cupón lo ingresa Secretaría. Transición 18: el aspirante avisa que legalizó, sin recargar archivos (CC-022) |
 
 ---
 
@@ -346,9 +347,8 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 
 #### RF-ASP-006: Ver Informe de Materias
 - **Acciona:** Desde estado **"Solicitud de cupón de pago"** (`CUPON-SOL`) en adelante
-- Aspirante ve resumen de equivalencias (solo lectura)
-- Tabla: materias reconocidas, carga horaria, correlativas
-- Cantidad a adeudar, observaciones, monto a pagar
+- Aspirante ve el resumen de equivalencias (solo lectura): la cantidad de materias reconocidas y las observaciones que cargó el Académico al aceptar los documentos legalizados (RF-ACAD-005), y el monto a pagar una vez que Secretaría envió el cupón (CC-022)
+- El detalle materia por materia está en la matriz de equivalencias vigente, que el aspirante ya ve en su solicitud (RF-ACAD-002); no hay una tabla estructurada por materia
 
 #### RF-ASP-007: Efectuar Pago
 - **Acciona:** Desde estado **"Pago de cupón por aspirante"** (`CUPON-PAG`) o **"Reenvío de comprobante"** (`PAG-REENV`)
@@ -465,7 +465,7 @@ Proporcionar un flujo de tramitación de equivalencias **trazable, automatizado,
 | 15 | Académico | Rechazar análisis preliminar/equivalencias | `ANAL-POST` | `INSC-RECH` | Se termina el proceso | RF-ACAD-006 |
 | 16 | Aspirante | Indica que sus documentos SÍ están legalizados | `INSC-ACEP` | `LEG-REV` | El aspirante tiene que responder si su documentación está legalizada | RF-ASP-009 |
 | 17 | Aspirante | Indica que sus documentos NO están legalizados | `INSC-ACEP` | `LEG-PEND` | El aspirante debe legalizarlos y avisar cuando estén listos | RF-ASP-009 |
-| 18 | Aspirante | Avisa que ya legalizó sus documentos | `LEG-PEND` | `LEG-REV` | Recarga los documentos ya legalizados | RF-ASP-009 |
+| 18 | Aspirante | Avisa que ya legalizó sus documentos | `LEG-PEND` | `LEG-REV` | Solo avisa: recarga archivos únicamente si el Académico los observa (`LEG-RECH`) | RF-ASP-009 |
 | 19 | Académico | Rechaza documentos | `LEG-REV` | `LEG-RECH` | Marca los documentos a recargar (tilde/cruz) | RF-ACAD-005, RF-ACAD-009 |
 | 20 | Aspirante | Reenvía documentos legalizados | `LEG-RECH` | `LEG-REV` | Recarga los documentos marcados con ❌ | RF-ASP-009 |
 | 21 | Académico | Acepta documentos | `LEG-REV` | `CUPON-SOL` | Al aspirante se le informa la cantidad de materias | RF-ACAD-005 |
@@ -743,9 +743,10 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
   - Validez de firmas electrónicas
   - Concordancia entre documentos y análisis
 - Marca cada documento con ✅ o ❌ (RF-ACAD-009, etapa `LEGALIZACION`)
-- Puede cargar archivo de observaciones
+- Deja sus observaciones en el comentario de cada documento
 - Decisión (radio buttons):
   - ☐ Aceptar documentos (no puede haber documentos marcados con ❌)
+    - Al aceptar indica la cantidad de materias reconocidas y, si quiere, observaciones: es el informe que ve el aspirante (RF-ASP-006, CC-022)
   - ☐ Rechazar documentos (comentario obligatorio, al menos un documento con ❌ y ninguno en `PENDIENTE`)
 - Botón: "Guardar revisión" (doble verificación)
 - Sistema:
@@ -818,7 +819,8 @@ Ambos roles comparten permisos, bandeja, vista detallada y mecanismo de asignaci
 - **Acciona:** Desde estado **"Solicitud de cupón de pago"** (`CUPON-SOL`)
 - Secretaría abre solicitud
 - Sección "Gestión de Pago":
-  - Información: Monto (pre-rellenado según política), ID solicitud, datos aspirante
+  - Información: ID solicitud, datos aspirante e informe de materias
+  - Monto: lo ingresa Secretaría, en pesos y con hasta 2 decimales; no hay una política que lo calcule (CC-022)
   - Botón: "Generar y enviar cupón"
     - Doble verificación (1er click muestra preview, 2do click ejecuta)
     - Sistema genera PDF con cupón

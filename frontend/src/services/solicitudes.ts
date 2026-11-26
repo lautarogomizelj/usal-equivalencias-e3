@@ -8,6 +8,8 @@ import type {
   Documento,
   EventoHistorial,
   FiltrosBandeja,
+  InformeMaterias,
+  Pago,
   ReunionInfo,
   SolicitudDetalle,
   SolicitudResumen,
@@ -35,6 +37,10 @@ export const solicitudes = {
     api.get<Documento[]>(`/solicitudes/${id}/documentos`, { signal }),
   analisis: (id: number, signal?: AbortSignal) => api.get<Analisis[]>(`/solicitudes/${id}/analisis`, { signal }),
   reunion: (id: number, signal?: AbortSignal) => api.get<ReunionInfo>(`/solicitudes/${id}/reunion`, { signal }),
+  /** Existe desde `CUPON-SOL`. */
+  informe: (id: number, signal?: AbortSignal) =>
+    api.get<InformeMaterias>(`/solicitudes/${id}/informe`, { signal }),
+  pago: (id: number, signal?: AbortSignal) => api.get<Pago>(`/solicitudes/${id}/pago`, { signal }),
   /** `reemplazaAId` va en la recarga: es el documento marcado para recargar que el archivo reemplaza. */
   subirDocumento: (id: number, archivo: File, tipo: TipoDocumento, descripcion?: string, reemplazaAId?: number) => {
     const cuerpo = new FormData()

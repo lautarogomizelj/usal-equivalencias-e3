@@ -36,6 +36,14 @@ public class TransicionService {
     public static final String FINALIZAR_REUNION = "FINALIZAR_REUNION";
     public static final String ACEPTAR_INSCRIPCION = "ACEPTAR_INSCRIPCION";
     public static final String RECHAZAR_INSCRIPCION = "RECHAZAR_INSCRIPCION";
+    public static final String INDICAR_LEGALIZACION = "INDICAR_LEGALIZACION";
+    public static final String AVISAR_LEGALIZADO = "AVISAR_LEGALIZADO";
+    public static final String ACEPTAR_LEGALIZADOS = "ACEPTAR_LEGALIZADOS";
+    public static final String RECHAZAR_LEGALIZADOS = "RECHAZAR_LEGALIZADOS";
+    public static final String ENVIAR_CUPON = "ENVIAR_CUPON";
+    public static final String ENVIAR_COMPROBANTE = "ENVIAR_COMPROBANTE";
+    public static final String ACEPTAR_PAGO = "ACEPTAR_PAGO";
+    public static final String RECHAZAR_PAGO = "RECHAZAR_PAGO";
 
     /** Las transiciones ya implementadas: cada sprint suma las suyas. De acá salen las `accionesDisponibles`. */
     static final List<Transicion> TABLA = List.of(
@@ -54,7 +62,19 @@ public class TransicionService {
             new Transicion(MARCAR_NO_ASISTIO, Rol.ACADEMICO, Estado.REU_PEND, Estado.REU_FEC_ACAD),
             new Transicion(FINALIZAR_REUNION, Rol.ACADEMICO, Estado.REU_PEND, Estado.ANAL_POST),
             new Transicion(ACEPTAR_INSCRIPCION, Rol.ACADEMICO, Estado.ANAL_POST, Estado.INSC_ACEP),
-            new Transicion(RECHAZAR_INSCRIPCION, Rol.ACADEMICO, Estado.ANAL_POST, Estado.INSC_RECH));
+            new Transicion(RECHAZAR_INSCRIPCION, Rol.ACADEMICO, Estado.ANAL_POST, Estado.INSC_RECH),
+            // La misma acción lleva a `LEG-REV` (sí) o a `LEG-PEND` (no): el destino lo elige quien la ejecuta.
+            new Transicion(INDICAR_LEGALIZACION, Rol.ASPIRANTE, Estado.INSC_ACEP, Estado.LEG_REV),
+            new Transicion(INDICAR_LEGALIZACION, Rol.ASPIRANTE, Estado.INSC_ACEP, Estado.LEG_PEND),
+            new Transicion(AVISAR_LEGALIZADO, Rol.ASPIRANTE, Estado.LEG_PEND, Estado.LEG_REV),
+            new Transicion(RECHAZAR_LEGALIZADOS, Rol.ACADEMICO, Estado.LEG_REV, Estado.LEG_RECH),
+            new Transicion(ENVIAR_DOCUMENTACION, Rol.ASPIRANTE, Estado.LEG_RECH, Estado.LEG_REV),
+            new Transicion(ACEPTAR_LEGALIZADOS, Rol.ACADEMICO, Estado.LEG_REV, Estado.CUPON_SOL),
+            new Transicion(ENVIAR_CUPON, Rol.SECRETARIA, Estado.CUPON_SOL, Estado.CUPON_PAG),
+            new Transicion(ENVIAR_COMPROBANTE, Rol.ASPIRANTE, Estado.CUPON_PAG, Estado.PAG_CTRL),
+            new Transicion(RECHAZAR_PAGO, Rol.SECRETARIA, Estado.PAG_CTRL, Estado.PAG_REENV),
+            new Transicion(ENVIAR_COMPROBANTE, Rol.ASPIRANTE, Estado.PAG_REENV, Estado.PAG_CTRL),
+            new Transicion(ACEPTAR_PAGO, Rol.SECRETARIA, Estado.PAG_CTRL, Estado.E3_INI));
 
     private final HistorialEstadoRepository historial;
     private final PermisosService permisos;

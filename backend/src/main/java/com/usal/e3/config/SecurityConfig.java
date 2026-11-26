@@ -86,8 +86,16 @@ public class SecurityConfig {
                                 "/solicitudes/*/reunion/no-asistio",
                                 "/solicitudes/*/reunion/finalizar",
                                 "/solicitudes/*/inscripcion/aceptar",
-                                "/solicitudes/*/inscripcion/rechazar")
+                                "/solicitudes/*/inscripcion/rechazar",
+                                "/solicitudes/*/legalizacion/aceptar",
+                                "/solicitudes/*/legalizacion/rechazar")
                         .hasAnyRole(Rol.ACADEMICO, Rol.ADMIN)
+                        .requestMatchers(
+                                HttpMethod.POST,
+                                "/solicitudes/*/pago/cupon",
+                                "/solicitudes/*/pago/aceptar",
+                                "/solicitudes/*/pago/rechazar")
+                        .hasAnyRole(Rol.SECRETARIA, Rol.ADMIN)
                         .requestMatchers(
                                 HttpMethod.POST, "/solicitudes/*/chat/mensajes", "/solicitudes/*/chat/leidos")
                         .hasAnyRole(Rol.ASPIRANTE, Rol.ACADEMICO, Rol.SECRETARIA)
@@ -102,7 +110,10 @@ public class SecurityConfig {
                                 "/solicitudes/*/cancelar",
                                 "/solicitudes/*/reunion/solicitar-otras-fechas",
                                 "/solicitudes/*/reunion/elegir-horario",
-                                "/solicitudes/*/reunion/rechazar-ronda")
+                                "/solicitudes/*/reunion/rechazar-ronda",
+                                "/solicitudes/*/legalizacion/indicar",
+                                "/solicitudes/*/legalizacion/listo",
+                                "/solicitudes/*/pago/comprobante")
                         .hasRole(Rol.ASPIRANTE)
                         .requestMatchers(HttpMethod.DELETE, "/solicitudes/*/documentos/*")
                         .hasRole(Rol.ASPIRANTE)

@@ -26,6 +26,7 @@
 | 1.19 | 2026-11-22 | jumaluc | Sprint 6 en backend y frontend: chat de la solicitud, fecha pautada por chat, resultado de la reunión, actualización del análisis y decisión de inscripción; migración `V8`. El informe de materias del aspirante pasa al Sprint 7 (CC-020, CC-021) |
 | 1.20 | 2026-11-22 | jumaluc | Sprint 7 en backend y frontend: legalización de documentos, informe de materias, cupón de pago en PDF, comprobante y verificación del pago; migración `V9` y dependencia OpenPDF. Una solicitud recorre las 27 transiciones (CC-022, CC-023) |
 | 1.21 | 2026-11-22 | jumaluc | Sprint 8 en backend y frontend: panel de Admin (cuentas del personal, permisos por carrera, carreras, asignación de responsables y alertas), auditoría general, campana de notificaciones, exportación de expedientes en ZIP y pantallas del Revisor; migración `V10` (CC-024, CC-025) |
+| 1.22 | 2026-11-26 | jumaluc | Guía de pruebas (`Docs/GUIA_PRUEBAS.md`): cómo levantar el sistema completo y recorrerlo con las cuentas demo. |
 
 Sistema web de tramitación de equivalencias académicas. Digitaliza y automatiza el proceso de reconocimiento de materias para ingresantes de la Facultad de Ingeniería de la Universidad del Salvador (USAL).
 
@@ -454,6 +455,7 @@ Importar con el alias `@/` (ej: `import { Button } from '@/components/ui'`).
 | `Docs/ARQUITECTURA_E3.md` | Estructura del monorepo, flujo de comunicación entre Frontend y Backend y las tres capas. Los puertos y el stack están en este README, no se repiten ahí. |
 | `Docs/GESTION_CAMBIOS.md` | Registro de cambios de requisito y de diseño que surgen durante el desarrollo. Cada cambio aprobado se refleja en el documento fuente y en su tabla de control de versiones. |
 | `Docs/demo-credentials.md` | Cuentas demo por rol para probar el sistema en desarrollo. |
+| `Docs/GUIA_PRUEBAS.md` | Guía para probar el sistema: puesta en marcha contra el backend real, recorrido completo de una solicitud, pruebas por rol y qué revisar si algo falla. |
 | `Docs/BLOQUEOS.md` | Lo que falta conseguir o decidir para poder seguir: credenciales, cuentas y materiales que no dependen del código. |
 | `Docs/TEMAS_PROFESOR.md` | Dudas del equipo para charlar con el profesor, con lo que se hizo mientras tanto. |
 | `Docs/Diagramas/` (3 archivos `.jpeg`) | Diagramas de actividades y de los flujos de análisis preliminar y revisión legal. |
